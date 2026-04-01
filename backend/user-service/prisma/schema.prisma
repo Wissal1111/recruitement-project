@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  userId              String    @id @default(uuid())
+  firstname           String
+  lastname            String
+  email               String    @unique
+  passwordHash        String
+  isActive            Boolean   @default(false)
+  lastLogin           DateTime?
+  profilePictureUrl   String?
+  failedLoginAttempts Int       @default(0)
+  accountLocked       Boolean   @default(false)
+  lockUntil           DateTime?
+  createdAt           DateTime  @default(now())
+
+  profile             UserProfile?
+  roles               UserRole[]
+  authTokens          AuthToken[]
+  passwordResetTokens PasswordResetToken[]
+  notifications       Notification[]
+  socialMediaUsages   SocialMediaUsage[]
+  interests           UserInterest[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  profileId          String      @id @default(uuid())
+  userId             String      @unique
+  age                Int?
+  gender             Gender?
+  dateOfBirth        DateTime?
+  education          String?
+  profession         String?
+  country            String?
+  city               String?
+  deviceType         DeviceType?
+  bio                String?
+  totalEarnings      Decimal     @default(0)
+  profileCompletedAt DateTime?
+  completionScore    Int         @default(0)
+
+  user               User        @relation(fields: [userId], references: [userId])
+
+  @@map("user_profiles")
+}
+
+model Role {
+  roleId  String     @id @default(uuid())
+  name    RoleName   @unique
+
+  users   UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id         String   @id @default(uuid())
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [userId])
+  role       Role     @relation(fields: [roleId], references: [roleId])
+
+  @@map("user_roles")
+}
+
+model AuthToken {
+  tokenId   String        @id @default(uuid())
+  userId    String
+  token     String
+  tokenType TokenType
+  expiresAt DateTime
+  isRevoked Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  user      User          @relation(fields: [userId], references: [userId])
+
+  @@map("auth_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [userId])
+
+  @@map("password_reset_tokens")
+}
+
+model Interest {
+  interestId  String         @id @default(uuid())
+  name        String
+  description String?
+
+  users       UserInterest[]
+
+  @@map("interests")
+}
+
+model UserInterest {
+  id         String   @id @default(uuid())
+  userId     String
+  interestId String
+  selectedAt DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [userId])
+  interest   Interest @relation(fields: [interestId], references: [interestId])
+
+  @@map("user_interests")
+}
+
+model Notification {
+  notificationId String   @id @default(uuid())
+  userId         String
+  title          String
+  message        String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [userId])
+
+  @@map("notifications")
+}
+
+model SocialMediaUsage {
+  usageId         String          @id @default(uuid())
+  userId          String
+  platform        Platform
+  dailyUsageRange DailyUsageRange
+  usageFrequency  UsageFrequency
+  isMainPlatform  Boolean         @default(false)
+  typicalActivity String?
+  declaredAt      DateTime        @default(now())
+
+  user            User            @relation(fields: [userId], references: [userId])
+
+  @@map("social_media_usages")
+}
+
+// ————— Enums —————
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum DeviceType {
+  MOBILE
+  DESKTOP
+  TABLET
+}
+
+enum RoleName {
+  ADMIN
+  CREATOR
+  PARTICIPANT
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  TIKTOK
+  LINKEDIN
+  YOUTUBE
+  OTHER
+}
+
+enum DailyUsageRange {
+  LESS_THAN_1H
+  ONE_TO_2H
+  TWO_TO_4H
+  MORE_THAN_4H
+}
+
+enum UsageFrequency {
+  RARELY
+  SOMETIMES
+  OFTEN
+  ALWAYS
+}
