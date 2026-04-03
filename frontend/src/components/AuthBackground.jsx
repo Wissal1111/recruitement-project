@@ -12,6 +12,7 @@ export default function AuthBackground({children}) {
             <CurvedLine className="curved-line1"/>
             <CurvedLine className="curved-line2"/>
             <SmallShapes className="small-shapes"/>
+            <SmallShapes className="small-shapes2"/>
         </div>
     );
 }

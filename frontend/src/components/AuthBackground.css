@@ -15,7 +15,7 @@
 }
 .online-survey{
     position: absolute;
-    top: 20vh;
+    bottom: 20vh;
     left: 4%;
 }
 .curved-line1{
@@ -35,4 +35,102 @@
     top:20%;
     right:10%;
     z-index: 0;
+}
+.small-shapes2{
+    display: none;
+}
+@media (max-width: 1300px){
+    .question-mark{
+    right: 20%;
+    }
+    .online-survey{
+        top:40%;
+        left: 4%;
+        height: auto;
+        width: 300px;
+    }
+    .curved-line1{
+    position: absolute;
+    bottom:10%;
+    right:10%;
+    z-index: 0;
+}
+
+
+.curved-line2{
+    position: absolute;
+    top:5%;
+    left:10%;
+    z-index: 0;
+}
+     .small-shapes{
+    position: absolute;
+    top:20%;
+    right:0;
+    z-index: 0;
+}
+ .small-shapes2{
+    display: none;
+}
+    
+}
+@media (max-width: 1024px){
+    .question-mark{
+        display: none;
+    }
+    .online-survey{
+        display: none;
+    }
+    .curved-line1{
+    position: absolute;
+    bottom:10%;
+    right:10%;
+    z-index: 0;
+}
+
+
+.curved-line2{
+    position: absolute;
+    top:5%;
+    left:10%;
+    z-index: 0;
+}
+     .small-shapes{
+    position: absolute;
+    top:20%;
+    right:0;
+    z-index: 0;
+}
+ .small-shapes2{
+    display: block;
+    position: absolute;
+    bottom:20%;
+    left:0;
+    z-index: 0;
+}
+    
+}
+@media (max-width: 600px){
+    .question-mark{
+        display: none;
+    }
+    .online-survey{
+        display: none;
+    }
+    .curved-line1{
+        display: none;
+    }
+    .curved-line2{
+        display: none;
+    }
+    .small-shapes{
+        display: none;
+    }
+    .small-shapes2{
+        display: none;
+    }
+    .auth-background{
+        background-color: white;
+    }
+    
 }
