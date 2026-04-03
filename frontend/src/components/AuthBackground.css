@@ -1,0 +1,14 @@
+.auth-background{
+    position: relative;
+    background-color: var(--light-purple);
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}   
+.question-mark{
+    position: absolute;
+    top: 10vh;
+    right: 30%;
+}
