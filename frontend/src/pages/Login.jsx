@@ -5,7 +5,7 @@ export default function Login() {
     return(
        <>
        <AuthBackground>
-        <SignCard />
+        <SignCard type="login"/>
        </AuthBackground>
        </>
     );

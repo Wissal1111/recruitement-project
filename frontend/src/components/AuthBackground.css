@@ -1,14 +1,38 @@
 .auth-background{
     position: relative;
     background-color: var(--light-purple);
-    width: 100vw;
-    height: 100vh;
-    display: flex;
+    width:100vw;
+    min-height: 100vh ; 
+     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 50px 0px;
 }   
 .question-mark{
     position: absolute;
     top: 10vh;
     right: 30%;
+}
+.online-survey{
+    position: absolute;
+    top: 20vh;
+    left: 4%;
+}
+.curved-line1{
+    position: absolute;
+    bottom:10%;
+    right:22%;
+    z-index: 0;
+}
+.curved-line2{
+    position: absolute;
+    top:5%;
+    left:22%;
+    z-index: 0;
+}
+.small-shapes{
+    position: absolute;
+    top:20%;
+    right:10%;
+    z-index: 0;
 }
