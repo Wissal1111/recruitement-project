@@ -8,6 +8,15 @@
     align-items: center;
     padding: 50px 0px;
 }   
+.back{
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background-color: var(--light-purple);
+    z-index: -1;
+}
 .question-mark{
     position: absolute;
     top: 10vh;

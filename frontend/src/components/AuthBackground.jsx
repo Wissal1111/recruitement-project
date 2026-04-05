@@ -5,6 +5,8 @@ import CurvedLine from "../assets/illustrations/CurvedLine";
 import SmallShapes from "../assets/illustrations/SmallShapes";
 export default function AuthBackground({children}) {
     return(
+         <>
+        <div className="back"></div>
         <div className="auth-background">
             {children}
             <QuestionMark className="question-mark z-0" />
@@ -14,5 +16,6 @@ export default function AuthBackground({children}) {
             <SmallShapes className="small-shapes"/>
             <SmallShapes className="small-shapes2"/>
         </div>
+         </>
     );
 }
