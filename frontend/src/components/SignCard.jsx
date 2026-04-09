@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import LogoText from "../assets/icons/LogoText";
+import Logo from "../assets/icons/Logo";
 import Error from "../assets/icons/Error";
 import "./SignCard.css";
 import { useState } from "react";
@@ -101,7 +101,7 @@ export default function SignCard({ type }) {
 
     return (
         <div className="sign-card z-10">
-            <LogoText />
+            <Logo />
             <h1>{type === "login" ? "Welcome back!" : "Create an account"}</h1>
             <p>
                 {type === "login"
@@ -185,7 +185,7 @@ export default function SignCard({ type }) {
                     />
                 )}
 
-                <button type="submit">{type === "login" ? "Log In" : "Sign Up"}</button>
+                <button className="shadow" type="submit">{type === "login" ? "Log In" : "Sign Up"}</button>
             </form>
 
             <span className="switch">
