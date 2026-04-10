@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -15,15 +13,17 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   user-service:
-    build: .
+    build: ./backend/user-service
     container_name: user_service
     restart: always
     ports:
       - "3001:3001"
     env_file:
-      - .env
+      - ./backend/user-service/.env
     depends_on:
       - postgres
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/user_service_db
 
 volumes:
   pgdata:

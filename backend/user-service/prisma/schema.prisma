@@ -19,6 +19,7 @@ model User {
   accountLocked       Boolean   @default(false)
   lockUntil           DateTime?
   createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   profile             UserProfile?
   roles               UserRole[]
