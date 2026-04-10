@@ -1,0 +1,17 @@
+.features-section{
+    width: 100%;
+    padding-top: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.features-section .features-title{
+    color: var(--title);
+    font-weight: bold;
+}
+.features-section .features-content{
+    color: var(--content);
+    text-align: center;
+
+}

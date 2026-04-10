@@ -9,6 +9,7 @@
     backdrop-filter: blur(24px);
     box-shadow:0 20px 40px rgba(74, 75, 215, 0.08);
     position: fixed;
+    z-index: 100;
 }
 a{
     text-decoration: none;
@@ -52,4 +53,29 @@ padding: 10px 20px;
     font-size: 1rem;
     color: var(--blue-text);
     font-weight: bold;
+}
+.sandwitch{
+    display: none;
+}
+
+@media (max-width:900px) {
+    .navbar{
+       padding: 0 30px; 
+    }
+}
+@media (max-width:760px) {
+    .sandwitch{
+        display: block;
+    }
+    .navbar .nav-elements{
+        display: none;
+    }
+    .navbar .mobile-menu-logo{
+     display: flex;
+     align-items: center;
+     gap: 10px;
+    }
+    .navbar{
+       padding: 0 14px; 
+    }
 }

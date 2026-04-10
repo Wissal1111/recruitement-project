@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import './TopNavBar.css'
+import Sandwitch from '../assets/icons/Sandwitch';
 export default function TopNavBar(){
     const [list,setList]=useState("Features");
     const navigate=useNavigate();
     return(
       <nav className="navbar">
+        <div className="mobile-menu-logo">
+        <div className="sandwitch"><Sandwitch/></div>
         <h1 className="logo">LucidCurator</h1>
+        </div>
         <ul className="nav-elements">
             <Link>
             <li className={list==="Features" && "selected-element"} onClick={()=>{setList("Features")}}>Features</li>

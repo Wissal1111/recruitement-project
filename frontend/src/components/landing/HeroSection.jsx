@@ -1,4 +1,5 @@
-import Hero from '../assets/illustrations/Hero';
+import Hero from '../../assets/illustrations/Hero';
+import MobileHero from '../../assets/illustrations/MobileHero';
 import './HeroSection.css'
 export default function HeroSection(){
     return(
@@ -13,9 +14,15 @@ export default function HeroSection(){
                     Make <i>smarter</i><br/>
                     decisions.
                  </h1>
-                 <span className='hero-content'>Start creating surveys or join as a participant to share your opinions.<br/>
+                 <span id="c1" className='hero-content'>Start creating surveys or join as a participant to share your opinions.<br/>
 A sophisticated, editorial-grade environment that treats data
 collection as a premium conversation.</span>
+<span id="c2" className="hero-content">
+    The premium editorial environment
+for high-quality survey data
+collection and participant
+matching.
+</span>
                <div className="hero-btns">
                 <div className="btn linear shadow">Learn More</div>
                 <div className="btn gray">View Samples</div>
@@ -36,7 +43,7 @@ collection as a premium conversation.</span>
                </div>
             </div>
             <div className="hero-image-container">
-                
+                <MobileHero/>
                 <Hero/>
             </div>
             </div>
