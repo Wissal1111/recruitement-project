@@ -4,5 +4,6 @@ const auth = require('../middleware/auth.middleware');
 
 router.get('/', auth, ctrl.getProfile);
 router.put('/', auth, ctrl.updateProfile);
+router.put('/earnings', auth, ctrl.updateEarnings);
 
-module.exports = router;
+module.exports = router; 
