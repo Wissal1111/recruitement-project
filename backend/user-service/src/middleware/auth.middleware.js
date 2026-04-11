@@ -16,4 +16,5 @@ module.exports = async (req, res, next) => {
     console.error('Auth middleware error:', err);
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
+  z
 };

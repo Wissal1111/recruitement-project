@@ -24,6 +24,9 @@ services:
       - postgres
     environment:
       DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/user_service_db
+    volumes:
+      - ./backend/user-service:/app
+      - /app/node_modules
 
 volumes:
   pgdata:

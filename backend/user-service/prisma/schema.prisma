@@ -169,6 +169,7 @@ enum RoleName {
   ADMIN
   CREATOR
   PARTICIPANT
+  BOTH
 }
 
 enum TokenType {
