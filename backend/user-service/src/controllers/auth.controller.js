@@ -11,7 +11,8 @@ const generateTokens = (userId) => {
 
 exports.register = async (req, res) => {
   try {
-    const { firstname, lastname, email, password, role } = req.body;
+    const { firstname, lastname, email, password } = req.body;
+    const role = 'PARTICIPANT'; 
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(409).json({ message: 'Email already in use' });
@@ -80,7 +81,11 @@ exports.login = async (req, res) => {
       }
     });
 
-    return res.json({ accessToken: access, refreshToken: refresh });
+    return res.json({
+  accessToken: access,
+  refreshToken: refresh,
+  user: { userId: user.userId }
+});
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
   }
