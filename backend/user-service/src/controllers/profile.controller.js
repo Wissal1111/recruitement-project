@@ -2,16 +2,22 @@ const prisma = require('../config/prisma');
 
 exports.getProfile = async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
+    const data = await prisma.user.findUnique({
       where: { userId: req.userId },
       select: {
-        userId: true, firstname: true, lastname: true,
-        email: true, profilePictureUrl: true, isActive: true,
+        userId: true,
+        firstname: true,
+        lastname: true,
+        email: true,
+        profilePictureUrl: true,
+        isActive: true,
+        ceratedAt: true,
+        lastLogin: true,
         profile: true,
-        roles: { include: { role: true } }
-      }
+        roles: { include: { role: true } },
+      },
     });
-    return res.json(user);
+    return res.json(data);
   } catch (err) {
     return res.status(500).json({ message: 'Server error zmr' });
   }

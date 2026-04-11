@@ -12,7 +12,8 @@ const generateTokens = (userId) => {
 
 exports.register = async (req, res) => {
   try {
-    const { firstname, lastname, email, password, role } = req.body;
+    const { firstname, lastname, email, password } = req.body;
+    const role = 'PARTICIPANT'; 
 
     console.log('Register request body:', req.body);
     console.log('Role received:', role);
@@ -117,7 +118,11 @@ exports.login = async (req, res) => {
       }
     });
 
-    return res.json({ accessToken: access, refreshToken: refresh });
+    return res.json({
+  accessToken: access,
+  refreshToken: refresh,
+  user: { userId: user.userId }
+});
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
   }

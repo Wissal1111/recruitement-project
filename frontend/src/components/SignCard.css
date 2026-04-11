@@ -3,7 +3,7 @@
     width: 440px;
     height: auto;
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
     padding: 30px 20px;
     display: flex;
     flex-direction: column;
@@ -12,7 +12,7 @@
 .sign-card h1{
     font-size: 26px;
     font-weight: bold;
-    color: var(--dark-text);
+    color: var(--title);
 }
 .sign-card p{
     font-size: 14px;
@@ -27,6 +27,7 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    overflow:visible;
 }
 .sign-card .feild{
     width: 100%;
@@ -37,19 +38,18 @@
 .sign-card  label{
     margin-left: 6px;
     font-size: 14px;
-    color: var(--dark-text);
-    font-weight: 600;
+    color: var(--title);
 }
 .sign-card .feild input, .sign-card select{
     width: 100%;
     padding: 10px;
-    color: var(--dark-text);
-    font-size: 16px;
-    border: 2px solid var(--medium-purple);
+    color: var(--title);
+    font-size: 14px;
+    border: 2px solid var(--background-blue);
     border-radius: var(--small-radius);
 }
 .sign-card select{
-    background-color: var(--light-purple);          
+    background-color: var(--background);          
     appearance: none;                     
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -60,31 +60,32 @@
 }
 .sign-card .feild input::placeholder{
     color: var(--light-text);
+    font-size: 14px;
 }
 .sign-card .feild input:focus, .sign-card .feild input:hover,.sign-card select:focus, .sign-card select:hover{
     outline: none;
-    box-shadow: 0px 0px 4px var(--medium-purple-hover);
+    box-shadow: 0px 0px 4px var(--background-blue);
 }
 .sign-card button{
-    margin-top: 30px;
+    margin-top: 20px;
     width: 100%;
     padding: 12px;
-    background-color: var(--dark-purple);
+    background: var(--linear-blue);
     color: white;
     border: none;
-    border-radius: var(--medium-radius);
+    border-radius: 50px;
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
 }
-.sign-card span{
-    margin-top: 10px;
+.sign-card .switch{
+    margin-top: 20px;
     margin-bottom: 5px;
     font-size: 14px;
     color: var(--light-text);
 }
-.sign-card span a{
-    color: var(--medium-purple);
+.sign-card .switch a{
+    color: var(--blue-text);
     text-decoration: none;
     font-weight: 500;
 }
@@ -92,6 +93,20 @@
     display: flex;
     gap: 10px;
     margin: 0;
+}
+.sign-card .feilds .error{
+    color:#B3001A;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    font-size: 12px;
+    margin-left: 6px;
+}
+.sign-card .feilds .required-label {
+    color: rgb(255, 107, 107);
+}
+.sign-card .feilds .input-error {
+    border-color: #B3001A;
 }
 @media (max-width:600px) {
     .sign-card{

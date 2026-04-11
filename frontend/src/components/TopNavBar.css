@@ -1,0 +1,124 @@
+.navbar{
+    height: 60px;
+    width: 100%;
+    background-color: rgba(247, 249, 254, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 80px;
+    backdrop-filter: blur(24px);
+    box-shadow:0 20px 40px rgba(74, 75, 215, 0.08);
+    position: fixed;
+    z-index: 100;
+}
+a{
+    text-decoration: none;
+    color: var(--gray);
+}
+.navbar .nav-elements{
+    display: flex;
+    gap: 32px;
+    color: var(--gray);
+}
+.navbar .nav-elements li{
+    cursor: pointer;
+    padding: 4px 0;
+    font-size: 14px;
+}
+.navbar .nav-elements li:hover{
+    color: var(--text-hover);
+}
+.selected-element{
+    color: var(--text-hover);
+    border-bottom: 2px solid var(--text-hover);
+}
+.btn{
+border: none;
+border-radius: 20px;
+cursor: pointer;
+margin: 0 4px;
+}
+.linear{
+background: var(--linear-blue);
+color: white;
+padding: 10px 20px;
+}
+.transparent{
+    background: transparent;
+    color: var(--gray);    
+    padding: 10px;
+
+}
+.navbar .logo{
+    font-size: 1rem;
+    color: var(--blue-text);
+    font-weight: bold;
+}
+.sandwitch{
+    display: none;
+}
+/* ===== MOBILE MENU ===== */
+.mobile-menu {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  width: 100%;
+  background: rgba(247, 249, 254, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  animation: slideDown 0.3s ease;
+  z-index: 99;
+}
+
+.mobile-menu ul {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.mobile-menu li {
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--gray);
+}
+
+.mobile-menu li:hover {
+  color: var(--text-hover);
+}
+
+/* ANIMATION */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width:900px) {
+    .navbar{
+       padding: 0 30px; 
+    }
+}
+@media (max-width:760px) {
+    .sandwitch{
+        display: block;
+    }
+    .navbar .nav-elements{
+        display: none;
+    }
+    .navbar .mobile-menu-logo{
+     display: flex;
+     align-items: center;
+     gap: 10px;
+    }
+    .navbar{
+       padding: 0 14px; 
+    }
+}
