@@ -59,8 +59,8 @@ padding: 10px 20px;
 }
 /* ===== MOBILE MENU ===== */
 .mobile-menu {
-  position: absolute;
-  top: 60px;
+  position: fixed;
+  top: 58px; 
   left: 0;
   width: 100%;
   background: rgba(247, 249, 254, 0.95);
@@ -71,7 +71,7 @@ padding: 10px 20px;
   gap: 20px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.08);
   animation: slideDown 0.3s ease;
-  z-index: 99;
+  z-index: 999; 
 }
 
 .mobile-menu ul {
