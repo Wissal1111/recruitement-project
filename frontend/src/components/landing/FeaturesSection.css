@@ -5,13 +5,45 @@
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    background-color: rgba(221, 225, 255, 0.4);
 }
 .features-section .features-title{
     color: var(--title);
     font-weight: bold;
+    text-align: center;
 }
 .features-section .features-content{
     color: var(--content);
     text-align: center;
 
+}
+.features-section .features-cards{
+    display: flex;
+    justify-content: space-around;
+    padding: 70px 0;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+.features-section .features-cards .features-card{
+    height: auto;
+    padding: 40px;
+    border-radius: 48px;
+    background-color: white;
+    box-shadow: 0 20px 40px rgbargba(74, 75, 215, 0.04);
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+
+}
+.features-card .features-card-title{
+    color: var(--title);
+    font-weight: bold;
+    font-size: 20px;
+    margin: 10px 0;
+}
+.features-card .features-card-content{
+    color: var(--content);
+    font-size: 14px;
+    margin-bottom: 6px;
 }
