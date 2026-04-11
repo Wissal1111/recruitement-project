@@ -76,7 +76,7 @@ The service will be available at `http://localhost:3001`
 - `GET /api/roles` - Get all available roles //done
 - `GET /api/roles/me` - Get current user's  role //done
 - `GET /api/roles/user/:userId` - Get specific user's roles (admin only)//dooooen
-- `POST /api/roles/remove` - Remove role from user (admin only)------- mabghatchhhhhhh hd zmr
+
 
 ### Profile Management
 - `GET /api/profile` - Get user profile // deffrent binha w bin get user howa role ctt // donnnnne
