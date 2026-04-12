@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const prisma = require('../config/prisma');
 
 const generateTokens = (userId) => {
@@ -14,6 +15,9 @@ exports.register = async (req, res) => {
     const { firstname, lastname, email, password } = req.body;
     const role = 'PARTICIPANT'; 
 
+    console.log('Register request body:', req.body);
+    console.log('Role received:', role);
+
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(409).json({ message: 'Email already in use' });
 
@@ -25,25 +29,58 @@ exports.register = async (req, res) => {
         profile: { create: {} },
       }
     });
+    console.log('User registered:', user.userId); 
 
-    // Assign role
-    let roleRecord = await prisma.role.findUnique({ where: { name: role || 'PARTICIPANT' } });
-    if (!roleRecord) roleRecord = await prisma.role.create({ data: { name: role || 'PARTICIPANT' } });
-    await prisma.userRole.create({ data: { userId: user.userId, roleId: roleRecord.roleId } });
+    // Normalize and map roles
+    const normalizedRole = (role || 'participant').toString().trim().toLowerCase();
+    console.log('Normalized role:', normalizedRole);
+    let roleNames = [];
+    
+    if (normalizedRole === 'creator') {
+      roleNames = ['CREATOR'];
+    } else if (normalizedRole === 'both') {
+      roleNames = ['PARTICIPANT', 'CREATOR'];
+    } else if (normalizedRole === 'admin') {
+      roleNames = ['ADMIN'];
+    } else if (normalizedRole === 'participant') {
+      roleNames = ['PARTICIPANT'];
+    } else {
+      roleNames = ['PARTICIPANT'];
+    }
+
+    console.log('Role names to assign:', roleNames);
+
+    const roleRecords = [];
+    for (const roleName of roleNames) {
+      let roleRecord = await prisma.role.findUnique({ where: { name: roleName } });
+      if (!roleRecord) {
+        console.log('Creating role:', roleName);
+        roleRecord = await prisma.role.create({ data: { name: roleName } });
+      } else {
+        console.log('Found existing role:', roleName);
+      }
+      roleRecords.push(roleRecord);
+      await prisma.userRole.create({ data: { userId: user.userId, roleId: roleRecord.roleId } });
+    }
 
     const { access, refresh } = generateTokens(user.userId);
     await prisma.authToken.create({
       data: {
         userId: user.userId, token: refresh,
-        tokenType: 'REFRESH',
+        tokenType: 'REFRESH', 
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       }
     });
 
-    return res.status(201).json({ accessToken: access, refreshToken: refresh, userId: user.userId });
+    return res.status(201).json({ 
+      accessToken: access, 
+      refreshToken: refresh, 
+      userId: user.userId, 
+      roles: roleRecords.map(r => r.name)
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Register error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
@@ -129,40 +166,141 @@ exports.changePassword = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
-
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.json({ message: 'If this email exists, a reset link was sent' });
 
-    await prisma.passwordResetToken.updateMany({ where: { userId: user.userId, isUsed: false }, data: { isUsed: true } });
+    // ✅ Validate email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    await prisma.passwordResetToken.create({
-      data: { userId: user.userId, token, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    const user = await prisma.user.findUnique({
+      where: { email }
     });
 
-    console.log(`Reset token: ${token}`); 
-    return res.json({ message: 'If this email exists, a reset link was sent' });
+    const responseMessage =
+      'If this email exists, a password reset link has been sent';
+
+    if (!user) {
+      return res.json({ message: responseMessage });
+    }
+
+    // ✅ Invalidate old tokens
+    await prisma.passwordResetToken.updateMany({
+      where: {
+        userId: user.userId,
+        isUsed: false
+      },
+      data: {
+        isUsed: true
+      }
+    });
+
+    // ✅ Generate token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.userId,
+        token,
+        expiresAt
+      }
+    });
+
+    // ✅ Reset link
+    const resetLink = `${
+      process.env.FRONTEND_URL || 'http://localhost:3000'
+    }/reset-password?token=${token}`;
+
+    // ✅ Nodemailer transporter (FIXED)
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: process.env.EMAIL_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    // ✅ Mail options
+    const mailOptions = {
+      from: `"Recruitment Project" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset Request',
+      html: `
+        <p>You requested a password reset.</p>
+        <p>Click here:</p>
+        <a href="${resetLink}">${resetLink}</a>
+        <p>This link expires in 1 hour.</p>
+      `
+    };
+
+    // ✅ Send email
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log('Email sent to:', email);
+    } catch (emailError) {
+      console.error('Email error:', emailError.message);
+    }
+
+    // ✅ Dev logs
+    console.log('TOKEN:', token);
+    console.log('LINK:', resetLink);
+
+    return res.json({ message: responseMessage });
+
   } catch (err) {
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Forgot password ERROR:', err);
+    return res.status(500).json({
+      message: err.message || 'Server error'
+    });
   }
 };
 
 exports.resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    const record = await prisma.passwordResetToken.findFirst({ where: { token, isUsed: false } });
-    if (!record || record.expiresAt < new Date())
-      return res.status(400).json({ message: 'Invalid or expired token' });
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
+    const record = await prisma.passwordResetToken.findFirst({
+      where: { token, isUsed: false },
+      include: { user: true }
+    });
+
+    if (!record) {
+      return res.status(400).json({ message: 'Invalid token' });
+    }
+
+    if (record.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Token has expired' });
+    }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({ where: { userId: record.userId }, data: { passwordHash } });
-    await prisma.passwordResetToken.update({ where: { id: record.id }, data: { isUsed: true } });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { userId: record.userId },
+        data: { passwordHash }
+      });
+      await tx.passwordResetToken.update({
+        where: { id: record.id },
+        data: { isUsed: true }
+      });
+    });
 
     return res.json({ message: 'Password reset successfully' });
   } catch (err) {
+    console.error('Reset password error:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };

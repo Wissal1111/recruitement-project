@@ -75,19 +75,19 @@ The service will be available at `http://localhost:3001`
 ### Role & Permission Management
 - `GET /api/roles` - Get all available roles //done
 - `GET /api/roles/me` - Get current user's  role //done
-- `GET /api/roles/user/:userId` - Get specific user's roles (admin only)--------
-- `POST /api/roles/remove` - Remove role from user (admin only)-------
+- `GET /api/roles/user/:userId` - Get specific user's roles (admin only)//dooooen
+
 
 ### Profile Management
 - `GET /api/profile` - Get user profile // deffrent binha w bin get user howa role ctt // donnnnne
-- `PUT /api/profile` - Update user profile t9dry tbdly ga3 hdo ['age', 'gender', 'dateOfBirth', 'education', 'profession', 'country', 'city', 'deviceType', 'bio'] fauuux-----------------------
+- `PUT /api/profile` - Update user profile t9dry tbdly ga3 hdo ['age', 'gender', 'dateOfBirth', 'education', 'profession', 'country', 'city', 'deviceType', 'bio'] //done
 - `GET /api/profile/interests` - Get user interests //done
-- `POST /api/profile/interests` - Add user interest  faux------------------
+- `POST /api/profile/interests` - Add user interest  //donne
 
 ### Notification Management
-- `POST /api/notifications` - Create notification (admin/system only)
-- `GET /api/notifications` - Get current user's notifications
-- `PUT /api/notifications/:id` - Mark notification as read
+- `POST /api/notifications` - Create notification (admin/system only)//done
+- `GET /api/notifications` - Get current user's notifications//done
+- `PUT /api/notifications/:id` - Mark notification as read//done
 
 ### Health Check
 - `GET /health` - Service health status
