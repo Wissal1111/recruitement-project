@@ -16,25 +16,25 @@
   max-width: 400px;
 }
 
-.logo {
+.footer .logo {
   color: var(--blue-text);
   font-weight: 700;
   margin-bottom: 20px;
 }
 
-.description {
+.footer .description {
   line-height: 1.7;
   font-size: 14px;
   margin-bottom: 25px;
 }
 
 /* ICONS */
-.icons {
+.footer .icons {
   display: flex;
   gap: 15px;
 }
 
-.icon-circle {
+.footer .icon-circle {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -47,7 +47,7 @@
   transition: 0.3s;
 }
 
-.icon-circle:hover {
+.footer .icon-circle:hover {
   background: #d6d9ff;
 }
 
@@ -85,16 +85,16 @@
   font-size: 12px;
 }
 
-.bottom-links {
+.footer .bottom-links {
   display: flex;
   gap: 30px;
 }
 
-.bottom-links span {
+.footer .bottom-links span {
   cursor: pointer;
 }
 
-.bottom-links span:hover {
+.footer .bottom-links span:hover {
   color: var(--blue-text);
 }
 

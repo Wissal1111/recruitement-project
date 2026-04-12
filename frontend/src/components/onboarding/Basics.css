@@ -1,0 +1,133 @@
+.onboarding-container{
+    margin-top: 50px;
+    margin-left: 240px;
+    width: calc(100% - 240px);
+    min-height: calc(100vh - 50px);
+    display: flex;
+    justify-content: center;
+}
+.onboarding-container .basics{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 100px;
+}
+.onboarding-container .step-label{
+    display: flex;
+    color: var(--blue-text);
+    font-weight: bold;
+    font-size: 10px;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background-color: var(--transparent-blue);
+}
+.onboarding-container .step-label .point{
+    height: 4px;
+    width: 4px;
+    background-color: rgba(74, 75, 215, 0.4);
+    border-radius: 50%;
+}
+.onboarding-container .onboarding-title{
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--title);
+}
+.onboarding-container .onboarding-content{
+    color: var(--content);
+    font-size: 16px;
+    max-width: 500px;
+    text-align: center;
+}
+.gender-cards {
+    display: flex;
+    gap: 80px;
+    margin: 20px 0;
+    overflow: visible;
+    padding: 20px;
+}
+
+.gender-card {
+    position: relative;
+    overflow: hidden;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    padding: 40px 80px;
+    border-radius: 32px;
+    cursor: pointer;
+    transition: 0.3s;
+    color: #94A3B8;
+}
+
+.gender-card svg {
+    color: inherit;
+}
+
+.gender-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+}
+
+.gender-card::before {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, var(--hover-color), transparent 70%);
+    opacity: 0;
+    transition: 0.2s;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    left: var(--x);
+    top: var(--y);
+}
+
+.gender-card:hover::before {
+    opacity: 0.4;
+}
+
+.gender-card.male {
+    --hover-color: rgba(74, 75, 215, 0.4);
+}
+
+.gender-card.female {
+    --hover-color: rgba(236, 72, 153, 0.4);
+}
+
+.gender-card.selected.male {
+    background-color: rgba(74, 75, 215, 0.1);
+    border: 2px solid #4A4BD7;
+    color: #4A4BD7;
+}
+
+.gender-card.selected.female {
+    background-color: rgba(236, 72, 153, 0.1);
+    border: 2px solid #EC4899;
+    color: #EC4899;
+}
+@media (max-width: 900px) {
+   .onboarding-container{
+    margin-top: 50px;
+    margin-left: 80px;
+    width: calc(100% - 80px);
+}
+}
+
+@media (max-width: 600px) {
+   .onboarding-container{
+    margin-top: 50px;
+    margin-left: 0px;
+    width: 100%;
+   }
+   .onboarding-container .basics{
+    margin-top: 30px;
+}
+.gender-cards {
+    flex-direction: column;
+  }
+}

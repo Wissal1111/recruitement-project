@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './TopNavBar.css';
-import Sandwitch from '../assets/icons/Sandwitch';
+import Sandwitch from '../../assets/icons/Sandwitch';
 
 export default function TopNavBar() {
   const [list, setList] = useState("Features");
