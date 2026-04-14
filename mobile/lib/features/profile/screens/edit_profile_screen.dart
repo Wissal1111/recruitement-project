@@ -240,14 +240,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     final data = <String, dynamic>{};
     if (_bioCtrl.text.isNotEmpty) data['bio'] = _bioCtrl.text.trim();
-    if (_professionCtrl.text.isNotEmpty)
+    if (_professionCtrl.text.isNotEmpty) {
       data['profession'] = _professionCtrl.text.trim();
+    }
     if (_country != null) data['country'] = _country;
     if (_city != null) data['city'] = _city;
     if (_education != null) data['education'] = _education;
     if (_gender != null) data['gender'] = _gender!.toUpperCase();
-    if (_dateOfBirth != null)
+    if (_dateOfBirth != null) {
       data['dateOfBirth'] = _dateOfBirth!.toIso8601String();
+    }
 
     final success =
         await ref.read(profileProvider.notifier).updateProfile(data);
@@ -405,7 +407,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 28),
 
                     // Bio
-                    _Label('SHORT BIOGRAPHY'),
+                    const _Label('SHORT BIOGRAPHY'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _bioCtrl,
@@ -417,7 +419,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 20),
 
                     // Profession
-                    _Label('PROFESSION'),
+                    const _Label('PROFESSION'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _professionCtrl,
@@ -427,10 +429,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 20),
 
                     // Gender
-                    _Label('GENDER'),
+                    const _Label('GENDER'),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _gender?.toLowerCase() == 'male'
+                      initialValue: _gender?.toLowerCase() == 'male'
                           ? 'male'
                           : _gender?.toLowerCase() == 'female'
                               ? 'female'
@@ -449,7 +451,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 20),
 
                     // Date of birth
-                    _Label('DATE OF BIRTH'),
+                    const _Label('DATE OF BIRTH'),
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: _pickDate,
@@ -478,10 +480,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 20),
 
                     // Education
-                    _Label('EDUCATION'),
+                    const _Label('EDUCATION'),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _educationLevels.contains(_education)
+                      initialValue: _educationLevels.contains(_education)
                           ? _education
                           : null,
                       hint: const Text('Select level',
@@ -497,10 +499,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 20),
 
                     // Country
-                    _Label('COUNTRY'),
+                    const _Label('COUNTRY'),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _countries.contains(_country) ? _country : null,
+                      initialValue: _countries.contains(_country) ? _country : null,
                       hint: const Text('Select country',
                           style: TextStyle(color: AppTheme.textTertiary)),
                       decoration: const InputDecoration(),
@@ -517,10 +519,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: 20),
 
                     // City
-                    _Label('CITY'),
+                    const _Label('CITY'),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _availableCities.contains(_city) ? _city : null,
+                      initialValue: _availableCities.contains(_city) ? _city : null,
                       hint: Text(
                         _country == null
                             ? 'Select country first'

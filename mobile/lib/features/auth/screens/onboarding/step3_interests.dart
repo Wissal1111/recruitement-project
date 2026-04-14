@@ -84,7 +84,7 @@ class _Step3InterestsState extends State<Step3Interests> {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                         color: AppTheme.surfaceHigh, shape: BoxShape.circle),
                     child: const Icon(Icons.person,
                         color: AppTheme.textTertiary, size: 20),
@@ -114,12 +114,12 @@ class _Step3InterestsState extends State<Step3Interests> {
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(100),
-                  child: LinearProgressIndicator(
+                  child: const LinearProgressIndicator(
                     value: 3 / 6,
                     minHeight: 4,
                     backgroundColor: AppTheme.surfaceHigh,
                     valueColor:
-                        const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                        AlwaysStoppedAnimation<Color>(AppTheme.primary),
                   ),
                 ),
                 const SizedBox(height: 24),

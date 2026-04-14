@@ -8,7 +8,7 @@ class AlertsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final alerts = [
-      _Alert(
+      const _Alert(
           icon: Icons.person,
           color: AppTheme.primaryColor,
           title: 'New Curation shared',
@@ -16,21 +16,21 @@ class AlertsScreen extends StatelessWidget {
               'Marcus Rivera shared "Minimalist Architecture 2024" with you.',
           time: '2m ago',
           actions: ['VIEW STREAM', 'IGNORE']),
-      _Alert(
+      const _Alert(
           icon: Icons.shield_outlined,
           color: AppTheme.errorColor,
           title: 'Security Alert',
           message:
               'A new login was detected from Chrome on MacOS (San Francisco, CA).',
           time: '1h ago'),
-      _Alert(
+      const _Alert(
           icon: Icons.bar_chart,
           color: AppTheme.primaryColor,
           title: 'Weekly Recap Available',
           message:
               'Your curation analytics for this week are ready. You gained 240 new followers.',
           time: '5h ago'),
-      _Alert(
+      const _Alert(
           icon: Icons.campaign_outlined,
           color: AppTheme.textSecondary,
           title: 'System Maintenance',
@@ -48,10 +48,10 @@ class AlertsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Curator',
+                        Text('Curator',
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -59,7 +59,7 @@ class AlertsScreen extends StatelessWidget {
                         CircleAvatar(
                             radius: 18,
                             backgroundColor: AppTheme.primaryLight,
-                            child: const Icon(Icons.person,
+                            child: Icon(Icons.person,
                                 size: 18, color: AppTheme.primaryColor)),
                       ]),
                   const SizedBox(height: 20),
@@ -68,20 +68,20 @@ class AlertsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16)),
-                    child: Column(
+                    child: const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Notification Center',
+                          Text('Notification Center',
                               style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                   color: AppTheme.textPrimary)),
-                          const SizedBox(height: 4),
-                          const Text(
+                          SizedBox(height: 4),
+                          Text(
                               'Customize how you receive updates and alerts.',
                               style: TextStyle(
                                   color: AppTheme.textSecondary, fontSize: 13)),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           _ToggleTile(
                               icon: Icons.notifications_outlined,
                               title: 'Push Notifications',
@@ -295,7 +295,7 @@ class _ToggleTileState extends State<_ToggleTile> {
         Switch(
           value: _val,
           onChanged: (v) => setState(() => _val = v),
-          activeColor: AppTheme.primaryColor,
+          activeThumbColor: AppTheme.primaryColor,
         ),
       ]),
     );

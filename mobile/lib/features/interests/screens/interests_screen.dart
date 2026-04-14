@@ -42,10 +42,10 @@ class _InterestsScreenState extends State<InterestsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Curator',
+                          Text('Curator',
                               style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -53,7 +53,7 @@ class _InterestsScreenState extends State<InterestsScreen> {
                           CircleAvatar(
                               radius: 18,
                               backgroundColor: AppTheme.primaryLight,
-                              child: const Icon(Icons.person,
+                              child: Icon(Icons.person,
                                   size: 18, color: AppTheme.primaryColor)),
                         ]),
                     const SizedBox(height: 24),

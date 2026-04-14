@@ -18,13 +18,13 @@ class ProfileScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('LucidCurator',
+              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('LucidCurator',
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.primaryColor)),
-                const Icon(Icons.notifications_outlined),
+                Icon(Icons.notifications_outlined),
               ]),
               const SizedBox(height: 24),
               Container(

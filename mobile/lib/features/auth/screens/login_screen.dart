@@ -25,8 +25,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _passCtrl.text,
           );
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      }
       return;
     }
 

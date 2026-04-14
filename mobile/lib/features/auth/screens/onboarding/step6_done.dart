@@ -12,7 +12,7 @@ class Step6Done extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    bool _agreed = true;
+    bool agreed = true;
 
     return SafeArea(
       child: Column(
@@ -101,18 +101,18 @@ class Step6Done extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
+                              const Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('PROGRESS',
+                                    Text('PROGRESS',
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                           letterSpacing: 1,
                                           color: AppTheme.textSecondary,
                                         )),
-                                    const SizedBox(height: 4),
-                                    const Text('100% Complete',
+                                    SizedBox(height: 4),
+                                    Text('100% Complete',
                                         style: TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w800,
@@ -201,20 +201,20 @@ class Step6Done extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(children: [
-                            Expanded(
+                            const Expanded(
                                 child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                  const Text('PREFERENCES',
+                                  Text('PREFERENCES',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 1.2,
                                         color: AppTheme.textSecondary,
                                       )),
-                                  const SizedBox(height: 2),
-                                  const Text('Editorial Intelligence',
+                                  SizedBox(height: 2),
+                                  Text('Editorial Intelligence',
                                       style: TextStyle(
                                         fontSize: 17,
                                         fontWeight: FontWeight.w700,
@@ -429,27 +429,27 @@ class _TermsRowState extends State<_TermsRow> {
         ),
       ),
       const SizedBox(width: 12),
-      Expanded(
+      const Expanded(
         child: Text.rich(
           TextSpan(
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 13, color: AppTheme.textSecondary, height: 1.5),
             children: [
-              const TextSpan(text: 'I agree to the '),
+              TextSpan(text: 'I agree to the '),
               TextSpan(
                 text: 'Terms of Service',
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppTheme.primary, fontWeight: FontWeight.w700),
               ),
-              const TextSpan(
+              TextSpan(
                   text:
                       ' and acknowledge that my data will be handled according to the '),
               TextSpan(
                 text: 'Privacy Policy',
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppTheme.primary, fontWeight: FontWeight.w700),
               ),
-              const TextSpan(text: '.'),
+              TextSpan(text: '.'),
             ],
           ),
         ),

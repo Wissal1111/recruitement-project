@@ -257,8 +257,7 @@ class _Step4State extends State<Step4ProfileDetails> {
               onPrimary: Colors.white,
               surface: AppTheme.surfaceLowest,
               onSurface: AppTheme.textPrimary,
-            ),
-            dialogBackgroundColor: AppTheme.surfaceLowest,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppTheme.surfaceLowest),
           ),
           child: child!,
         );
@@ -342,12 +341,12 @@ class _Step4State extends State<Step4ProfileDetails> {
                   const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(100),
-                    child: LinearProgressIndicator(
+                    child: const LinearProgressIndicator(
                       value: 4 / 6,
                       minHeight: 4,
                       backgroundColor: AppTheme.surfaceHigh,
                       valueColor:
-                          const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                          AlwaysStoppedAnimation<Color>(AppTheme.primary),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -422,7 +421,7 @@ class _Step4State extends State<Step4ProfileDetails> {
                     icon: Icons.school_outlined,
                     title: 'Level of studies',
                     child: DropdownButtonFormField<String>(
-                      value: _education,
+                      initialValue: _education,
                       hint: const Text('Select your highest degree',
                           style: TextStyle(
                               color: AppTheme.textTertiary, fontSize: 15)),
@@ -442,7 +441,7 @@ class _Step4State extends State<Step4ProfileDetails> {
                     icon: Icons.public_outlined,
                     title: 'Country',
                     child: DropdownButtonFormField<String>(
-                      value: _country,
+                      initialValue: _country,
                       hint: const Text('Select your country',
                           style: TextStyle(
                               color: AppTheme.textTertiary, fontSize: 15)),
@@ -465,7 +464,7 @@ class _Step4State extends State<Step4ProfileDetails> {
                     icon: Icons.location_city_outlined,
                     title: 'City',
                     child: DropdownButtonFormField<String>(
-                      value: _availableCities.contains(_city) ? _city : null,
+                      initialValue: _availableCities.contains(_city) ? _city : null,
                       hint: Text(
                         _country == null
                             ? 'Select country first'

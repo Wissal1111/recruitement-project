@@ -14,19 +14,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _page = 0;
 
   final _pages = [
-    _OnboardingPage(
+    const _OnboardingPage(
       title: 'Create high-impact surveys.',
       subtitle:
           'Define your ideal audience and start collecting editorial-grade data with a few simple taps.',
       icon: Icons.assignment_outlined,
     ),
-    _OnboardingPage(
+    const _OnboardingPage(
       title: 'Earn Rewards',
       subtitle:
           'Share your opinions and get paid for your honesty. We value your unique perspective.',
       icon: Icons.monetization_on_outlined,
     ),
-    _OnboardingPage(
+    const _OnboardingPage(
       title: 'Smart Matching',
       subtitle:
           'Our AI matches you to the exact demographic profiles you need.',

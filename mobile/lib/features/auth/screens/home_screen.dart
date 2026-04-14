@@ -46,12 +46,12 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              Row(children: [
+              const Row(children: [
                 _StatCard(
                     label: 'ACTIVE SURVEYS',
                     value: '12',
                     icon: Icons.assignment_outlined),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 _StatCard(
                     label: 'EARNINGS',
                     value: '\$145.00',
@@ -90,21 +90,21 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              _ActivityItem(
+              const _ActivityItem(
                   icon: Icons.bar_chart,
                   color: AppTheme.primaryColor,
                   title: 'User Experience Research Q3',
                   subtitle: '14 new responses received today',
                   time: '2H AGO'),
-              _ActivityItem(
+              const _ActivityItem(
                   icon: Icons.check_circle,
                   color: AppTheme.successColor,
                   title: 'Payment Processed',
                   subtitle: "Earnings from 'Brand Perception' added to wallet",
                   time: 'YESTERDAY'),
-              _ActivityItem(
+              const _ActivityItem(
                   icon: Icons.star,
-                  color: const Color(0xFFF59E0B),
+                  color: Color(0xFFF59E0B),
                   title: 'Milestone Reached',
                   subtitle: "You've reached 'Expert Curator' status",
                   time: '2D AGO'),

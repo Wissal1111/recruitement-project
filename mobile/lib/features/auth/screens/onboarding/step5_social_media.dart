@@ -123,12 +123,12 @@ class _Step5State extends State<Step5SocialMedia> {
                   const SizedBox(height: 10),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(100),
-                    child: LinearProgressIndicator(
+                    child: const LinearProgressIndicator(
                       value: 5 / 6,
                       minHeight: 4,
                       backgroundColor: AppTheme.surfaceHigh,
                       valueColor:
-                          const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                          AlwaysStoppedAnimation<Color>(AppTheme.primary),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -268,7 +268,7 @@ class _Step5State extends State<Step5SocialMedia> {
                       )),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    value: _hearAbout,
+                    initialValue: _hearAbout,
                     decoration: const InputDecoration(),
                     items: _hearOptions
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))

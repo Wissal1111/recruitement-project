@@ -138,7 +138,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       child: Container(
                         width: 72,
                         height: 72,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppTheme.primaryContainer,
                           shape: BoxShape.circle,
                         ),
@@ -197,11 +197,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           color: const Color(0xFFD1FAE5),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.check_circle_outline,
+                        child: const Row(children: [
+                          Icon(Icons.check_circle_outline,
                               color: AppTheme.successColor, size: 22),
-                          const SizedBox(width: 12),
-                          const Expanded(
+                          SizedBox(width: 12),
+                          Expanded(
                               child: Text('Password updated successfully!',
                                   style: TextStyle(
                                       color: AppTheme.successColor,
@@ -234,7 +234,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     ],
 
                     // Current password
-                    _Label('CURRENT PASSWORD'),
+                    const _Label('CURRENT PASSWORD'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _oldCtrl,
@@ -257,7 +257,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     const SizedBox(height: 20),
 
                     // New password
-                    _Label('NEW PASSWORD'),
+                    const _Label('NEW PASSWORD'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _newCtrl,
@@ -309,7 +309,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     const SizedBox(height: 20),
 
                     // Confirm new password
-                    _Label('CONFIRM NEW PASSWORD'),
+                    const _Label('CONFIRM NEW PASSWORD'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _confirmCtrl,

@@ -74,7 +74,7 @@ class _Step2GenderState extends State<Step2Gender> {
               ),
             ]),
             const SizedBox(height: 16),
-            RegistrationProgress(currentStep: 2, rightLabel: 'PERSONAL INFO'),
+            const RegistrationProgress(currentStep: 2, rightLabel: 'PERSONAL INFO'),
             const SizedBox(height: 32),
 
             const Text('Tell us about yourself',

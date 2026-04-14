@@ -122,12 +122,12 @@ class _Step1State extends State<Step1CreateProfile> {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(100),
-              child: LinearProgressIndicator(
+              child: const LinearProgressIndicator(
                 value: 1 / 6,
                 minHeight: 4,
                 backgroundColor: AppTheme.surfaceHigh,
                 valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                    AlwaysStoppedAnimation<Color>(AppTheme.primary),
               ),
             ),
             const SizedBox(height: 32),
@@ -302,10 +302,10 @@ class _Step1State extends State<Step1CreateProfile> {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
+            const Row(
               children: [
                 Expanded(child: Divider(color: AppTheme.surfaceHigh)),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text('or'),
                 ),

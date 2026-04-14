@@ -54,8 +54,9 @@ class UserProfile {
     final map = <String, dynamic>{};
     if (age != null) map['age'] = age;
     if (gender != null) map['gender'] = gender;
-    if (dateOfBirth != null)
+    if (dateOfBirth != null) {
       map['dateOfBirth'] = dateOfBirth!.toIso8601String();
+    }
     if (education != null) map['education'] = education;
     if (profession != null) map['profession'] = profession;
     if (country != null) map['country'] = country;
