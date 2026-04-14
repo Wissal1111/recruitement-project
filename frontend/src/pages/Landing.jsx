@@ -1,4 +1,4 @@
-import TopNavBar from "../components/TopNavBar";
+import TopNavBar from "../components/landing/TopNavBar";
 import HeroSection from "../components/landing/HeroSection";
 import RoleSection from "../components/landing/RoleSection";
 import FeaturesSection from "../components/landing/FeaturesSection";

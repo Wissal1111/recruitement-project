@@ -17,6 +17,7 @@
   --radius:24px;
   --medium-radius:12px;
   --small-radius:8px;
+  --transparent-blue:rgba(112, 115, 255, 0.1);
 }
 *{
   margin: 0;
@@ -24,4 +25,8 @@
   box-sizing: border-box;
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow-x: hidden;
+}
+body{
+  background-color: #F7F9FE;
+
 }
