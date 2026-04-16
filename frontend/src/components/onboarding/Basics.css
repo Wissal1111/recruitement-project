@@ -38,8 +38,8 @@
 .onboarding-container .onboarding-content{
     color: var(--content);
     font-size: 16px;
-    max-width: 500px;
     text-align: center;
+    width: 80%;
 }
 .gender-cards {
     display: flex;
