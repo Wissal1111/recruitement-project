@@ -27,6 +27,59 @@ services:
     volumes:
       - ./backend/user-service:/app
       - /app/node_modules
+    networks:
+      - app-network
+
+  # --- SURVEY SERVICE (MongoDB) ---
+  mongodb:
+    image: mongo:latest
+    container_name: survey_db
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: 123456
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+  survey-service:
+    build: ./backend/survey-service
+    container_name: survey_service
+    restart: always
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./backend/survey-service/.env
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+    volumes:
+      - ./backend/survey-service:/app
+      - /app/node_modules
+
+  # --- API GATEWAY (NGINX) ---
+  gateway:
+    image: nginx:alpine
+    container_name: api_gateway
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - user-service
+      - survey-service
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   pgdata:
+  mongo_data:
