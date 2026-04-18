@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --gray:#475569;
+  --title:#2C333A;
+  --content:#586068;
+  --light-text:#475569;
+  --blue-text:#4A4BD7;
+  --text-hover:#4338CA;
+  --dark-blue-text:#4C5B9C;
+  --background-blue:rgba(112, 115, 255, 0.2);
+  --background:#F0F4FA;
+  --linear-blue: linear-gradient(45deg, #4A4BD7 0%, #7073FF 100%);
+  --radial:  radial-gradient(circle, #F7F9FE 0%, #DDE1FF 70%, #DDE1FF 100%);
+  --radius:24px;
+  --medium-radius:12px;
+  --small-radius:8px;
+  --transparent-blue:rgba(112, 115, 255, 0.1);
+}
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-x: hidden;
+}
+body{
+  background-color: #F7F9FE;
+
+}

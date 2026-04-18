@@ -1,0 +1,74 @@
+.auth-background{
+    position: relative;
+    background: var(--radial);
+    width:100vw;
+    min-height: 100vh ; 
+     display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 50px 0px;
+}   
+.back{
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background: var(--radial);
+    z-index: -1;
+}
+.blur-blue1{
+position: absolute;
+top: -120px;
+right: -180px;
+}
+.blur-blue2{
+position: absolute;
+bottom: -120px;
+left: -180px;
+}
+.flower{
+    position: absolute;
+    bottom: 20%;
+    right:10%;
+}
+.bubbles{
+   position: absolute;
+    top: 20%;
+    left:10%;  
+}
+.dots{
+  position: absolute;
+    top: 30%;
+    right:20%;    
+}
+@media (max-width: 1300px){
+
+}
+@media (max-width: 1024px){
+      
+}
+@media (max-width: 600px){
+    .auth-background{
+        background: white;
+    }
+    .blur-blue1{
+        display: none;
+    }
+    .blur-blue2{
+        display: none;
+    }
+    .flower{
+        display: none;
+    }
+    .dots{
+        display: none;
+    }
+    .bubbles{
+        display: none;
+    }
+    .back{
+        background: white;
+    }
+    
+}
