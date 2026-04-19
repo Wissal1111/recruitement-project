@@ -18,6 +18,7 @@
   --medium-radius:12px;
   --small-radius:8px;
   --transparent-blue:rgba(112, 115, 255, 0.1);
+  --red:#B3001A;
 }
 *{
   margin: 0;

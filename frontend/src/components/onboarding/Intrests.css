@@ -122,6 +122,9 @@
     color: var(--blue-text);
     transition: all 0.3s;
 }
+button:disabled{
+    cursor: not-allowed;
+}
 @media (max-width: 900px) {
 
     .intrests-cards {

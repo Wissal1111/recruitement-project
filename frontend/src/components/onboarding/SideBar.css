@@ -38,7 +38,11 @@
     cursor: pointer;
     transition: 0.1s;
 }
-.onboarding-sidebar .onboarding-sidebar-elements li.active, .onboarding-sidebar .onboarding-sidebar-elements li:hover, .onboarding-sidebar .onboarding-sidebar-elements .selected-step{
+.onboarding-sidebar .onboarding-sidebar-elements li.active, .onboarding-sidebar .onboarding-sidebar-elements li:hover{
+    color: var(--blue-text);
+
+}
+.onboarding-sidebar .onboarding-sidebar-elements .selected-step{
     color: var(--blue-text);
     background-color: rgba(224, 231, 255, 0.5);
     border-right: 4px solid var(--blue-text);
