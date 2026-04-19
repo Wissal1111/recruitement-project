@@ -1,12 +1,13 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/api_client.dart';
 import '../../../shared/theme.dart';
-import '../../../shared/widgets/gradient_button.dart';
 import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -30,138 +31,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _loading = false;
   bool _initialized = false;
 
-  final _countries = [
-    'Algeria',
-    'Argentina',
-    'Australia',
-    'Austria',
-    'Belgium',
-    'Brazil',
-    'Canada',
-    'Chile',
-    'China',
-    'Colombia',
-    'Egypt',
-    'France',
-    'Germany',
-    'India',
-    'Indonesia',
-    'Iran',
-    'Iraq',
-    'Ireland',
-    'Israel',
-    'Italy',
-    'Japan',
-    'Jordan',
-    'Kenya',
-    'Lebanon',
-    'Malaysia',
-    'Mexico',
-    'Morocco',
-    'Netherlands',
-    'New Zealand',
-    'Nigeria',
-    'Norway',
-    'Pakistan',
-    'Peru',
-    'Philippines',
-    'Poland',
-    'Portugal',
-    'Romania',
-    'Russia',
-    'Saudi Arabia',
-    'South Africa',
-    'South Korea',
-    'Spain',
-    'Sweden',
-    'Switzerland',
-    'Thailand',
-    'Tunisia',
-    'Turkey',
-    'Ukraine',
-    'United Arab Emirates',
-    'United Kingdom',
-    'United States',
-    'Venezuela',
-    'Vietnam',
-    'Other',
-  ];
+  final _countries = ['Algeria', 'France', 'United States', 'Other'];
 
   final Map<String, List<String>> _citiesByCountry = {
-    'Algeria': [
-      'Algiers',
-      'Oran',
-      'Constantine',
-      'Annaba',
-      'Blida',
-      'Batna',
-      'Tlemcen',
-      'Sétif',
-      'Other'
-    ],
-    'United States': [
-      'New York City',
-      'Los Angeles',
-      'Chicago',
-      'Houston',
-      'San Francisco',
-      'Other'
-    ],
-    'France': ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Other'],
-    'United Kingdom': [
-      'London',
-      'Manchester',
-      'Birmingham',
-      'Leeds',
-      'Glasgow',
-      'Other'
-    ],
-    'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne', 'Frankfurt', 'Other'],
-    'Canada': [
-      'Toronto',
-      'Montreal',
-      'Vancouver',
-      'Calgary',
-      'Ottawa',
-      'Other'
-    ],
-    'Morocco': [
-      'Casablanca',
-      'Rabat',
-      'Marrakech',
-      'Fès',
-      'Tangier',
-      'Agadir',
-      'Other'
-    ],
-    'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Other'],
-    'United Arab Emirates': ['Dubai', 'Abu Dhabi', 'Sharjah', 'Other'],
-    'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Luxor', 'Other'],
-    'Tunisia': ['Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Other'],
-    'Lebanon': ['Beirut', 'Tripoli', 'Sidon', 'Other'],
-    'Jordan': ['Amman', 'Zarqa', 'Irbid', 'Other'],
-    'Iraq': ['Baghdad', 'Basra', 'Mosul', 'Erbil', 'Other'],
-    'India': ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Other'],
-    'Turkey': ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Other'],
-    'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Other'],
-    'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Florence', 'Other'],
-    'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Other'],
-    'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Other'],
-    'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama', 'Other'],
-    'China': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Other'],
-    'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Other'],
-    'South Africa': [
-      'Johannesburg',
-      'Cape Town',
-      'Durban',
-      'Pretoria',
-      'Other'
-    ],
-    'Nigeria': ['Lagos', 'Abuja', 'Kano', 'Ibadan', 'Other'],
-    'Mexico': ['Mexico City', 'Guadalajara', 'Monterrey', 'Other'],
-    'Pakistan': ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Other'],
-    'Indonesia': ['Jakarta', 'Surabaya', 'Bandung', 'Other'],
-    'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Other'],
+    'Algeria': ['Algiers', 'Oran', 'Constantine', 'Other'],
+    'France': ['Paris', 'Lyon', 'Other'],
+    'United States': ['New York', 'Los Angeles', 'Other'],
   };
 
   List<String> get _availableCities {
@@ -171,10 +46,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   final _educationLevels = [
     'High School',
-    'Associate Degree',
     "Bachelor's Degree",
     "Master's Degree",
-    'PhD / Doctorate',
     'Other',
   ];
 
@@ -210,69 +83,101 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       maxWidth: 800,
       imageQuality: 85,
     );
-    if (picked != null) setState(() => _pickedImage = File(picked.path));
+    if (picked != null) {
+      setState(() => _pickedImage = File(picked.path));
+    }
+  }
+
+  // ✅ UPLOAD PHOTO
+  Future<String?> _uploadPhoto() async {
+    if (_pickedImage == null) return null;
+
+    try {
+      final dio = ref.read(dioProvider);
+
+      final fileName = _pickedImage!.path.split('/').last;
+
+      final formData = FormData.fromMap({
+        'profilePicture': await MultipartFile.fromFile(
+          _pickedImage!.path,
+          filename: fileName,
+        ),
+      });
+
+      final res = await dio.post('/api/profile/picture', data: formData);
+
+      return res.data['profilePictureUrl'] as String?;
+    } catch (e) {
+      debugPrint('Photo upload failed: $e');
+      return null;
+    }
   }
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _dateOfBirth ?? DateTime(1995, 1, 1),
+      initialDate: _dateOfBirth ?? DateTime(1995),
       firstDate: DateTime(now.year - 100),
       lastDate: DateTime(now.year - 13),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppTheme.primary,
-            onPrimary: Colors.white,
-            surface: AppTheme.surfaceLowest,
-            onSurface: AppTheme.textPrimary,
-          ),
-        ),
-        child: child!,
-      ),
     );
-    if (picked != null) setState(() => _dateOfBirth = picked);
+    if (picked != null) {
+      setState(() => _dateOfBirth = picked);
+    }
   }
 
+  // ✅ SAVE PROFILE
   Future<void> _save() async {
     setState(() => _loading = true);
 
+    String? newPhotoUrl;
+    if (_pickedImage != null) {
+      newPhotoUrl = await _uploadPhoto();
+    }
+
     final data = <String, dynamic>{};
-    if (_bioCtrl.text.isNotEmpty) data['bio'] = _bioCtrl.text.trim();
+
+    if (_bioCtrl.text.isNotEmpty) {
+      data['bio'] = _bioCtrl.text.trim();
+    }
     if (_professionCtrl.text.isNotEmpty) {
       data['profession'] = _professionCtrl.text.trim();
     }
+
     if (_country != null) data['country'] = _country;
     if (_city != null) data['city'] = _city;
     if (_education != null) data['education'] = _education;
     if (_gender != null) data['gender'] = _gender!.toUpperCase();
+
     if (_dateOfBirth != null) {
       data['dateOfBirth'] = _dateOfBirth!.toIso8601String();
+    }
+
+    if (newPhotoUrl != null) {
+      data['profilePictureUrl'] = newPhotoUrl;
     }
 
     final success =
         await ref.read(profileProvider.notifier).updateProfile(data);
 
+    if (success) {
+      await ref.read(profileProvider.notifier).refresh();
+    }
+
     setState(() => _loading = false);
 
     if (!mounted) return;
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
-      context.pop();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to update profile'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
-    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Profile updated successfully'
+            : 'Failed to update profile'),
+        backgroundColor: success ? AppTheme.successColor : AppTheme.errorColor,
+      ),
+    );
+
+    if (success) context.pop();
   }
 
   @override
@@ -284,288 +189,72 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(children: [
-                GestureDetector(
-                  onTap: () => context.pop(),
-                  child: Container(
-                    width: 40,
-                    height: 40,
+            const SizedBox(height: 20),
+
+            // ✅ PROFILE IMAGE (UPDATED)
+            Center(
+              child: Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceLow,
-                      borderRadius: BorderRadius.circular(12),
+                      shape: BoxShape.circle,
+                      color: AppTheme.primaryContainer,
+                      image: _pickedImage != null
+                          ? DecorationImage(
+                              image: FileImage(_pickedImage!),
+                              fit: BoxFit.cover,
+                            )
+                          : (profile?.profilePictureUrl != null
+                              ? DecorationImage(
+                                  image:
+                                      NetworkImage(profile!.profilePictureUrl!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null),
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new, size: 16),
+                    child: (_pickedImage == null &&
+                            profile?.profilePictureUrl == null)
+                        ? const Icon(Icons.person,
+                            size: 52, color: AppTheme.primary)
+                        : null,
                   ),
-                ),
-                const Expanded(
-                    child: Center(
-                        child: Text('Edit Profile',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primary,
-                            )))),
-                const SizedBox(width: 40),
-              ]),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Personalize your editorial identity.',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 14,
-                        )),
-                    const SizedBox(height: 28),
+            const SizedBox(height: 30),
 
-                    // Profile photo
-                    Center(
-                      child: Column(children: [
-                        Stack(children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppTheme.primaryContainer,
-                              image: _pickedImage != null
-                                  ? DecorationImage(
-                                      image: FileImage(_pickedImage!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: _pickedImage == null
-                                ? const Icon(Icons.person,
-                                    size: 52, color: AppTheme.primary)
-                                : null,
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: const BoxDecoration(
-                                  color: AppTheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.camera_alt,
-                                    color: Colors.white, size: 16),
-                              ),
-                            ),
-                          ),
-                        ]),
-                        const SizedBox(height: 10),
-                        const Text('Profile Photo',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            )),
-                        const SizedBox(height: 4),
-                        const Text('Square JPG or PNG, at least 400×400px.',
-                            style: TextStyle(
-                                color: AppTheme.textSecondary, fontSize: 12)),
-                        const SizedBox(height: 12),
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              OutlinedButton(
-                                onPressed: _pickImage,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppTheme.primary,
-                                  side:
-                                      const BorderSide(color: AppTheme.primary),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(9999)),
-                                ),
-                                child: const Text('Upload New'),
-                              ),
-                              if (_pickedImage != null) ...[
-                                const SizedBox(width: 12),
-                                TextButton(
-                                  onPressed: () =>
-                                      setState(() => _pickedImage = null),
-                                  child: const Text('Remove',
-                                      style: TextStyle(
-                                          color: AppTheme.errorColor)),
-                                ),
-                              ],
-                            ]),
-                      ]),
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Bio
-                    const _Label('SHORT BIOGRAPHY'),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _bioCtrl,
-                      maxLines: 4,
-                      maxLength: 240,
-                      decoration:
-                          const InputDecoration(hintText: 'Tell your story...'),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Profession
-                    const _Label('PROFESSION'),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _professionCtrl,
-                      decoration: const InputDecoration(
-                          hintText: 'e.g. Senior Designer'),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Gender
-                    const _Label('GENDER'),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _gender?.toLowerCase() == 'male'
-                          ? 'male'
-                          : _gender?.toLowerCase() == 'female'
-                              ? 'female'
-                              : null,
-                      hint: const Text('Select gender',
-                          style: TextStyle(color: AppTheme.textTertiary)),
-                      decoration: const InputDecoration(),
-                      isExpanded: true,
-                      items: const [
-                        DropdownMenuItem(value: 'male', child: Text('Male')),
-                        DropdownMenuItem(
-                            value: 'female', child: Text('Female')),
-                      ],
-                      onChanged: (v) => setState(() => _gender = v),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Date of birth
-                    const _Label('DATE OF BIRTH'),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickDate,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceLow,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(children: [
-                          Expanded(
-                              child: Text(_dobDisplay,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: _dateOfBirth == null
-                                        ? AppTheme.textTertiary
-                                        : AppTheme.textPrimary,
-                                  ))),
-                          const Icon(Icons.calendar_month_outlined,
-                              color: AppTheme.textTertiary, size: 20),
-                        ]),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Education
-                    const _Label('EDUCATION'),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _educationLevels.contains(_education)
-                          ? _education
-                          : null,
-                      hint: const Text('Select level',
-                          style: TextStyle(color: AppTheme.textTertiary)),
-                      decoration: const InputDecoration(),
-                      isExpanded: true,
-                      items: _educationLevels
-                          .map(
-                              (e) => DropdownMenuItem(value: e, child: Text(e)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _education = v),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Country
-                    const _Label('COUNTRY'),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _countries.contains(_country) ? _country : null,
-                      hint: const Text('Select country',
-                          style: TextStyle(color: AppTheme.textTertiary)),
-                      decoration: const InputDecoration(),
-                      isExpanded: true,
-                      items: _countries
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: (v) => setState(() {
-                        _country = v;
-                        _city = null;
-                      }),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // City
-                    const _Label('CITY'),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _availableCities.contains(_city) ? _city : null,
-                      hint: Text(
-                        _country == null
-                            ? 'Select country first'
-                            : 'Select city',
-                        style: const TextStyle(color: AppTheme.textTertiary),
-                      ),
-                      decoration: const InputDecoration(),
-                      isExpanded: true,
-                      items: _availableCities
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: _country == null
-                          ? null
-                          : (v) => setState(() => _city = v),
-                    ),
-                    const SizedBox(height: 36),
-
-                    // Save / Discard
-                    Row(children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => context.pop(),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 54),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(9999)),
-                          ),
-                          child: const Text('Discard'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GradientButton(
-                          label: 'Save Changes',
-                          isLoading: _loading,
-                          onPressed: _loading ? null : _save,
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 32),
-                  ],
-                ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  TextField(controller: _bioCtrl),
+                  TextField(controller: _professionCtrl),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _loading ? null : _save,
+                    child: const Text('Save Changes'),
+                  ),
+                ],
               ),
             ),
           ],
@@ -573,17 +262,4 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
     );
   }
-}
-
-class _Label extends StatelessWidget {
-  final String text;
-  const _Label(this.text);
-  @override
-  Widget build(BuildContext context) => Text(text,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
-        color: AppTheme.textSecondary,
-      ));
 }
