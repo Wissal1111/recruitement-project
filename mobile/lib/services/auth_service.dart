@@ -1,15 +1,17 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../utils/constants.dart';
+import 'package:http/http.dart' as http;
+
 import '../features/auth/models/user_model.dart';
+import '../utils/constants.dart';
 
 class AuthService {
   final _storage = const FlutterSecureStorage();
 
   Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-  };
+        'Content-Type': 'application/json',
+      };
 
   Future<Map<String, String>> get _authHeaders async {
     final token = await _storage.read(key: AppConstants.tokenKey);
@@ -40,7 +42,10 @@ class AuthService {
     if (response.statusCode == 201 || response.statusCode == 200) {
       return {'success': true, 'data': data};
     }
-    return {'success': false, 'message': data['message'] ?? 'Registration failed'};
+    return {
+      'success': false,
+      'message': data['message'] ?? 'Registration failed'
+    };
   }
 
   // LOGIN

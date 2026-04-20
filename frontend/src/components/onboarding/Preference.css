@@ -1,0 +1,113 @@
+.preference{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 70px;
+}
+.preference .preference-container{
+    display: flex;
+    gap: 50px;
+    height: auto;
+    margin: 50px 0;
+
+}
+.preference .preference-container .preference-form{
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    width: 360px;
+}
+.preference .preference-container .preference-form .input{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.preference .preference-container .preference-form .lbl{
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--content);
+    margin-left: 10px;
+}
+.preference .preference-container .preference-form select, .preference .preference-container .preference-form input{
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 50px;
+    background-color: white;
+    border: none;
+    font-size: 14px;
+    color: #0F172A;
+}
+.preference .preference-container .preference-form select:focus, .preference .preference-container .preference-form input:focus{
+    outline: none;
+}
+.preference-form select{
+    appearance: none;
+     -webkit-appearance: none;
+     -moz-appearance: none;
+    cursor: pointer;
+}
+.radio-inputs {
+  position: relative;
+  display: flex;
+  border-radius: 2rem;
+  background-color: #F0F4FA;
+  box-shadow: 0 0 0px 1px rgba(0, 0, 0, 0.06);
+  padding: 0.25rem 0.3rem;
+  width: 100%;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.radio-inputs .radio {
+  flex: 1;
+  display: block;
+  text-align: center;
+  cursor: pointer;
+}
+
+.radio-inputs .radio input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.radio-inputs .radio .name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50px;
+  padding: 0.5rem 0;
+  color: rgba(51, 65, 85, 1);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.radio-inputs .radio input:checked + .name {
+  background-color: #ffffff;
+  color: var(--blue-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.preference-btn{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+.preference .preference-container .preference-overview{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: auto;
+    display: block;
+}
+.preference .preference-container .preference-overview img{
+    width: 180px;
+    height: auto;
+    border-radius: 24px;
+
+}
+@media (max-width:700px) {
+    .preference .preference-container .preference-overview{
+        display: none;
+    }
+    
+}

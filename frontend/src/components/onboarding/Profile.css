@@ -1,0 +1,110 @@
+.onboarding-profile{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 70px;
+
+}
+.onboarding-profile .highlight{
+    color: var(--blue-text);
+    font-weight: bold;
+    display: inline;
+}
+.onboarding-profile .profile-form{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 40px;
+    margin: 20px 0;
+    border-radius: 32px;
+    width: 680px;
+    background-color: white;
+    border: 1px solid #EEF2FF;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.06);
+}
+.onboarding-profile .profile-form .input-row{
+    display: flex;
+    gap: 20px;
+    width: 100%;
+}
+.onboarding-profile .profile-form select {
+    appearance: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+.onboarding-profile .profile-form .input-row .input-grp {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    width: 100%;
+}
+.input-grp svg{
+    position: absolute;
+    right: 12px;
+    top: 44%;
+}
+.onboarding-profile .profile-form .input-row .input-grp label{
+font-weight: bold;
+font-size: 11px;
+color: #64748B;
+margin-left: 10px;
+} 
+
+.onboarding-profile .profile-form input, .onboarding-profile .profile-form select{
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 50px;
+    background-color: #F0F4FA;
+    border: none;
+    font-size: 14px;
+    color: #0F172A;
+}
+.onboarding-profile .profile-form input:focus, .onboarding-profile .profile-form select:focus{
+    outline: none;
+}
+.onboarding-profile .profile-form input::placeholder{
+    color: #94A3B8;
+}
+.onboarding-profile .profile-form .profile-btn{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+.onboarding-profile .profile-form select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.onboarding-profile .line{
+    width: 100%;
+    height: 1px;
+    background-color: #E2E8F0;
+    margin: 8px 0;
+}
+#tt2{
+    display: none;
+}
+#tt1{
+    display: block;
+}
+@media (max-width:800px) {
+ .onboarding-profile .profile-form .input-row{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}   
+    
+.onboarding-profile .profile-form{
+    width: 90%;
+}
+#tt2{
+    display: block;
+}
+#tt1{
+    display: none;
+}
+}

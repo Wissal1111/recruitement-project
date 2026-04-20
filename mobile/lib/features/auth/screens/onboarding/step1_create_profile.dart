@@ -25,7 +25,8 @@ class _Step1State extends State<Step1CreateProfile> {
 
   bool _obscurePass = true;
   bool _obscureConfirm = true;
-  bool _agreed = true;
+  bool _agreed =
+      false; // Start unchecked so the button is initially disabled (optional, but good practice)
   String? _error;
 
   @override
@@ -36,6 +37,8 @@ class _Step1State extends State<Step1CreateProfile> {
     _email = TextEditingController(text: widget.data.email);
     _pass = TextEditingController(text: widget.data.password);
     _confirm = TextEditingController(text: '');
+    // If they already filled it out and came back, check the box automatically
+    _agreed = widget.data.firstname.isNotEmpty;
   }
 
   @override
@@ -65,10 +68,6 @@ class _Step1State extends State<Step1CreateProfile> {
       setState(() => _error = 'Passwords do not match');
       return;
     }
-    if (!_agreed) {
-      setState(() => _error = 'Please agree to the Terms of Service');
-      return;
-    }
 
     setState(() => _error = null);
 
@@ -88,6 +87,7 @@ class _Step1State extends State<Step1CreateProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -126,11 +126,12 @@ class _Step1State extends State<Step1CreateProfile> {
                 value: 1 / 6,
                 minHeight: 4,
                 backgroundColor: AppTheme.surfaceHigh,
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
               ),
             ),
             const SizedBox(height: 32),
+
+            // Icon
             Center(
               child: Container(
                 width: 160,
@@ -178,6 +179,8 @@ class _Step1State extends State<Step1CreateProfile> {
               ),
             ),
             const SizedBox(height: 32),
+
+            // Error Message Box
             if (_error != null) ...[
               Container(
                 padding: const EdgeInsets.all(14),
@@ -204,6 +207,8 @@ class _Step1State extends State<Step1CreateProfile> {
               ),
               const SizedBox(height: 16),
             ],
+
+            // Form Fields
             _FormSection(
               label: 'FIRST NAME',
               child: TextField(controller: _first),
@@ -253,6 +258,8 @@ class _Step1State extends State<Step1CreateProfile> {
               ),
             ),
             const SizedBox(height: 20),
+
+            // Terms and Conditions Checkbox
             Row(
               children: [
                 GestureDetector(
@@ -263,7 +270,11 @@ class _Step1State extends State<Step1CreateProfile> {
                     decoration: BoxDecoration(
                       color: _agreed ? AppTheme.primary : Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.primary),
+                      border: Border.all(
+                        color:
+                            _agreed ? AppTheme.primary : AppTheme.textSecondary,
+                        width: 1.5,
+                      ),
                     ),
                     child: _agreed
                         ? const Icon(Icons.check, color: Colors.white, size: 14)
@@ -281,12 +292,16 @@ class _Step1State extends State<Step1CreateProfile> {
               ],
             ),
             const SizedBox(height: 32),
+
+            // Continue Button (DISABLED when _agreed is false)
             GradientButton(
               label: 'Continue',
-              onPressed: _validate,
+              onPressed: _agreed ? _validate : null, // <--- THE MAGIC FIX
               trailingIcon: Icons.arrow_forward,
             ),
             const SizedBox(height: 20),
+
+            // Sign In Link
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -302,6 +317,8 @@ class _Step1State extends State<Step1CreateProfile> {
               ],
             ),
             const SizedBox(height: 16),
+
+            // Social Logins
             const Row(
               children: [
                 Expanded(child: Divider(color: AppTheme.surfaceHigh)),
@@ -342,7 +359,15 @@ class _FormSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+            color: AppTheme.textSecondary,
+          ),
+        ),
         const SizedBox(height: 8),
         child,
       ],

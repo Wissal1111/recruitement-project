@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme.dart';
 import '../providers/auth_provider.dart';
@@ -64,7 +65,8 @@ class HomeScreen extends ConsumerWidget {
                 subtitle:
                     'Design a beautiful, high-converting survey in minutes.',
                 icon: Icons.add,
-                onTap: () {},
+                onTap: () => context
+                    .push('/surveys/create'), // ← leads to create survey form
               ),
               const SizedBox(height: 16),
               _ActionCard(
@@ -72,7 +74,8 @@ class HomeScreen extends ConsumerWidget {
                 title: 'Browse Available Surveys',
                 subtitle: 'Explore community templates and public research.',
                 icon: Icons.explore,
-                onTap: () {},
+                onTap: () =>
+                    context.push('/surveys/list'), // ← leads to surveys list
               ),
               const SizedBox(height: 24),
               Row(

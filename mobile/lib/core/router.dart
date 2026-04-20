@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucid_curator/features/auth/screens/home_screen.dart';
 
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/change_password_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
-import '../features/auth/screens/home_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/onboarding_screen.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/reset_password_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/interests/screens/interests_screen.dart';
-import '../features/profile/notifications/screens/alerts_screen.dart';
+import '../features/notifications/screens/alerts_screen.dart';
 import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/surveys/screens/create_survey_screen.dart';
+import '../features/surveys/screens/survey_builder_screen.dart';
+import '../features/surveys/screens/surveys_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -25,7 +28,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final onAuthPage = state.matchedLocation.startsWith('/login') ||
           state.matchedLocation.startsWith('/register') ||
           state.matchedLocation.startsWith('/onboarding') ||
-          state.matchedLocation.startsWith('/splash');
+          state.matchedLocation.startsWith('/splash') ||
+          state.matchedLocation.startsWith('/forgot-password') ||
+          state.matchedLocation.startsWith('/reset-password');
 
       if (!isLoggedIn && !onAuthPage) return '/login';
       if (isLoggedIn && onAuthPage) return '/home';
@@ -38,8 +43,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(
-          path: '/forgot-password',
-          builder: (_, __) => const ForgotPasswordScreen()),
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
       GoRoute(
         path: '/reset-password',
         builder: (context, state) {
@@ -50,6 +56,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
+          GoRoute(
+              path: '/surveys/list', builder: (_, __) => const SurveysScreen()),
+          GoRoute(
+              path: '/surveys/create',
+              builder: (_, __) => const CreateSurveyScreen()),
+          GoRoute(
+              path: '/surveys/build',
+              builder: (_, __) => const SurveyBuilderScreen()),
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
           GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
           GoRoute(

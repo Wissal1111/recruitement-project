@@ -1,15 +1,28 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Logo from "../assets/icons/Logo";
 import Error from "../assets/icons/Error";
 import "./SignCard.css";
 import { useState } from "react";
+import { registerUser, loginUser } from "../api/Auth";
+import Loading from "./Loading";
 
-function Feild({ type, id, placeholder, label, showError, error, value, onChange, onBlur }) {
+function Feild({
+    type,
+    id,
+    placeholder,
+    label,
+    showError,
+    error,
+    value,
+    onChange,
+    onBlur
+}) {
     return (
         <div className="feild">
             <label htmlFor={id} className={showError ? "label-error" : ""}>
                 {label}
             </label>
+
             <input
                 className={showError ? "input-error" : ""}
                 type={type}
@@ -19,20 +32,29 @@ function Feild({ type, id, placeholder, label, showError, error, value, onChange
                 onChange={onChange}
                 onBlur={onBlur}
             />
-            {showError && <span className="error"><Error /> {error}</span>}
+
+            {showError && (
+                <span className="error">
+                    <Error /> {error}
+                </span>
+            )}
         </div>
     );
 }
 
 export default function SignCard({ type }) {
+    const navigate = useNavigate();
+
     const [firstname, setFirstname] = useState("");
     const [lastname, setLastname] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [role, setRole] = useState("participant");
 
-    // touched state to track if the user interacted with the field
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+    const [showError, setShowError] = useState(false);
+
     const [touched, setTouched] = useState({
         firstname: false,
         lastname: false,
@@ -41,42 +63,56 @@ export default function SignCard({ type }) {
         confirmPassword: false
     });
 
-    const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const validatePassword = (password) => /^.{8,}$/.test(password);
+    // ---------------- VALIDATION ----------------
+    const validateEmail = (email) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    const validatePassword = (password) =>
+        /^.{8,}$/.test(password);
 
     const getError = (field) => {
-        switch(field) {
+        switch (field) {
             case "firstname":
-                if (!firstname) return "First name is required.";
-                return "";
+                return !firstname ? "First name is required." : "";
+
             case "lastname":
-                if (!lastname) return "Last name is required.";
-                return "";
+                return !lastname ? "Last name is required." : "";
+
             case "email":
                 if (!email) return "Email is required.";
-                if (!validateEmail(email)) return "Please enter a valid email address.";
+                if (!validateEmail(email)) return "Invalid email.";
                 return "";
+
             case "password":
                 if (!password) return "Password is required.";
-                if (!validatePassword(password)) return "Password must be exactly 8 chars with letters and numbers.";
+                if (!validatePassword(password))
+                    return "Password must be 8+ characters.";
                 return "";
+
             case "confirmPassword":
-                if (!confirmPassword) return "Please confirm your password.";
-                if (confirmPassword !== password) return "Passwords do not match.";
+                if (!confirmPassword)
+                    return "Confirm password required.";
+                if (confirmPassword !== password)
+                    return "Passwords do not match.";
                 return "";
+
             default:
                 return "";
         }
-    }
+    };
 
     const handleBlur = (field) => {
-        setTouched({...touched, [field]: true});
-    }
+        setTouched((prev) => ({ ...prev, [field]: true }));
+    };
 
-    const handleSubmit = (e) => {
+    // ---------------- REGISTER ----------------
+    const handleRegister = async (e) => {
         e.preventDefault();
 
-        // Mark all fields as touched to show all errors
+        setShowError(false);
+        setErrorMsg("");
+
+        // IMPORTANT FIX
         setTouched({
             firstname: true,
             lastname: true,
@@ -90,110 +126,235 @@ export default function SignCard({ type }) {
             getError("lastname"),
             getError("email"),
             getError("password"),
-            type === "signup" ? getError("confirmPassword") : ""
+            getError("confirmPassword")
         ];
 
-        if (errors.every(err => err === "")) {
-            alert(`${type === "login" ? "Logging in..." : "Signing up..."} ✅`);
-            // Call backend API
+        if (!errors.every((e) => e === "")) return;
+
+        try {
+            setLoading(true);
+
+            await registerUser({
+                firstname,
+                lastname,
+                email,
+                password
+            });
+
+            setTimeout(() => {
+                setLoading(false);
+                navigate("/onboarding");
+            }, 800);
+
+        } catch (err) {
+            setLoading(false);
+            setShowError(true);
+            setErrorMsg(err.response?.data?.message || err.message);
         }
-    }
+    };
+
+    // ---------------- LOGIN ----------------
+    const handleLogin = async (e) => {
+        e.preventDefault();
+
+        setShowError(false);
+        setErrorMsg("");
+
+        setTouched({
+            firstname: true,
+            lastname: true,
+            email: true,
+            password: true,
+            confirmPassword: true
+        });
+
+        if (!email || !password) {
+            setShowError(true);
+            setErrorMsg("Email and password required");
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const res = await loginUser({
+                email,
+                password
+            });
+
+            console.log("LOGIN SUCCESS:", res);
+
+            setTimeout(() => {
+                setLoading(false);
+                navigate("/onboarding");
+            }, 800);
+
+        } catch (err) {
+            setLoading(false);
+            setShowError(true);
+            setErrorMsg(err.response?.data?.message || err.message);
+        }
+    };
 
     return (
-        <div className="sign-card z-10">
-            <Logo />
-            <h1>{type === "login" ? "Welcome back!" : "Create an account"}</h1>
-            <p>
-                {type === "login"
-                    ? "Please enter your details to access your account."
-                    : "Fill in the details to create your account."}
-            </p>
-            <form className="feilds" onSubmit={handleSubmit}>
-                {type === "signup" && (
-                    <div className="flex-inputs">
+        <>
+            {loading && <Loading />}
+
+            {!loading && (
+                <div className="sign-card z-10">
+                    <Logo />
+
+                    <h1>
+                        {type === "login"
+                            ? "Welcome back!"
+                            : "Create an account"}
+                    </h1>
+
+                    <p>
+                        {type === "login"
+                            ? "Please login to continue."
+                            : "Create your account."}
+                    </p>
+
+                    {/* 🔥 FIX: use onSubmit instead of onClick */}
+                    <form
+                        className="feilds"
+                        onSubmit={
+                            type === "signup"
+                                ? handleRegister
+                                : handleLogin
+                        }
+                    >
+                        {type === "signup" && (
+                            <div className="flex-inputs">
+                                <Feild
+                                    type="text"
+                                    id="firstname"
+                                    label="First Name"
+                                    placeholder="Enter your first name"
+                                    value={firstname}
+                                    onChange={(e) =>
+                                        setFirstname(e.target.value)
+                                    }
+                                    onBlur={() =>
+                                        handleBlur("firstname")
+                                    }
+                                    showError={
+                                        touched.firstname &&
+                                        !!getError("firstname")
+                                    }
+                                    error={getError("firstname")}
+                                />
+
+                                <Feild
+                                    type="text"
+                                    id="lastname"
+                                    label="Last Name"
+                                    placeholder="Enter your last name"
+                                    value={lastname}
+                                    onChange={(e) =>
+                                        setLastname(e.target.value)
+                                    }
+                                    onBlur={() =>
+                                        handleBlur("lastname")
+                                    }
+                                    showError={
+                                        touched.lastname &&
+                                        !!getError("lastname")
+                                    }
+                                    error={getError("lastname")}
+                                />
+                            </div>
+                        )}
+
                         <Feild
-                            type="text"
-                            id="firstname"
-                            label="First Name"
-                            placeholder="Enter your first name"
-                            value={firstname}
-                            onChange={(e) => setFirstname(e.target.value)}
-                            onBlur={() => handleBlur("firstname")}
-                            showError={touched.firstname && !!getError("firstname")}
-                            error={getError("firstname")}
+                            type="email"
+                            id="email"
+                            label="Email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) =>
+                                setEmail(e.target.value)
+                            }
+                            onBlur={() => handleBlur("email")}
+                            showError={
+                                touched.email &&
+                                !!getError("email")
+                            }
+                            error={getError("email")}
                         />
+
                         <Feild
-                            type="text"
-                            id="lastname"
-                            label="Last Name"
-                            placeholder="Enter your last name"
-                            value={lastname}
-                            onChange={(e) => setLastname(e.target.value)}
-                            onBlur={() => handleBlur("lastname")}
-                            showError={touched.lastname && !!getError("lastname")}
-                            error={getError("lastname")}
+                            type="password"
+                            id="password"
+                            label="Password"
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) =>
+                                setPassword(e.target.value)
+                            }
+                            onBlur={() => handleBlur("password")}
+                            showError={
+                                touched.password &&
+                                !!getError("password")
+                            }
+                            error={getError("password")}
                         />
-                    </div>
-                )}
 
-                <Feild
-                    type="email"
-                    id="email"
-                    label="Email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={() => handleBlur("email")}
-                    showError={touched.email && !!getError("email")}
-                    error={getError("email")}
-                />
+                        {type === "signup" && (
+                            <Feild
+                                type="password"
+                                id="confirm"
+                                label="Confirm Password"
+                                placeholder="Re-enter password"
+                                value={confirmPassword}
+                                onChange={(e) =>
+                                    setConfirmPassword(
+                                        e.target.value
+                                    )
+                                }
+                                onBlur={() =>
+                                    handleBlur("confirmPassword")
+                                }
+                                showError={
+                                    touched.confirmPassword &&
+                                    !!getError("confirmPassword")
+                                }
+                                error={getError("confirmPassword")}
+                            />
+                        )}
 
-                {type === "signup" && (
-                    <div className="feild">
-                        <label htmlFor="role">Role</label>
-                        <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
-                            <option value="participant">Participant</option>
-                            <option value="creator">Creator</option>
-                            <option value="both">Both</option>
-                        </select>
-                    </div>
-                )}
+                        {showError && (
+                            <div className="register-err">
+                                {errorMsg}
+                            </div>
+                        )}
 
-                <Feild
-                    type="password"
-                    id="password"
-                    label="Password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => handleBlur("password")}
-                    showError={touched.password && !!getError("password")}
-                    error={getError("password")}
-                />
+                        <button className="shadow" type="submit">
+                            {type === "signup"
+                                ? "Sign Up"
+                                : "Log In"}
+                        </button>
+                    </form>
 
-                {type === "signup" && (
-                    <Feild
-                        type="password"
-                        id="confirm-password"
-                        label="Confirm Password"
-                        placeholder="Enter your password again"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        onBlur={() => handleBlur("confirmPassword")}
-                        showError={touched.confirmPassword && !!getError("confirmPassword")}
-                        error={getError("confirmPassword")}
-                    />
-                )}
-
-                <button className="shadow" type="submit">{type === "login" ? "Log In" : "Sign Up"}</button>
-            </form>
-
-            <span className="switch">
-                {type === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
-                <Link to={type === "login" ? "/signup" : "/login"}>
-                    {type === "login" ? "Sign up for free" : "Log in"}
-                </Link>
-            </span>
-        </div>
+                    <span className="switch">
+                        {type === "login"
+                            ? "Don't have an account?"
+                            : "Already have an account?"}{" "}
+                        <Link
+                            to={
+                                type === "login"
+                                    ? "/signup"
+                                    : "/login"
+                            }
+                        >
+                            {type === "login"
+                                ? "Sign up"
+                                : "Log in"}
+                        </Link>
+                    </span>
+                </div>
+            )}
+        </>
     );
 }

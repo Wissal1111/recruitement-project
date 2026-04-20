@@ -113,7 +113,7 @@
     padding: 0 40px;
     justify-content: space-between;
 }
-.interets .goback{
+.onboarding-container .goback{
     background-color: transparent;
     padding: 10px 20px;
     color: var(--title);
@@ -121,6 +121,9 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     color: var(--blue-text);
     transition: all 0.3s;
+}
+button:disabled{
+    cursor: not-allowed;
 }
 @media (max-width: 900px) {
 

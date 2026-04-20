@@ -88,7 +88,7 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) return res.status(401).json({ message: 'Email does not exist' });
 
     if (user.accountLocked && user.lockUntil > new Date())
       return res.status(403).json({ message: 'Account locked. Try again later.' });
@@ -101,7 +101,7 @@ exports.login = async (req, res) => {
         where: { userId: user.userId },
         data: { failedLoginAttempts: attempts, accountLocked: locked, lockUntil: locked ? new Date(Date.now() + 15 * 60 * 1000) : null }
       });
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid password' });
     }
 
     await prisma.user.update({
