@@ -11,7 +11,7 @@ exports.getProfile = async (req, res) => {
         email: true,
         profilePictureUrl: true,
         isActive: true,
-        ceratedAt: true,
+        createdAt: true,
         lastLogin: true,
         profile: true,
         roles: { include: { role: true } },

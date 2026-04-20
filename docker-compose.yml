@@ -18,7 +18,7 @@ services:
     container_name: user_service
     restart: always
     ports:
-      - "3001:3001"
+      - "3002:3002"
     env_file:
       - ./backend/user-service/.env
     depends_on:
