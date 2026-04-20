@@ -1,14 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../models/interest_model.dart';
 import '../repository/interest_repository.dart';
 
-// All available interests from the backend
 final allInterestsProvider = FutureProvider<List<Interest>>((ref) async {
   return ref.read(interestRepositoryProvider).getAllInterests();
 });
 
-// User's currently selected interests
 final userInterestsProvider =
     AsyncNotifierProvider<UserInterestsNotifier, List<UserInterest>>(
   UserInterestsNotifier.new,
@@ -17,20 +14,38 @@ final userInterestsProvider =
 class UserInterestsNotifier extends AsyncNotifier<List<UserInterest>> {
   @override
   Future<List<UserInterest>> build() async {
-    return ref.read(interestRepositoryProvider).getUserInterests();
+    try {
+      return ref.read(interestRepositoryProvider).getUserInterests();
+    } catch (_) {
+      return [];
+    }
   }
 
-  Future<void> addInterest(String interestId) async {
-    await ref.read(interestRepositoryProvider).addInterest(interestId);
-    // Refresh list
-    state = await AsyncValue.guard(
-      () => ref.read(interestRepositoryProvider).getUserInterests(),
-    );
+  /// Called from onboarding step 3 — saves all selected interests at once
+  Future<void> saveFromOnboarding(List<String> interestIds) async {
+    try {
+      await ref.read(interestRepositoryProvider).addInterests(interestIds);
+      state = await AsyncValue.guard(
+        () => ref.read(interestRepositoryProvider).getUserInterests(),
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  Future<void> removeInterest(String userInterestId) async {
-    await ref.read(interestRepositoryProvider).removeInterest(userInterestId);
-    // Refresh list
+  /// Called from interests screen — full replace
+  Future<void> replaceAll(List<String> interestIds) async {
+    try {
+      await ref.read(interestRepositoryProvider).updateInterests(interestIds);
+      state = await AsyncValue.guard(
+        () => ref.read(interestRepositoryProvider).getUserInterests(),
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> refresh() async {
     state = await AsyncValue.guard(
       () => ref.read(interestRepositoryProvider).getUserInterests(),
     );

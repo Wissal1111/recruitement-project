@@ -20,6 +20,16 @@ class AuthRepository {
       : _dio = dio,
         _storage = storage;
 
+  // ✅ NEW HELPER: Safely extracts error messages so the app never crashes on HTML/404 errors
+  String _getErrorMessage(DioException e, String fallback) {
+    if (e.response?.data is Map<String, dynamic>) {
+      return e.response?.data['message'] ?? fallback;
+    } else if (e.response?.statusCode == 404) {
+      return 'Backend route not found (404). Please restart your Node.js server.';
+    }
+    return fallback;
+  }
+
   Future<User> register(RegisterRequest req) async {
     try {
       final res = await _dio.post('/api/auth/register', data: req.toJson());
@@ -41,8 +51,7 @@ class AuthRepository {
         isActive: true,
       );
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? 'Registration failed';
-      throw Exception(message);
+      throw Exception(_getErrorMessage(e, 'Registration failed'));
     }
   }
 
@@ -71,8 +80,7 @@ class AuthRepository {
         isActive: true,
       );
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? 'Login failed';
-      throw Exception(message);
+      throw Exception(_getErrorMessage(e, 'Login failed'));
     }
   }
 
@@ -88,8 +96,7 @@ class AuthRepository {
     try {
       await _dio.post('/api/auth/forgot-password', data: {'email': email});
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? 'Request failed';
-      throw Exception(message);
+      throw Exception(_getErrorMessage(e, 'Request failed'));
     }
   }
 
@@ -100,8 +107,7 @@ class AuthRepository {
         'newPassword': newPassword,
       });
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? 'Reset failed';
-      throw Exception(message);
+      throw Exception(_getErrorMessage(e, 'Reset failed'));
     }
   }
 

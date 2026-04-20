@@ -1,0 +1,435 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../shared/theme.dart';
+import '../../../shared/widgets/gradient_button.dart';
+
+class CreateSurveyScreen extends StatefulWidget {
+  const CreateSurveyScreen({super.key});
+
+  @override
+  State<CreateSurveyScreen> createState() => _CreateSurveyScreenState();
+}
+
+class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
+  final _titleCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  bool _isMultiPhase = false;
+  RangeValues _ageRange = const RangeValues(18, 45);
+  String? _profession = 'Technology & Design';
+  String? _education = "Master's Degree";
+  String? _country = 'United Kingdom';
+  final Set<String> _selectedInterests = {'UX Research'};
+
+  final _professions = [
+    'Technology & Design',
+    'Healthcare',
+    'Education',
+    'Finance',
+    'Marketing',
+    'Other'
+  ];
+  final _educationLevels = [
+    'High School',
+    "Bachelor's Degree",
+    "Master's Degree",
+    'PhD',
+    'Other'
+  ];
+  final _countries = [
+    'United Kingdom',
+    'United States',
+    'France',
+    'Germany',
+    'Algeria',
+    'Other'
+  ];
+  final _interests = [
+    'UX Research',
+    'SaaS Growth',
+    'AI Ethics',
+    'Product Design',
+    'Data Science',
+    'Marketing'
+  ];
+
+  int get _estimatedAudience {
+    final ageSpan = _ageRange.end - _ageRange.start;
+    return (ageSpan * 500 + _selectedInterests.length * 1200).round();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.surfaceBase,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // App bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => context.pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLow,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.close,
+                        size: 18, color: AppTheme.textPrimary),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Text('Create New Survey',
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primary)),
+              ]),
+            ),
+
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Survey name
+                    _Label('SURVEY NAME'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _titleCtrl,
+                      decoration: const InputDecoration(
+                          hintText: 'e.g. Q4 Consumer Trend Analysis'),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Description
+                    _Label('DESCRIPTION'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _descCtrl,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                          hintText:
+                              'Define the primary objective of this research...'),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Phase type toggle
+                    Row(children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isMultiPhase = false),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: 52,
+                            decoration: BoxDecoration(
+                              gradient: !_isMultiPhase
+                                  ? AppTheme.primaryGradient
+                                  : null,
+                              color: _isMultiPhase ? Colors.white : null,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.flash_on,
+                                      size: 18,
+                                      color: !_isMultiPhase
+                                          ? Colors.white
+                                          : AppTheme.textSecondary),
+                                  const SizedBox(width: 6),
+                                  Text('SINGLE PHASE',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                        color: !_isMultiPhase
+                                            ? Colors.white
+                                            : AppTheme.textSecondary,
+                                      )),
+                                ]),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isMultiPhase = true),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: 52,
+                            decoration: BoxDecoration(
+                              gradient: _isMultiPhase
+                                  ? AppTheme.primaryGradient
+                                  : null,
+                              color: !_isMultiPhase ? Colors.white : null,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.layers_outlined,
+                                      size: 18,
+                                      color: _isMultiPhase
+                                          ? Colors.white
+                                          : AppTheme.textSecondary),
+                                  const SizedBox(width: 6),
+                                  Text('MULTI-PHASE',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                        color: _isMultiPhase
+                                            ? Colors.white
+                                            : AppTheme.textSecondary,
+                                      )),
+                                ]),
+                          ),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 24),
+
+                    // Target participants card
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              const Icon(Icons.people_outline,
+                                  color: AppTheme.primary, size: 22),
+                              const SizedBox(width: 10),
+                              const Text('Target Participants',
+                                  style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textPrimary)),
+                            ]),
+                            const SizedBox(height: 20),
+
+                            // Age range
+                            Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('AGE RANGE',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1,
+                                          color: AppTheme.textSecondary)),
+                                  Text(
+                                      '${_ageRange.start.round()} — ${_ageRange.end.round()}',
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.primary)),
+                                ]),
+                            SliderTheme(
+                              data: SliderThemeData(
+                                activeTrackColor: AppTheme.primary,
+                                inactiveTrackColor: AppTheme.surfaceHigh,
+                                thumbColor: AppTheme.primary,
+                                overlayColor: AppTheme.primary.withOpacity(0.1),
+                              ),
+                              child: RangeSlider(
+                                values: _ageRange,
+                                min: 13,
+                                max: 80,
+                                onChanged: (v) => setState(() => _ageRange = v),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Profession
+                            _DropdownField(
+                              label: 'PROFESSION',
+                              value: _profession,
+                              items: _professions,
+                              onChanged: (v) => setState(() => _profession = v),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Education
+                            _DropdownField(
+                              label: 'EDUCATION',
+                              value: _education,
+                              items: _educationLevels,
+                              onChanged: (v) => setState(() => _education = v),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Key interests
+                            const Text('KEY INTERESTS',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1,
+                                    color: AppTheme.textSecondary)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _interests.map((interest) {
+                                final selected =
+                                    _selectedInterests.contains(interest);
+                                return GestureDetector(
+                                  onTap: () => setState(() => selected
+                                      ? _selectedInterests.remove(interest)
+                                      : _selectedInterests.add(interest)),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: selected
+                                          ? AppTheme.primary
+                                          : AppTheme.surfaceLow,
+                                      borderRadius: BorderRadius.circular(9999),
+                                    ),
+                                    child: Text(interest,
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: selected
+                                                ? Colors.white
+                                                : AppTheme.textSecondary)),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Country
+                            _DropdownField(
+                              label: 'COUNTRY',
+                              value: _country,
+                              items: _countries,
+                              onChanged: (v) => setState(() => _country = v),
+                              trailingIcon: Icons.public_outlined,
+                            ),
+                          ]),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Audience estimator
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2D2D6B), Color(0xFF4A4BD7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('AUDIENCE ESTIMATOR',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                    color: Colors.white70)),
+                            const SizedBox(height: 6),
+                            Text(
+                                '~${_estimatedAudience.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                                style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white)),
+                            const SizedBox(height: 4),
+                            const Text(
+                                'Qualified participants matching your criteria within our curated network.',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                    height: 1.4)),
+                          ]),
+                    ),
+                    const SizedBox(height: 32),
+
+                    GradientButton(
+                      label: 'Continue to Questions',
+                      onPressed: _titleCtrl.text.isNotEmpty
+                          ? () => context.push('/surveys/build')
+                          : null,
+                      trailingIcon: Icons.arrow_forward,
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text,
+      style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          color: AppTheme.textSecondary));
+}
+
+class _DropdownField extends StatelessWidget {
+  final String label;
+  final String? value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+  final IconData? trailingIcon;
+
+  const _DropdownField({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    this.trailingIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                  color: AppTheme.textSecondary)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              suffixIcon: trailingIcon != null
+                  ? Icon(trailingIcon, color: AppTheme.textTertiary, size: 18)
+                  : null,
+            ),
+            isExpanded: true,
+            items: items
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+            onChanged: onChanged,
+          ),
+        ],
+      );
+}
