@@ -26,9 +26,9 @@ export default function Profile({ setStep }) {
     return(
         <div className="onboarding-profile">
             <span className="step-label">
-                STEP 3 OF 4 
+                STEP 4 OF 5 
                 <div className="point"></div> 
-                50% COMPLETE
+                60% COMPLETE
             </span>
 
             <h1 className="onboarding-title" id='tt1'>
@@ -122,14 +122,14 @@ export default function Profile({ setStep }) {
                 <div className="line"></div>
                 {/* BUTTONS */}
                 <div className="profile-btn">
-                    <button className="btn goback" onClick={() => setStep(2)}>
+                    <button className="btn goback" onClick={() => setStep(3)}>
                         Back
                     </button>
 
                     <button 
                         className="btn linear"
                         onClick={() => {
-                            setStep(4);
+                            setStep(5);
                         }}
                     >
                         Continue

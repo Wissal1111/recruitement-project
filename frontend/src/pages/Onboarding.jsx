@@ -5,6 +5,7 @@ import Basics from "../components/onboarding/Basics";
 import Intrests from "../components/onboarding/Intrests";
 import Profile from "../components/onboarding/Profile";
 import Preference from "../components/onboarding/Preference";
+import Birthday from "../components/onboarding/Birthday";
 
 export default function Onboarding() {
     const [step, setStep] = useState(1);
@@ -15,9 +16,10 @@ export default function Onboarding() {
     <SideBar step={step} setStep={setStep} percentage={percentage}/>
         <div className="onboarding-container">
           {step === 1 && <Basics setStep={setStep}/>}
-          {step === 2 && <Intrests setStep={setStep}/>}
-          {step === 3 && <Profile setStep={setStep}/>}
-          {step === 4 && <Preference setStep={setStep}/>}
+          {step === 2 && <Birthday setStep={setStep}/>}
+          {step === 3 && <Intrests setStep={setStep}/>}
+          {step === 4 && <Profile setStep={setStep}/>}
+          {step === 5 && <Preference setStep={setStep}/>}
         </div>
 
    

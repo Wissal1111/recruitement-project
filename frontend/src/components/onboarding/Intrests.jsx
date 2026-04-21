@@ -5,6 +5,7 @@ import {
     FaMicrochip, FaHeartbeat, FaGraduationCap, FaBriefcase,
     FaGamepad, FaMusic, FaDumbbell, FaUtensils
 } from "react-icons/fa";
+import Error from '../../assets/icons/Error';
 
 const interestsList = [
     { name: "Technology", desc: "AI, SaaS, infrastructure", icon: <FaMicrochip />, color: "#4A4BD7", key: "tech" },
@@ -58,9 +59,9 @@ export default function Intrests({ setStep }) {
         <div className="interets">
 
             <span className="step-label">
-                STEP 2 OF 4 
+                STEP 3 OF 5 
                 <div className="point"></div> 
-                25% COMPLETE
+                40% COMPLETE
             </span>
 
             <h1 className="onboarding-title">
@@ -92,15 +93,19 @@ export default function Intrests({ setStep }) {
                     </div>
                 ))}
             </div>
-
+            {selected.length === 0 && (
+    <span className="interests-warning">
+        <Error/> Please select at least one interest
+    </span>
+)}
             <div className="intrests-btn">
-                <button className="btn goback" onClick={() => setStep(1)}>
+                <button className="btn goback" onClick={() => setStep(2)}>
                     Back
                 </button>
 
                 <button 
                     className="btn linear"
-                    onClick={() => setStep(3)}
+                    onClick={() => setStep(4)}
                     disabled={selected.length === 0}
                 >
                     Continue

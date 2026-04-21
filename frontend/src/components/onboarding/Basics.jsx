@@ -34,7 +34,7 @@ export default function Basics({ setStep }) {
             <div className="basics">
 
                 <span className="step-label">
-                    STEP 1 OF 4 
+                    STEP 1 OF 5 
                     <div className="point"></div> 
                     0% COMPLETE
                 </span>

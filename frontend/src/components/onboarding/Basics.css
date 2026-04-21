@@ -130,4 +130,10 @@
 .gender-cards {
     flex-direction: column;
   }
+  .onboarding-container .onboarding-title{
+    font-size: 28px;
+  }
+  .onboarding-container .onboarding-content{
+    font-size: 15px;
+  }
 }

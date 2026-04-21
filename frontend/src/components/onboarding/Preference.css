@@ -93,17 +93,32 @@
     justify-content: space-between;
 }
 .preference .preference-container .preference-overview{
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
     height: auto;
     display: block;
 }
 .preference .preference-container .preference-overview img{
-    width: 180px;
-    height: auto;
+    width: 200px;
+    height: 180px;
     border-radius: 24px;
 
+}
+.preference-container .preference-overview .why-ask{
+    background-color: rgba(238, 242, 255, 0.5);
+    border: 1px solid rgba(224, 231, 255, 0.5);
+    padding: 20px;
+    border-radius: 24px;
+    width: 200px;
+    margin-top: 10px;
+}
+.preference-container .preference-overview .why-ask h3{
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--title);
+}
+.preference-container .preference-overview .why-ask p{
+    font-size: 14px;
+    color: var(--content);
+    margin-top: 8px;
 }
 @media (max-width:700px) {
     .preference .preference-container .preference-overview{

@@ -1,0 +1,57 @@
+.birthday {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-top: 100px;
+}
+
+.birthday-card {
+    margin-top: 30px;
+    background: white;
+    padding: 20px 25px;
+    border-radius: 30px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    transition: 0.3s;
+}
+
+.birthday-card:hover {
+    transform: translateY(-4px);
+}
+
+.birthday-input { 
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 50px;
+    background-color: #F0F4FA;
+    border: none;
+    font-size: 14px;
+    color: #0F172A;
+    width: 250px;
+    cursor: pointer;
+}
+
+.birthday-input:focus {
+    outline: none;
+    border-color: #4A4BD7;
+    box-shadow: 0 0 0 3px rgba(74, 75, 215, 0.15);
+}
+
+/* BUTTON ROW FIX */
+.bdbtn {
+    width: 250px;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* OPTIONAL: disable state */
+.btn.linear:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.birthday-card .line{
+    width: 100%;
+    height: 1px;
+    background-color: #EEF2FF;
+    margin: 20px 0;
+}
