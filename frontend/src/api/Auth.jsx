@@ -3,7 +3,7 @@ import axios from "axios";
 const registerUser = async (userData) => {
   try {
     const response = await axios.post(
-      "http://localhost:3001/api/auth/register",
+      "http://localhost:90/api/auth/register",
       userData
     );
 
@@ -17,7 +17,7 @@ const registerUser = async (userData) => {
 const loginUser = async (data) => {
   try {
     const response = await axios.post(
-      "http://localhost:3001/api/auth/login",
+      "http://localhost:90/api/auth/login",
       data
     );
 

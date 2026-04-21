@@ -1,0 +1,93 @@
+.top-navbar{
+    background-color: rgba(238, 242, 255, 0.3);
+    height: 50px;
+    width: 100%;
+    position: fixed;
+    display: flex;
+    padding: 0 40px;
+    justify-content: space-between;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+}
+.top-navbar .lucid-logo{
+    display: flex;
+    width: auto;
+    align-items: center;
+    gap: 6px;
+}
+.top-navbar .lucid-logo p{
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--blue-text);
+}
+.top-navbar img{
+width: 30px;
+height: 30px;
+}
+.top-navbar .main-elements{
+    display: flex;
+    height: 100%;
+    align-items: center;
+    gap: 30px;
+    color: var(--title);
+}
+.main-elements .serlected-menu{
+    color: var(--blue-text);
+}
+.main-elements li {
+    cursor: pointer;
+    position: relative;
+    height: 100%;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    border-bottom: 2px solid rgba(238, 242, 255, 0.3);
+
+}
+
+.main-elements li:hover {
+    color: var(--blue-text);
+}
+
+.main-elements .selected-menu {
+    color: var(--blue-text);
+    border-bottom: 2px solid var(--blue-text);
+}
+.top-navbar .right-top{
+display: flex;
+align-items: center;
+gap: 14px;
+}
+.top-navbar .right-top svg{
+ color: var(--title);
+ width: 18px;
+ cursor: pointer;
+}
+.top-navbar .right-top .search{
+    overflow: visible;
+    position: relative;
+}
+.top-navbar .right-top .search svg{
+   color: gray;
+   position: absolute;
+   right: 10px;
+   top: 2px;
+   width: 16px;
+   cursor: pointer;
+}
+
+.top-navbar .right-top .search input{
+    border: none;
+    border-radius: 50px;
+    padding: 6px 12px;
+    width: 220px;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.1);
+}
+.top-navbar .right-top .search input:focus{
+    outline: none;
+}
+.top-navbar .right-top .profile-pic{
+    cursor: pointer;
+}

@@ -5,6 +5,8 @@ import "./SignCard.css";
 import { useState } from "react";
 import { registerUser, loginUser } from "../api/Auth";
 import Loading from "./Loading";
+import { setSession } from "../utils/AuthSession";
+
 
 function Feild({
     type,
@@ -106,95 +108,99 @@ export default function SignCard({ type }) {
     };
 
     // ---------------- REGISTER ----------------
-    const handleRegister = async (e) => {
-        e.preventDefault();
+const handleRegister = async (e) => {
+    e.preventDefault();
 
-        setShowError(false);
-        setErrorMsg("");
+    setShowError(false);
+    setErrorMsg("");
 
-        // IMPORTANT FIX
-        setTouched({
-            firstname: true,
-            lastname: true,
-            email: true,
-            password: true,
-            confirmPassword: true
+    setTouched({
+        firstname: true,
+        lastname: true,
+        email: true,
+        password: true,
+        confirmPassword: true
+    });
+
+    const errors = [
+        getError("firstname"),
+        getError("lastname"),
+        getError("email"),
+        getError("password"),
+        getError("confirmPassword")
+    ];
+
+    if (!errors.every((e) => e === "")) return;
+
+    try {
+        setLoading(true);
+
+        const res = await registerUser({
+            firstname,
+            lastname,
+            email,
+            password
         });
 
-        const errors = [
-            getError("firstname"),
-            getError("lastname"),
-            getError("email"),
-            getError("password"),
-            getError("confirmPassword")
-        ];
+        // ✅ SAVE SESSION
+        setSession({
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+            user: {
+                userId: res.userId,
+                roles: res.roles
+            }
+        });
 
-        if (!errors.every((e) => e === "")) return;
+        setLoading(false);
+        navigate("/onboarding");
 
-        try {
-            setLoading(true);
-
-            await registerUser({
-                firstname,
-                lastname,
-                email,
-                password
-            });
-
-            setTimeout(() => {
-                setLoading(false);
-                navigate("/onboarding");
-            }, 800);
-
-        } catch (err) {
-            setLoading(false);
-            setShowError(true);
-            setErrorMsg(err.response?.data?.message || err.message);
-        }
-    };
+    } catch (err) {
+        setLoading(false);
+        setShowError(true);
+        setErrorMsg(err.response?.data?.message || err.message);
+    }
+};
 
     // ---------------- LOGIN ----------------
-    const handleLogin = async (e) => {
-        e.preventDefault();
+const handleLogin = async (e) => {
+    e.preventDefault();
 
-        setShowError(false);
-        setErrorMsg("");
+    setShowError(false);
+    setErrorMsg("");
 
-        setTouched({
-            firstname: true,
-            lastname: true,
-            email: true,
-            password: true,
-            confirmPassword: true
+    if (!email || !password) {
+        setShowError(true);
+        setErrorMsg("Email and password required");
+        return;
+    }
+
+    try {
+        setLoading(true);
+
+        const res = await loginUser({
+            email,
+            password
         });
 
-        if (!email || !password) {
-            setShowError(true);
-            setErrorMsg("Email and password required");
-            return;
-        }
+        console.log("LOGIN SUCCESS:", res);
 
-        try {
-            setLoading(true);
+        
+        setSession({
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+            user: res.user
+        });
 
-            const res = await loginUser({
-                email,
-                password
-            });
+        setLoading(false);
+        navigate("/home");
 
-            console.log("LOGIN SUCCESS:", res);
-
-            setTimeout(() => {
-                setLoading(false);
-                navigate("/onboarding");
-            }, 800);
-
-        } catch (err) {
-            setLoading(false);
-            setShowError(true);
-            setErrorMsg(err.response?.data?.message || err.message);
-        }
-    };
+    } catch (err) {
+        setLoading(false);
+        setShowError(true);
+        setErrorMsg(err.response?.data?.message || err.message);
+    }
+};
 
     return (
         <>
