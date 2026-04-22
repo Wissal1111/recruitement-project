@@ -9,14 +9,25 @@ import BottomCards from "../components/profile/bottomcards/BottomCards";
 
 export default function Profile(){
     const navigate=useNavigate();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
     const logout = () => {
   clearSession();
   navigate("/login");
 };
 return(
     <>
-    <TopNavBar page="home"/>
-    <SideBar page={"profile"} part={"home"}/>
+    <TopNavBar
+                    page="home"
+                    sidebarOpen={sidebarOpen}
+                    setSidebarOpen={setSidebarOpen}
+                />
+                <SideBar
+                    page="profile"
+                    part="home"
+                    isOpen={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
+                />
     <div className="wrapper">
     <Info/>
     <Biography/>

@@ -6,11 +6,23 @@ import { useNavigate } from "react-router-dom";
 
 export default function MySurveys(){
     const navigate=useNavigate();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
 
 return(
     <div className="dashboard">
-    <TopNavBar page="recruit"/>
-    <SideBar page={"mysurveys"} part={"recruit"}/>
+         <TopNavBar
+                            page="recruit"
+                            sidebarOpen={sidebarOpen}
+                            setSidebarOpen={setSidebarOpen}
+                        />
+                        <SideBar
+                            page="mysurveys"
+                            part="recruit"
+                            isOpen={sidebarOpen}
+                            onClose={() => setSidebarOpen(false)}
+                        />
+   
     <div className="wrapper">
    
 
