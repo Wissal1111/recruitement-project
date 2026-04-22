@@ -5,8 +5,10 @@ import { Settings,Bell,Search } from "lucide-react";
 
 
 import profileImg from '../assets/images/user.png';
+import { useNavigate } from 'react-router-dom';
 
-export default function TopNavBar({page,setPage}){
+export default function TopNavBar({page}){
+    const navigate=useNavigate();
     const [nb,setNb]=useState(1);
     return(
         <div className="top-navbar">
@@ -15,9 +17,9 @@ export default function TopNavBar({page,setPage}){
                 <p>LucidCurator</p>
             </div>
             <ul className="main-elements">
-                <li className={page === "home" ? "selected-menu" : ""} onClick={()=>setPage("home")}>Home</li>
-<li className={page === "recruit" ? "selected-menu" : ""} onClick={()=>setPage("recruit")}>Recruit</li>
-<li className={page === "participate" ? "selected-menu" : "" } onClick={()=>setPage("participate")}>Participate</li>
+                <li className={page === "home" ? "selected-menu" : ""} onClick={()=>navigate("/home")}>Home</li>
+                <li className={page === "recruit" ? "selected-menu" : ""} onClick={()=>navigate("/recruit")}>Recruit</li>
+                <li className={page === "participate" ? "selected-menu" : "" } onClick={()=>navigate("/participate")}>Participate</li>
             </ul>
            
             <div className="right-top">

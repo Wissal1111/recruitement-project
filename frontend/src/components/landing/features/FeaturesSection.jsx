@@ -1,7 +1,7 @@
-import FirstFIcon from '../../assets/icons/FirstFIcon';
-import SecondFIcon from '../../assets/icons/SecondFIcon';
-import ThirdFIcon from '../../assets/icons/ThirdFIcon';
-import FourthFIcon from '../../assets/icons/FourthFIcon';
+import FirstFIcon from '../../../assets/icons/FirstFIcon';
+import SecondFIcon from '../../../assets/icons/SecondFIcon';
+import ThirdFIcon from '../../../assets/icons/ThirdFIcon';
+import FourthFIcon from '../../../assets/icons/FourthFIcon';
 import './FeaturesSection.css'
 function Card({icon, title, content}){
     return(

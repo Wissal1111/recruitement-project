@@ -1,5 +1,5 @@
 import './SideBar.css';
-import { Basics, Intrests, Profile, Preferences, Birthday } from '../../assets/icons/SideBarIcons';
+import { Basics, Intrests, Profile, Preferences, Birthday } from '../../../assets/icons/SideBarIcons';
 export default function SideBar({step, setStep, percentage}) {
 const ChangeStep = (newStep) => {
     setStep(newStep);

@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 :root{
   --gray:#475569;
   --title:#2C333A;
@@ -30,4 +29,10 @@
 body{
   background-color: #F7F9FE;
 
+}
+.wrapper{
+  margin-top: 50px;
+  margin-left: 240px;
+  padding: 20px 30px;
+  overflow: visible;
 }

@@ -49,7 +49,7 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
-.birthday-card .line{
+.line{
     width: 100%;
     height: 1px;
     background-color: #EEF2FF;

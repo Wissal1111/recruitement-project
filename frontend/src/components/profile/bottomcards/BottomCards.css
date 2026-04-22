@@ -1,0 +1,95 @@
+.bottom-card {
+    background-color: white;
+    border-radius: 48px;
+    padding: 28px 40px;
+    box-shadow: 0 20px 40px rgba(74, 75, 215, 0.03);
+    flex: 1;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+.mgmt-desc {
+    font-size: 14px;
+    color: #64748B;
+    line-height: 1.65;
+    margin-bottom: 22px;
+}
+.mngt{
+    margin-bottom: 14px;
+}
+.mgmt-actions {
+    display: flex;
+    gap: 12px;
+    height: 50px;
+
+}
+
+.mgmt-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.change-password-btn {
+    background-color: #F1F5F9;
+    color: #475569;
+}
+
+.change-password-btn:hover {
+    background-color: #E2E8F0;
+}
+
+.logout-btn {
+    background-color: #FEF2F2;
+    color: var(--red);
+}
+
+.logout-btn:hover {
+    background-color: #FEE2E2;
+}
+.mang{
+    color: var(--red);
+}
+.edu-bd{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+    align-items: center;
+    justify-content: center;
+}
+.bottomcards{
+    display: flex;
+    gap: 40px;
+}
+.circard{
+    background-color: var(--background-blue);
+    border-radius: 50px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    color: var(--title);
+    font-size: 14px;
+}
+
+.circard .crc{
+    background-color: white;
+    padding: 6px 8px 4px 8px;
+    border-radius: 50%;
+}
+.edu .crc{
+    color: var(--blue-text);
+}
+.bd .crc{
+    color: var(--blue-text);
+}

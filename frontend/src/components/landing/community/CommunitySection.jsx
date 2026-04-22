@@ -1,7 +1,7 @@
 import './CommunitySection.css';
-import pic1 from '../../assets/images/pic1.png';
-import pic2 from '../../assets/images/pic2.png';
-import pic3 from '../../assets/images/pic3.png';
+import pic1 from '../../../assets/images/pic1.png';
+import pic2 from '../../../assets/images/pic2.png';
+import pic3 from '../../../assets/images/pic3.png';
 function Icon(){
     return(
         <svg width="43" height="30" viewBox="0 0 43 30" fill="none" xmlns="http://www.w3.org/2000/svg">

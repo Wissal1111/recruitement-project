@@ -16,7 +16,7 @@ function FemaleIcon() {
 );}
 
 
-export default function Basics({ setStep }) {
+export default function Basics({ setStep,setGender}) {
     const [selected, setSelected] = useState(null);
 
     const handleMove = (e) => {
@@ -52,7 +52,9 @@ export default function Basics({ setStep }) {
                     <div 
                         className={`gender-card male ${selected === "male" ? "selected" : ""}`}
                         onMouseMove={handleMove}
-                        onClick={() => setSelected("male")}
+                        onClick={() => {setSelected("male")
+                            setGender("MALE")
+                        }}
                     >
                         <MaleIcon/>
                         <span>Male</span>
@@ -61,7 +63,9 @@ export default function Basics({ setStep }) {
                     <div 
                         className={`gender-card female ${selected === "female" ? "selected" : ""}`}
                         onMouseMove={handleMove}
-                        onClick={() => setSelected("female")}
+                        onClick={() => {setSelected("female")
+                        setGender("FEMALE")}
+                        }
                     >
                         <FemaleIcon/>
                         <span>Female</span>

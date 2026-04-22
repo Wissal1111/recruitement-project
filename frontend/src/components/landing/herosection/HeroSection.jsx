@@ -1,5 +1,5 @@
-import Hero from '../../assets/illustrations/Hero';
-import MobileHero from '../../assets/illustrations/MobileHero';
+import Hero from '../../../assets/illustrations/Hero';
+import MobileHero from '../../../assets/illustrations/MobileHero';
 import './HeroSection.css'
 export default function HeroSection(){
     return(

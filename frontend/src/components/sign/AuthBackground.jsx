@@ -1,8 +1,8 @@
 import "./AuthBackground.css";
-import Blur from "../assets/illustrations/Blur"
-import Flower from "../assets/illustrations/Flower";
-import Bubbles from "../assets/illustrations/Bubbles";
-import Dots from "../assets/illustrations/Dots";
+import Blur from "../../assets/illustrations/Blur"
+import Flower from "../../assets/illustrations/Flower";
+import Bubbles from "../../assets/illustrations/Bubbles";
+import Dots from "../../assets/illustrations/Dots";
 export default function AuthBackground({children}) {
     return(
          <>

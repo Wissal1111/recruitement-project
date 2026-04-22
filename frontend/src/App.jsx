@@ -6,9 +6,11 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
+import MySurveys from "./pages/MySurveys";
 
 function App() {
   return (
@@ -58,6 +60,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Onboarding />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recruit"
+          element={
+            <ProtectedRoute>
+              <MySurveys />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/home/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

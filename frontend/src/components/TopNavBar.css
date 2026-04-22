@@ -1,5 +1,5 @@
 .top-navbar{
-    background-color: rgba(238, 242, 255, 0.3);
+    background-color: rgb(242, 245, 255);
     height: 50px;
     width: 100%;
     position: fixed;
@@ -90,4 +90,5 @@ gap: 14px;
 }
 .top-navbar .right-top .profile-pic{
     cursor: pointer;
+    border-radius: 50%;
 }

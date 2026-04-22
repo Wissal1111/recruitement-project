@@ -5,7 +5,7 @@ import {
     FaMicrochip, FaHeartbeat, FaGraduationCap, FaBriefcase,
     FaGamepad, FaMusic, FaDumbbell, FaUtensils
 } from "react-icons/fa";
-import Error from '../../assets/icons/Error';
+import Error from '../../../assets/icons/Error';
 
 const interestsList = [
     { name: "Technology", desc: "AI, SaaS, infrastructure", icon: <FaMicrochip />, color: "#4A4BD7", key: "tech" },

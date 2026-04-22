@@ -1,0 +1,100 @@
+.bio-intrests{
+    display: flex;
+    gap: 40px;
+    width: 100%;
+}
+.biograpghy-card,.intrests-profile-card{
+    background-color: white;
+    border-radius: 48px;
+    padding: 28px 40px;
+    box-shadow: 0 20px 40px rgba(74, 75, 215, 0.03);
+}
+.biograpghy-card{
+     flex: 0 0 700px;
+}
+.intrests-profile-card{ 
+    flex:1;
+}
+ .biograpgy-title{
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: #0F172A;
+    font-size: 18px;
+    gap: 12px;
+}
+.biograpghy-card .biograpgy-title,.intrests-profile-card .biograpgy-title{
+    margin-bottom: 22px;
+
+}
+.biograpghy-card .bio-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.biograpghy-card .bio-row .bio-info{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 260px;
+}
+.biograpghy-card .bio-info label{
+    font-size: 11px;
+    font-weight: bold;
+    color: #94A3B8;
+}
+.biograpghy-card .bio-row .bio-info span{
+    font-size: 16px;
+    color: #0F172A;
+}
+.biograpghy-card .bio-info p{
+    margin-top: 10px;
+    font-size: 15px;
+}
+.intrests-profile-card .interests-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.intrests-profile-card  .interest-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 18px;
+    background-color: #EEF2FF;
+    color: #3730A3;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    width: fit-content;
+    cursor: default;
+    transition: background-color 0.2s ease;
+}
+
+.intrests-profile-card  .interest-tag:hover {
+    background-color: #E0E7FF;
+}
+
+.intrests-profile-card  .interests-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    background: none;
+    border: none;
+    color: #6366F1;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.2s ease;
+}
+
+.intrests-profile-card .interests-add-btn:hover {
+    color: #4338CA;
+}
+
+.intrests-profile-card  .interests-add-btn span {
+    font-size: 18px;
+    line-height: 1;
+}

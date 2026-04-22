@@ -1,0 +1,84 @@
+.profile-info{
+    overflow: visible;
+    display: flex;
+}
+.profile-info img{
+    width: 122px;
+    height: 122px;
+    border-radius: 48px;
+    border: 6px solid white;
+    box-shadow: 0 10px 20px rgba(0, 0, 0,0.05);
+    z-index: 0;
+}
+.profile-info .side-info{
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 2px;
+
+}
+.profile-info .side-info h3{
+    color: #0F172A;
+    font-size: 21px;
+}
+.profile-info .side-info p{
+    color: var(--content);
+    font-size: 13px;
+}
+.profile-info .pic{
+    position: relative;
+    overflow: visible;
+    width: 122px;
+}
+.profile-info .pic svg{
+    position: absolute;
+    z-index: 1;
+    bottom: -14px;
+    right: -20px;
+    cursor: pointer;
+}
+.profile-info .side-info .roles .role-label{
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    color: var(--blue-text);
+    background-color: var(--background-blue);
+    width: auto;
+    font-weight: bold;
+    margin: 10px 0;
+}
+.profile-info .side-info .roles{
+    display: flex;
+    gap: 10px;
+}
+.profile-top{
+display: flex;
+justify-content: space-between;
+margin: 10px 0;
+overflow: visible;
+}
+.profile-top .profile-btns{
+    display: flex;
+    overflow: visible;
+
+}
+.profile-top .profile-btns .edit{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    box-shadow: 0 5px 6px rgba(0, 0, 0,0.05);
+    height: 36px;
+    font-weight: bold;
+}
+.profile-top .profile-btns .settings-btn{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    height: 36px;
+    background-color: white;
+    box-shadow: 0 5px 6px rgba(0, 0, 0,0.05);
+    color: var(--title);
+    font-weight: bold;
+}

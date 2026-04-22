@@ -3,21 +3,25 @@ import TopNavBar from "../components/TopNavBar";
 import { useState } from "react";
 import { clearSession } from "../utils/AuthSession"
 import { useNavigate } from "react-router-dom";
+import Info from "../components/profile/info/Info";
+import Biography from "../components/profile/biography/Biography";
+import BottomCards from "../components/profile/bottomcards/BottomCards";
 
-export default function Dashboard(){
+export default function Profile(){
     const navigate=useNavigate();
     const logout = () => {
   clearSession();
   navigate("/login");
 };
 return(
-    <div className="dashboard">
+    <>
     <TopNavBar page="home"/>
-    <SideBar page={"dashboard"} part={"home"}/>
+    <SideBar page={"profile"} part={"home"}/>
     <div className="wrapper">
-    
-
-    </div>
-    </div>
+    <Info/>
+    <Biography/>
+    <BottomCards onLogout={logout}/>
+</div>
+    </>
 )
 }

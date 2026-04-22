@@ -110,7 +110,7 @@
 }
 .sign-card .register-err{
     color:var(--red);
-    font-size: 14px;
+    font-size: 13px;
     text-align: center;
 }
 @media (max-width:600px) {

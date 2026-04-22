@@ -1,5 +1,5 @@
-import Creator from '../../assets/icons/Creator';
-import Participant from '../../assets/icons/Participant';
+import Creator from '../../../assets/icons/Creator';
+import Participant from '../../../assets/icons/Participant';
 import './RoleSection.css'
 function Card({role}){
     const c= role==="CREATOR" ? "creator" : "participant";

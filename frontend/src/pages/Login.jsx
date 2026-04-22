@@ -1,5 +1,5 @@
-import AuthBackground from "../components/AuthBackground";
-import SignCard from "../components/SignCard";
+import AuthBackground from "../components/sign/AuthBackground";
+import SignCard from "../components/sign/SignCard";
 
 export default function Login() {
     return(

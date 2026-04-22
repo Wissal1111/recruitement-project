@@ -4,18 +4,15 @@ import { useState } from "react";
 import { clearSession } from "../utils/AuthSession"
 import { useNavigate } from "react-router-dom";
 
-export default function Dashboard(){
+export default function MySurveys(){
     const navigate=useNavigate();
-    const logout = () => {
-  clearSession();
-  navigate("/login");
-};
+
 return(
     <div className="dashboard">
-    <TopNavBar page="home"/>
-    <SideBar page={"dashboard"} part={"home"}/>
+    <TopNavBar page="recruit"/>
+    <SideBar page={"mysurveys"} part={"recruit"}/>
     <div className="wrapper">
-    
+   
 
     </div>
     </div>

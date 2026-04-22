@@ -1,11 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import Logo from "../assets/icons/Logo";
-import Error from "../assets/icons/Error";
+import Logo from "../../assets/icons/Logo";
+import Error from "../../assets/icons/Error";
 import "./SignCard.css";
 import { useState } from "react";
-import { registerUser, loginUser } from "../api/Auth";
+import { registerUser, loginUser } from "../../api/Auth";
 import Loading from "./Loading";
-import { setSession } from "../utils/AuthSession";
+import { setSession } from "../../utils/AuthSession";
 
 
 function Feild({
@@ -64,7 +64,10 @@ export default function SignCard({ type }) {
         password: false,
         confirmPassword: false
     });
-
+    const clearErrors = () => {
+    setShowError(false);
+    setErrorMsg("");
+};
     // ---------------- VALIDATION ----------------
     const validateEmail = (email) =>
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -240,7 +243,8 @@ const handleLogin = async (e) => {
                                     placeholder="Enter your first name"
                                     value={firstname}
                                     onChange={(e) =>
-                                        setFirstname(e.target.value)
+                                        {setFirstname(e.target.value)
+                                        clearErrors();}
                                     }
                                     onBlur={() =>
                                         handleBlur("firstname")
@@ -259,7 +263,8 @@ const handleLogin = async (e) => {
                                     placeholder="Enter your last name"
                                     value={lastname}
                                     onChange={(e) =>
-                                        setLastname(e.target.value)
+                                       { setLastname(e.target.value)
+                                        clearErrors(); }
                                     }
                                     onBlur={() =>
                                         handleBlur("lastname")
@@ -280,7 +285,8 @@ const handleLogin = async (e) => {
                             placeholder="Enter your email"
                             value={email}
                             onChange={(e) =>
-                                setEmail(e.target.value)
+                                {setEmail(e.target.value)
+                                    clearErrors();}
                             }
                             onBlur={() => handleBlur("email")}
                             showError={
@@ -297,7 +303,8 @@ const handleLogin = async (e) => {
                             placeholder="Enter your password"
                             value={password}
                             onChange={(e) =>
-                                setPassword(e.target.value)
+                                {setPassword(e.target.value)
+                                    clearErrors();}
                             }
                             onBlur={() => handleBlur("password")}
                             showError={
@@ -315,9 +322,10 @@ const handleLogin = async (e) => {
                                 placeholder="Re-enter password"
                                 value={confirmPassword}
                                 onChange={(e) =>
-                                    setConfirmPassword(
+                                    {setConfirmPassword(
                                         e.target.value
                                     )
+                                    clearErrors();}
                                 }
                                 onBlur={() =>
                                     handleBlur("confirmPassword")

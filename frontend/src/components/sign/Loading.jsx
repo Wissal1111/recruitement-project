@@ -1,5 +1,5 @@
 import './Loading.css'
-import Logo from "../assets/icons/Logo";
+import Logo from "../../assets/icons/Logo";
 
 export default function Loading(){
     return(

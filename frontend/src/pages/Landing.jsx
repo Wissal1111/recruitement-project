@@ -1,10 +1,10 @@
-import TopNavBar from "../components/landing/TopNavBar";
-import HeroSection from "../components/landing/HeroSection";
-import RoleSection from "../components/landing/RoleSection";
-import FeaturesSection from "../components/landing/FeaturesSection";
-import RoadMapSection from "../components/landing/RoadMapSection";
-import CommunitySection from "../components/landing/CommunitySection";
-import Footer from "../components/Footer";
+import TopNavBar from "../components/landing/topnavbar/TopNavBar";
+import HeroSection from "../components/landing/herosection/HeroSection";
+import RoleSection from "../components/landing/role/RoleSection";
+import FeaturesSection from "../components/landing/features/FeaturesSection";
+import RoadMapSection from "../components/landing/roadmap/RoadMapSection";
+import CommunitySection from "../components/landing/community/CommunitySection";
+import Footer from "../components/landing/footer/Footer";
 
 export default function Landing() {
   return (
