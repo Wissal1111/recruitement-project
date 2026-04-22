@@ -13,6 +13,32 @@ exports.createStudy = async (req, res) => {
       endDate
     } = req.body;
 
+    const defaultPhase = {
+      phaseOrder: 1,
+      title: ' ',
+      description: '',
+      phaseType: 'NORMAL',
+      rewardAmount: 0,
+      maxParticipants: 0,
+      status: 'PENDING',
+      questions: [
+        {
+          text: ' ',
+          questionType: 'TEXT',
+          isRequired: false,
+          orderIndex: 1,
+          options: []
+        }
+      ]
+    };
+    const defaultQuestion = {
+      text: ' ',
+      questionType: 'TEXT',
+      isRequired: false,
+      orderIndex: 1,
+      options: []
+    };
+
     // Get creatorId from token (added by authMiddleware)
     // Checking for common ID field names (userId, id, sub, _id)
     const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id; 
@@ -23,16 +49,19 @@ exports.createStudy = async (req, res) => {
       });
     }
 
-    // 2. Validate that phases exist
-    if (!phases || !Array.isArray(phases) || phases.length === 0) {
-      return res.status(400).json({
-        message: "Error: Study must contain at least one phase."
-      });
-    }
+    // 2. If no phases are provided, create one default empty phase with one empty TEXT question
+    const preparedPhases = Array.isArray(phases) && phases.length > 0 ? phases : [defaultPhase];
+
+    // Ensure each phase has at least one question
+    preparedPhases.forEach((phase) => {
+      if (!Array.isArray(phase.questions) || phase.questions.length === 0) {
+        phase.questions = [{ ...defaultQuestion }];
+      }
+    });
 
     // 3. Budget calculation logic
     let calculatedTotal = 0;
-    phases.forEach((phase, index) => {
+    preparedPhases.forEach((phase, index) => {
       const phaseCost = (parseFloat(phase.rewardAmount) || 0) * (parseInt(phase.maxParticipants) || 0);
       calculatedTotal += phaseCost;
 
@@ -55,7 +84,7 @@ exports.createStudy = async (req, res) => {
       totalBudget,
       studyCategory, // Mapping category to studyCategory from schema
       creatorId,
-      phases,
+      phases: preparedPhases,
       startDate: startDate || new Date(),
       endDate: endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       studyStatus: 'DRAFT'
@@ -131,6 +160,92 @@ exports.getStudyById = async (req, res) => {
   }
 };
 
+// Update a study (survey) by studyId (Owner only)
+exports.updateStudy = async (req, res) => {
+  try {
+    const { studyId } = req.params;
+    const updateData = req.body || {};
+    const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
+
+    const study = await Study.findOne({ studyId });
+    if (!study) {
+      return res.status(404).json({ message: "Study not found" });
+    }
+    if (study.creatorId !== creatorId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const defaultQuestion = {
+      text: ' ',
+      questionType: 'TEXT',
+      isRequired: false,
+      orderIndex: 1,
+      options: []
+    };
+
+    const defaultPhase = {
+      phaseOrder: 1,
+      title: ' ',
+      description: '',
+      phaseType: 'NORMAL',
+      rewardAmount: 0,
+      maxParticipants: 0,
+      status: 'PENDING',
+      questions: [{ ...defaultQuestion }]
+    };
+
+    const hasPhasesInPayload = Array.isArray(updateData.phases);
+    const nextPhases = hasPhasesInPayload
+      ? (updateData.phases.length > 0 ? updateData.phases : [defaultPhase])
+      : study.phases;
+
+    nextPhases.forEach((phase, index) => {
+      if (!phase.phaseOrder) {
+        phase.phaseOrder = index + 1;
+      }
+      if (!Array.isArray(phase.questions) || phase.questions.length === 0) {
+        phase.questions = [{ ...defaultQuestion }];
+      }
+    });
+
+    const effectiveTotalBudget = updateData.totalBudget !== undefined
+      ? parseFloat(updateData.totalBudget)
+      : parseFloat(study.totalBudget);
+
+    let calculatedTotal = 0;
+    nextPhases.forEach((phase) => {
+      const phaseCost = (parseFloat(phase.rewardAmount) || 0) * (parseInt(phase.maxParticipants) || 0);
+      calculatedTotal += phaseCost;
+    });
+
+    if (calculatedTotal > effectiveTotalBudget) {
+      return res.status(400).json({
+        message: `Insufficient budget. Required total (${calculatedTotal}) is greater than the specified budget (${effectiveTotalBudget}).`
+      });
+    }
+
+    const allowedFields = ['title', 'description', 'totalBudget', 'studyCategory', 'startDate', 'endDate', 'studyStatus'];
+    allowedFields.forEach((field) => {
+      if (updateData[field] !== undefined) {
+        study[field] = updateData[field];
+      }
+    });
+
+    if (hasPhasesInPayload) {
+      study.phases = nextPhases;
+    }
+
+    const updatedStudy = await study.save();
+
+    res.status(200).json({
+      message: "Study updated successfully",
+      study: updatedStudy
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating study", error: error.message });
+  }
+};
+
 // Delete a study by its studyId (Owner only)
 exports.deleteStudy = async (req, res) => {
   try {
@@ -172,7 +287,7 @@ exports.deleteStudy = async (req, res) => {
 exports.updateStudyStatus = async (req, res) => {
   try {
     const { studyId } = req.params;
-    const { status } = req.body;
+    const  status  = 'PUBLISHED';
     const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
 
     const study = await Study.findOne({ studyId });
@@ -212,8 +327,83 @@ exports.updatePhase = async (req, res) => {
   }
 };
 
-// Add a question to a specific form within a phase
-exports.addQuestionToForm = async (req, res) => {
+// Add a new phase to an existing study
+exports.addPhase = async (req, res) => {
+  try {
+    const { studyId } = req.params;
+    const phaseData = req.body || {};
+    const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
+
+    const study = await Study.findOne({ studyId });
+    if (!study) return res.status(404).json({ message: "Study not found" });
+    if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
+
+    const defaultQuestion = {
+      text: ' ',
+      questionType: 'TEXT',
+      isRequired: false,
+      orderIndex: 1,
+      options: []
+    };
+
+    const nextPhaseOrder = study.phases.length + 1;
+    const newPhase = {
+      phaseOrder: phaseData.phaseOrder || nextPhaseOrder,
+      title: phaseData.title || ' ',
+      description: phaseData.description || '',
+      phaseType: phaseData.phaseType || 'NORMAL',
+      rewardAmount: phaseData.rewardAmount ?? 0,
+      maxParticipants: phaseData.maxParticipants ?? 0,
+      status: phaseData.status || 'PENDING',
+      questions: Array.isArray(phaseData.questions) && phaseData.questions.length > 0
+        ? phaseData.questions
+        : [{ ...defaultQuestion }]
+    };
+
+    study.phases.push(newPhase);
+    study.phases.sort((a, b) => (a.phaseOrder || 0) - (b.phaseOrder || 0));
+    study.phases.forEach((phase, index) => {
+      phase.phaseOrder = index + 1;
+    });
+
+    await study.save();
+
+    res.status(201).json({ message: "Phase added", study });
+  } catch (error) {
+    res.status(500).json({ message: "Error adding phase", error: error.message });
+  }
+};
+
+// Delete a phase from an existing study
+exports.deletePhase = async (req, res) => {
+  try {
+    const { studyId, phaseId } = req.params;
+    const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
+
+    const study = await Study.findOne({ studyId });
+    if (!study) return res.status(404).json({ message: "Study not found" });
+    if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
+
+    const initialCount = study.phases.length;
+    study.phases = study.phases.filter((phase) => phase.phaseId !== phaseId);
+    if (study.phases.length === initialCount) {
+      return res.status(404).json({ message: "Phase not found" });
+    }
+
+    study.phases.forEach((phase, index) => {
+      phase.phaseOrder = index + 1;
+    });
+
+    await study.save();
+
+    res.status(200).json({ message: "Phase deleted", study });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting phase", error: error.message });
+  }
+};
+
+// Add a question to a specific phase
+exports.addQuestionToPhase = async (req, res) => {
   try {
     const { studyId, phaseId } = req.params;
     const questionData = req.body;
@@ -224,9 +414,9 @@ exports.addQuestionToForm = async (req, res) => {
     if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
 
     const phase = study.phases.find(p => p.phaseId === phaseId);
-    if (!phase || !phase.form) return res.status(404).json({ message: "Phase or Form not found" });
+    if (!phase) return res.status(404).json({ message: "Phase not found" });
 
-    phase.form.questions.push(questionData);
+    phase.questions.push(questionData);
     await study.save();
 
     res.status(201).json({ message: "Question added", study });
@@ -235,7 +425,7 @@ exports.addQuestionToForm = async (req, res) => {
   }
 };
 
-// Remove a question from a form
+// Remove a question from a phase
 exports.removeQuestion = async (req, res) => {
   try {
     const { studyId, phaseId, questionId } = req.params;
@@ -246,9 +436,9 @@ exports.removeQuestion = async (req, res) => {
     if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
 
     const phase = study.phases.find(p => p.phaseId === phaseId);
-    if (!phase || !phase.form) return res.status(404).json({ message: "Phase or Form not found" });
+    if (!phase) return res.status(404).json({ message: "Phase not found" });
 
-    phase.form.questions = phase.form.questions.filter(q => q.questionId !== questionId);
+    phase.questions = phase.questions.filter(q => q.questionId !== questionId);
     await study.save();
 
     res.status(200).json({ message: "Question removed", study });
