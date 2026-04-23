@@ -93,3 +93,35 @@
 .bd .crc{
     color: var(--blue-text);
 }
+@media (max-width:870px) {
+    .bottomcards{
+    gap: 20px;
+    flex-direction: column;
+}
+.edu-bd{
+    flex-direction: row;
+}
+.bottom-card {
+    flex-direction: column;
+    align-items: normal;
+    gap: 0px;
+}
+.mgmt-actions {
+    display: flex;
+    gap: 12px;
+    height: 100px;
+    flex-direction: column;
+
+}
+}
+@media (max-width:760px) {
+.bottom-card {
+margin-bottom: 60px;
+}
+}
+@media (max-width:540px) {
+
+.edu-bd{
+    flex-direction: column;
+}
+}

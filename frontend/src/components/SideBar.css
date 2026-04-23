@@ -52,7 +52,7 @@
     z-index: 1;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 760px) {
     .main-sidebar {
         transform: translateX(-100%);
         z-index: 1;
