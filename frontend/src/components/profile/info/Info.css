@@ -8,7 +8,7 @@
     border-radius: 48px;
     border: 6px solid white;
     box-shadow: 0 10px 20px rgba(0, 0, 0,0.05);
-    z-index: 0;
+    z-index: -1;
 }
 .profile-info .side-info{
     display: flex;
@@ -32,7 +32,7 @@
 }
 .profile-info .pic svg{
     position: absolute;
-    z-index: 1;
+    z-index: 0;
     bottom: -14px;
     right: -20px;
     cursor: pointer;
@@ -81,4 +81,35 @@ overflow: visible;
     box-shadow: 0 5px 6px rgba(0, 0, 0,0.05);
     color: var(--title);
     font-weight: bold;
+}
+@media (max-width:870px) {
+    .profile-top{
+display: flex;
+justify-content: space-between;
+flex-direction: column;
+}
+.profile-top .profile-btns{
+    gap: 70px;
+    margin: 10px 0;
+}
+}
+@media (max-width:760px) {
+    .profile-top{
+flex-direction: row;
+}
+.profile-top .profile-btns{
+    gap: 10px;
+    margin: 10px 0;
+}
+}
+@media (max-width:660px) {
+    .profile-top{
+display: flex;
+justify-content: space-between;
+flex-direction: column;
+}
+.profile-top .profile-btns{
+    gap: 70px;
+    margin: 10px 0;
+}
 }

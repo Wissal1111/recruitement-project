@@ -36,31 +36,52 @@ return(<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http:/
 </svg>
 )
 }
-export default function Info(){
-    return(
-       <div className="profile-top">
-         <div className="profile-info">
-            <div className="pic">
-            <img src={profileImg} alt="profile" className='profile-pic'/>
-            <Edit/>
-            </div>
-            <div className="side-info">
-            <h3>Sarah Miller</h3>
-            <p>Software Engenieer</p>
-            <div className="roles">
-                <div className="role-label">
-                CREATOR
-            </div>
-            <div className="role-label">
-                PARTICIPANT
-            </div>
-            </div>
-            </div>
+export default function Info({
+  firstName,
+  LastName,
+  Profession,
+  roles = []
+}) {
+  return (
+    <div className="profile-top">
+      <div className="profile-info">
+        <div className="pic">
+          <img src={profileImg} alt="profile" className="profile-pic" />
+          <Edit />
         </div>
-        <div className="profile-btns">
-          <button className='btn linear edit'><Pen color='white' size={14} strokeWidth={3}/>Edit Profile</button>  
-          <button className='btn settings-btn'>Settings</button>  
+
+        <div className="side-info">
+          <h3>
+            {firstName || "Unknown"} {LastName || ""}
+          </h3>
+
+          <p>{Profession || "No profession yet"}</p>
+
+          {/* ROLES */}
+          <div className="roles">
+            {roles && roles.length > 0 ? (
+             roles.map((role) => (
+  <div key={role} className="role-label">
+    {role}
+  </div>
+))
+            ) : (
+              <div className="role-label empty">
+                No roles
+              </div>
+            )}
+          </div>
         </div>
-       </div>
-    )
+      </div>
+
+      <div className="profile-btns">
+        <button className="btn linear edit">
+          <Pen color="white" size={14} strokeWidth={3} />
+          Edit Profile
+        </button>
+
+        <button className="btn settings-btn">Settings</button>
+      </div>
+    </div>
+  );
 }

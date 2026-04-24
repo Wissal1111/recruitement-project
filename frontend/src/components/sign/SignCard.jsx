@@ -113,6 +113,7 @@ export default function SignCard({ type }) {
     // ---------------- REGISTER ----------------
 const handleRegister = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
 
     setShowError(false);
     setErrorMsg("");
@@ -155,19 +156,21 @@ const handleRegister = async (e) => {
             }
         });
 
-        setLoading(false);
         navigate("/onboarding");
 
     } catch (err) {
         setLoading(false);
         setShowError(true);
         setErrorMsg(err.response?.data?.message || err.message);
-    }
+    } finally {
+    setLoading(false);
+}
 };
 
     // ---------------- LOGIN ----------------
 const handleLogin = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
 
     setShowError(false);
     setErrorMsg("");
@@ -185,24 +188,23 @@ const handleLogin = async (e) => {
             email,
             password
         });
-
-        console.log("LOGIN SUCCESS:", res);
-
-        
+                
         setSession({
             accessToken: res.accessToken,
             refreshToken: res.refreshToken,
             user: res.user
         });
 
-        setLoading(false);
+        
         navigate("/home");
 
     } catch (err) {
         setLoading(false);
         setShowError(true);
         setErrorMsg(err.response?.data?.message || err.message);
-    }
+    } finally {
+    setLoading(false);
+}
 };
 
     return (
@@ -344,7 +346,7 @@ const handleLogin = async (e) => {
                             </div>
                         )}
 
-                        <button className="shadow" type="submit">
+                        <button className="shadow" type="submit" disabled={loading}>
                             {type === "signup"
                                 ? "Sign Up"
                                 : "Log In"}

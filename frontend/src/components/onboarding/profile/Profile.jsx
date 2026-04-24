@@ -19,16 +19,21 @@ export default function Profile({
     const countries = Country.getAllCountries();
 
     const handleCountryChange = (e) => {
-        const countryCode = e.target.value;
+    const countryCode = e.target.value;
 
-        setSelectedCountry(countryCode);
-        setSelectedCity("");
+    const country = countries.find(
+        (c) => c.isoCode === countryCode
+    );
 
-        setCountry(countryCode); // ✅ send to parent
+    setSelectedCountry(countryCode);
+    setSelectedCity("");
 
-        const citiesList = City.getCitiesOfCountry(countryCode);
-        setCities(citiesList || []);
-    };
+    // ✅ SAVE NAME ONLY
+    setCountry(country?.name || "");
+
+    const citiesList = City.getCitiesOfCountry(countryCode);
+    setCities(citiesList || []);
+};
 
     return (
         <div className="onboarding-profile">

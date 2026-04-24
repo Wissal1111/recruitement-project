@@ -38,3 +38,34 @@
 .main-sidebar ul .selected-page .icon{
     color: var(--blue-text);
 }
+
+.main-sidebar {
+    transition: transform 0.25s ease;
+}
+
+/* overlay behind drawer */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+@media (max-width: 760px) {
+    .main-sidebar {
+        transform: translateX(-100%);
+        z-index: 1;
+        top: 50px;
+        height: calc(100vh - 50px);
+        box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .main-sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        display: block;
+    }
+}

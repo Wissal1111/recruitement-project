@@ -1,13 +1,22 @@
-import axios from "axios";
+import api from "../api/axiosInstance";
 
-const API_URL = "http://localhost:90/api/profile";
+const API_URL = "/profile";
 
-export const updateProfile = async (profileData, token) => {
+// get profile info
+export const getProfile = async () => {
     try {
-        const response = await axios.put(API_URL, profileData, {
+        const response = await api.get(API_URL);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+// update profile
+export const updateProfile = async (profileData) => {
+    try {
+        const response = await api.put(API_URL, profileData, {
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
             }
         });
 
