@@ -253,5 +253,7 @@ module.exports = {
   getRoles,
   removeRole,
   getUserRoles,
-  getMyRoles
+  getMyRoles,
+  addCreatorRoleToMe,
+  becomeCreator
 };
