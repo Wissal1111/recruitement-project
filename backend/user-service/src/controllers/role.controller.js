@@ -134,9 +134,82 @@ const getMyRoles = async (req, res) => {
   }
 };
 
+/**
+ * Add CREATOR role to the current authenticated user
+ */
+const addCreatorRoleToMe = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const user = await prisma.user.findUnique({
+      where: { userId },
+      select: { userId: true, email: true, firstname: true, lastname: true, isActive: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.isActive) {
+      return res.status(400).json({ message: 'Cannot assign CREATOR role to an inactive user' });
+    }
+
+    let creatorRole = await prisma.role.findUnique({
+      where: { name: 'CREATOR' },
+      select: { roleId: true, name: true }
+    });
+
+    if (!creatorRole) {
+      creatorRole = await prisma.role.create({
+        data: { name: 'CREATOR' },
+        select: { roleId: true, name: true }
+      });
+    }
+
+    const existingAssignment = await prisma.userRole.findFirst({
+      where: { userId, roleId: creatorRole.roleId }
+    });
+
+    if (existingAssignment) {
+      return res.status(409).json({
+        message: 'User already has CREATOR role',
+        userId,
+        roleName: creatorRole.name
+      });
+    }
+
+    const assignment = await prisma.userRole.create({
+      data: {
+        userId,
+        roleId: creatorRole.roleId
+      },
+      select: {
+        assignedAt: true
+      }
+    });
+
+    res.status(201).json({
+      message: 'CREATOR role added successfully',
+      user: {
+        userId: user.userId,
+        email: user.email,
+        name: `${user.firstname} ${user.lastname}`
+      },
+      role: {
+        roleName: creatorRole.name,
+        assignedAt: assignment.assignedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error adding CREATOR role:', error);
+    res.status(500).json({ message: 'Failed to add CREATOR role' });
+  }
+};
+
 module.exports = {
   getRoles,
   removeRole,
   getUserRoles,
-  getMyRoles
+  getMyRoles,
+  addCreatorRoleToMe
 };

@@ -9,6 +9,7 @@ router.get('/', ctrl.getRoles);
 
 // Get current user's roles✔
 router.get('/me', auth, ctrl.getMyRoles);
+router.post('/me/creator', auth, ctrl.addCreatorRoleToMe);
 
 // Get specific user's roles (admin only)✔
 router.get('/user/:userId', auth, ctrl.getUserRoles);
