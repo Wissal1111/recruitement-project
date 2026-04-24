@@ -4,6 +4,7 @@ const auth = require('../middleware/auth.middleware');
 const { requireAdmin } = require('../middleware/rbac.middleware');
 const roleValidation = require('../middleware/role.middleware');
 
+
 // US-18: Get roles list (Low priority - public access for now)✔
 router.get('/', ctrl.getRoles);
 
@@ -13,6 +14,11 @@ router.get('/me', auth, ctrl.getMyRoles);
 // Get specific user's roles (admin only)✔
 router.get('/user/:userId', auth, ctrl.getUserRoles);
 
+
+// add role creator to user
+// hadi drtha ana (malek)
+
+router.post('/become-creator', auth, ctrl.becomeCreator);
 
 
 // Remove role from user (admin only)

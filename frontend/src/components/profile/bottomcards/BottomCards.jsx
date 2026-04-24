@@ -1,5 +1,5 @@
-import './BottomCards.css'
-import {LogOut,Lock,GraduationCap,Cake} from "lucide-react"
+import './BottomCards.css';
+import { LogOut, Lock, GraduationCap, Cake } from "lucide-react";
 
 function MgmtIcon() {
     return (
@@ -11,41 +11,68 @@ function MgmtIcon() {
     )
 }
 
-export default function BottomCards({ onLogout }) {
-    return (<div className="bottomcards">
+export default function BottomCards({
+    onLogout,
+    education,
+    dateOfBirth
+}) {
+
+    const formattedDate = dateOfBirth
+        ? new Date(dateOfBirth).toLocaleDateString("en-GB")
+        : "Not set";
+
+    return (
+        <div className="bottomcards">
+
+            {/* EDUCATION + BIRTHDAY */}
             <div className="edu-bd">
+
                 <div className="circard edu">
-              <div className="crc">
-                <GraduationCap color="currentColor" size={17}/></div>
-              Master Degree
-            </div>
-            <div className="circard bd">
-              <div className="crc">
-                <Cake color="currentColor" size={17}/></div>
-              10-01-2005
-            </div>
-            </div>
-            <div className="bottom-card mgmt-card">
-                <div className="mang">
-                    <div className="biograpgy-title mngt">
-                    <MgmtIcon />
-                    Account Management
+                    <div className="crc">
+                        <GraduationCap color="currentColor" size={17} />
+                    </div>
+                    {education || "Not specified"}
                 </div>
-                <p className="mgmt-desc">
-                    Control your login sessions, data privacy preferences, and security protocols.
-                </p></div>
+
+                <div className="circard bd">
+                    <div className="crc">
+                        <Cake color="currentColor" size={17} />
+                    </div>
+                    {formattedDate}
+                </div>
+
+            </div>
+
+            {/* MANAGEMENT */}
+            <div className="bottom-card mgmt-card">
+
+                <div className="mang">
+
+                    <div className="biograpgy-title mngt">
+                        <MgmtIcon />
+                        Account Management
+                    </div>
+
+                    <p className="mgmt-desc">
+                        Control your login sessions, data privacy preferences, and security protocols.
+                    </p>
+
+                </div>
+
                 <div className="mgmt-actions">
+
                     <button className="mgmt-btn change-password-btn">
-                        <Lock color="currentColor" size={16}/>
-                        
+                        <Lock color="currentColor" size={16} />
                         Change Password
                     </button>
+
                     <button className="mgmt-btn logout-btn" onClick={onLogout}>
-                        <LogOut color="currentColor" size={16}/>
+                        <LogOut color="currentColor" size={16} />
                         Logout Account
                     </button>
+
                 </div>
             </div>
-            </div>
-    )
+        </div>
+    );
 }

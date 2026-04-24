@@ -57,7 +57,7 @@ npm start
 node src/test.js
 ```
 
-The service will be available at `http://localhost:3001`
+The service will be available at `http://localhost:3002`
 
 ## API Endpoints
 

@@ -1,5 +1,5 @@
 const prisma = require('../config/prisma');
-
+const { RoleName } = require('@prisma/client');
 /**
  * Role Management Controller
  * Implements clean code principles with optimized database access
@@ -134,9 +134,54 @@ const getMyRoles = async (req, res) => {
   }
 };
 
+/**
+ * Add role CREATOR to user
+ */
+// hadi drtha ana (malek)
+const becomeCreator = async (req, res) => {
+  const roles = await prisma.role.findMany();
+console.log("ALL ROLES IN DB:", roles);
+  try {
+    let role = await prisma.role.findFirst({
+      where: { name: RoleName.CREATOR }
+    });
+
+    if (!role) {
+      role = await prisma.role.create({
+        data: { name: RoleName.CREATOR }
+      });
+    }
+
+    const existing = await prisma.userRole.findFirst({
+      where: {
+        userId: req.userId,
+        roleId: role.roleId
+      }
+    });
+
+    if (existing) {
+      return res.json({ message: "Already a creator" });
+    }
+
+    await prisma.userRole.create({
+      data: {
+        userId: req.userId,
+        roleId: role.roleId
+      }
+    });
+
+    return res.json({ message: "You are now a CREATOR 🎉" });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed" });
+  }
+};
 module.exports = {
   getRoles,
   removeRole,
   getUserRoles,
-  getMyRoles
+  getMyRoles,
+// hadi drtha ana (malek)
+  becomeCreator 
 };

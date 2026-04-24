@@ -1,4 +1,4 @@
-import './Biography.css'
+import './Biography.css';
 
 function Icon(){
     return(
@@ -16,59 +16,67 @@ function Int(){
 </svg>
 )
 }
-
-const interests = [
-    'Editorial Design',
-    'Behavioral Science',
-    'UI/UX Strategy',
-    'Typography',
-    'Data Visualisation',
-    'Narrative Strategy',
-]
-
-export default function Biography(){
-    return(
+export default function Biography({
+    email,
+    location,
+    bio,
+    interests = []
+}) {
+    return (
         <div className="bio-intrests">
 
-        <div className="biograpghy-card">
-            <div className="biograpgy-title">
-                <Icon/>
-                Personal Biography
-            </div>
-            <div className="bio-row">
-                <div className="bio-info">
-                    <label htmlFor="email">EMAIL ADDRESS</label>
-                    <span>sarah.miller@curator.io</span>
+            {/* BIO */}
+            <div className="biograpghy-card">
+                <div className="biograpgy-title">
+                    <Icon />
+                    Personal Biography
                 </div>
-                <div className="bio-info">
-                    <label htmlFor="location">LOCATION</label>
-                    <span>Algeria, Mascara</span>
-                </div>
-            </div>
-            <div className="line"></div>
-            <div className="bio-info">
-                <label htmlFor="aboutme">ABOUT ME</label>
-                <p>Passionate about the intersection of data-driven insights and narrative
-excellence. I help brands craft meaningful survey experiences that feel like high-
-end conversations rather than simple form fills. Over 12 years of experience in
-editorial design and behavioral research.</p>
-            </div>
-        </div>
 
-        <div className="intrests-profile-card">
-            <div className="biograpgy-title">
-                <Int/>
-                Curated Interests
+                <div className="bio-row">
+                    <div className="bio-info">
+                        <label>EMAIL ADDRESS</label>
+                        <span>{email || "Not set"}</span>
+                    </div>
+
+                    <div className="bio-info">
+                        <label>LOCATION</label>
+                        <span>{location || "Not set"}</span>
+                    </div>
+                </div>
+
+                <div className="line"></div>
+
+                <div className="bio-info">
+                    <label>ABOUT ME</label>
+                    <p>{bio || "No biography added yet."}</p>
+                </div>
             </div>
-            <div className="interests-list">
-                {interests.map((interest) => (
-                    <span key={interest} className="interest-tag">{interest}</span>
-                ))}
+
+            {/* INTERESTS */}
+            <div className="intrests-profile-card">
+                <div className="biograpgy-title">
+                    <Int />
+                    Curated Interests
+                </div>
+
+                <div className="interests-list">
+                    {interests.length > 0 ? (
+                        interests.map((interest) => (
+                            <span key={interest} className="interest-tag">
+                                {interest}
+                            </span>
+                        ))
+                    ) : (
+                        <span className="interest-tag empty">
+                            No interests yet
+                        </span>
+                    )}
+                </div>
+
+                <button className="interests-add-btn">
+                    <span>+</span> Add
+                </button>
             </div>
-            <button className="interests-add-btn">
-                <span>+</span> Add
-            </button>
-        </div>      
         </div>
-    )
+    );
 }

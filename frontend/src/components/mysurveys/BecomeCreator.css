@@ -1,0 +1,239 @@
+.become-creator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height:100vh;
+  padding: 2rem;
+  background: #f5f4fe;
+  position: relative;
+  overflow: hidden;
+  padding-top: 70px;
+}
+
+.become-creator::before,
+.become-creator::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.15;
+  pointer-events: none;
+}
+.become-creator::before {
+  width: 350px;
+  height: 350px;
+  background: #6366f1;
+  top: -80px;
+  left: -80px;
+}
+.become-creator::after {
+  width: 300px;
+  height: 300px;
+  background: #a78bfa;
+  bottom: -60px;
+  right: -60px;
+}
+
+/* Card */
+.bc-card {
+  display: flex;
+  align-items: center;
+  gap: 3.5rem;
+  max-width: 860px;
+  width: 100%;
+  background: #fff;
+  border-radius: 24px;
+  padding: 3rem 3.5rem;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 8px 40px rgba(99, 102, 241, 0.08);
+  position: relative;
+  z-index: 1;
+  animation: bcFadeUp 0.6s ease both;
+}
+
+@keyframes bcFadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Illustration */
+.bc-illustration {
+  position: relative;
+  flex-shrink: 0;
+  width: auto;
+  overflow: visible;
+}
+
+.bc-illustration svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating badges */
+.bc-badge {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #e0e7ff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
+  animation: bcFloat 3s ease-in-out infinite;
+}
+
+.bc-badge--left  { top: 10px; left: -15px; animation-delay: 0s; }
+.bc-badge--right { bottom: 20px; right: -25px; animation-delay: 1.4s; }
+
+@keyframes bcFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+.bc-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.bc-dot--green { background: #22c55e; }
+.bc-dot--amber { background: #f59e0b; }
+
+/* Content */
+.bc-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ede9fe;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 13px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid #c4b5fd;
+  width: fit-content;
+}
+
+.bc-title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #1e1b4b;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.bc-title span {
+  color: #4f46e5;
+}
+
+.bc-desc {
+  font-size: 14.5px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 380px;
+}
+
+/* Actions */
+.bc-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+  overflow: visible;
+}
+
+.bc-btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s, border-color 0.15s;
+}
+
+.bc-btn--primary {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+}
+.bc-btn--primary:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.bc-btn--ghost {
+  background: transparent;
+  color: #4f46e5;
+  border: 1.5px solid #c4b5fd;
+}
+.bc-btn--ghost:hover {
+  background: #ede9fe;
+  transform: translateY(-1px);
+}
+
+/* Stats */
+.bc-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f8;
+}
+
+.bc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bc-stat__num {
+  font-size: 18px;
+  font-weight: 700;
+  color: #312e81;
+  line-height: 1;
+}
+
+.bc-stat__label {
+  font-size: 11.5px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.bc-stat__divider {
+  width: 1px;
+  height: 32px;
+  background: #e0e7ff;
+}
+
+/* Responsive */
+@media (max-width: 680px) {
+  .bc-card {
+    flex-direction: column;
+    padding: 2rem 1.5rem;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .bc-badge--left  { left: 0; top: -14px; }
+  .bc-badge--right { right: 0; bottom: 0; }
+
+  .bc-desc { max-width: 100%; }
+  .bc-actions { justify-content: center; }
+  .bc-stats { justify-content: center; }
+}
