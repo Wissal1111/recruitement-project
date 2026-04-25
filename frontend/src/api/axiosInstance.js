@@ -5,66 +5,49 @@ const api = axios.create({
   baseURL: "http://localhost:90/api",
 });
 
-/* =========================
-   REQUEST: attach token
-========================= */
+const authApi = axios.create({
+  baseURL: "http://localhost:90/api",
+});
+
 api.interceptors.request.use((config) => {
   const { accessToken } = getSession();
-
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
-
   return config;
 });
-
-/* =========================
-   REFRESH LOGIC
-========================= */
 
 let isRefreshing = false;
 let queue = [];
 
 const processQueue = (error, token = null) => {
   queue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+    if (error) prom.reject(error);
+    else prom.resolve(token);
   });
   queue = [];
 };
 
-/* =========================
-   RESPONSE INTERCEPTOR
-========================= */
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const originalRequest = error.config;
-
     const url = originalRequest?.url || "";
 
-    // 🚨 SKIP AUTH ROUTES (VERY IMPORTANT)
     const isAuthRoute =
       url.includes("/auth/login") ||
       url.includes("/auth/register") ||
       url.includes("/auth/refresh");
 
-    if (isAuthRoute) {
-      return Promise.reject(error);
-    }
+    if (isAuthRoute) return Promise.reject(error);
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       const { refreshToken } = getSession();
 
       if (!refreshToken) {
+        console.warn("⚠️ No refresh token found in session — clearing and rejecting");
         clearSession();
         return Promise.reject(error);
       }
@@ -73,41 +56,47 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           queue.push({ resolve, reject });
         }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
+          const retryConfig = { ...originalRequest };
+          retryConfig.headers = {
+            ...originalRequest.headers,
+            Authorization: `Bearer ${token}`,
+          };
+          return api(retryConfig);
         });
       }
 
       isRefreshing = true;
 
       try {
-        const res = await axios.post(
-          "http://localhost:90/api/auth/refresh",
-          { refreshToken }
-        );
+        console.log("🔄 Attempting token refresh...");
+        const res = await authApi.post("/auth/refresh", { refreshToken });
 
         const newAccessToken = res.data.accessToken;
 
-        setSession({
-          accessToken: newAccessToken,
-          refreshToken,
-          user: getSession().user,
-        });
+        if (!newAccessToken) {
+          throw new Error("No accessToken returned from refresh endpoint");
+        }
+
+        console.log("✅ Token refreshed successfully");
+
+        setSession({ accessToken: newAccessToken });
 
         processQueue(null, newAccessToken);
 
-        originalRequest.headers.Authorization =
-          `Bearer ${newAccessToken}`;
-
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
 
       } catch (err) {
+        console.group("🔴 Refresh Failed");
+        console.log("Error status:", err.response?.status);
+        console.log("Error data:", err.response?.data);
+        console.log("Refresh token used:", refreshToken);
+        console.groupEnd();
+
         processQueue(err, null);
-
-        // ❌ ONLY clear session (NO redirect here)
         clearSession();
-
         return Promise.reject(err);
+
       } finally {
         isRefreshing = false;
       }

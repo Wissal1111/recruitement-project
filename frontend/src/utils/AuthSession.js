@@ -1,7 +1,7 @@
 export const setSession = ({ accessToken, refreshToken, user }) => {
-  localStorage.setItem("accessToken", accessToken);
-  localStorage.setItem("refreshToken", refreshToken);
-  if (user) localStorage.setItem("user", JSON.stringify(user));
+  if (accessToken != null) localStorage.setItem("accessToken", accessToken);
+  if (refreshToken != null) localStorage.setItem("refreshToken", refreshToken);
+  if (user != null) localStorage.setItem("user", JSON.stringify(user));
 };
 
 export const clearSession = () => {
@@ -11,9 +11,10 @@ export const clearSession = () => {
 };
 
 export const getSession = () => {
+  const raw = localStorage.getItem("user");
   return {
     accessToken: localStorage.getItem("accessToken"),
     refreshToken: localStorage.getItem("refreshToken"),
-    user: JSON.parse(localStorage.getItem("user")),
+    user: raw ? JSON.parse(raw) : null,
   };
 };
