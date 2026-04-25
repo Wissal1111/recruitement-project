@@ -1,15 +1,13 @@
 const mongoose = require('mongoose');
 const { randomUUID } = require('crypto');
 
-// 1. Schéma pour les options de questions (Question Options)
 const QuestionOptionSchema = new mongoose.Schema({
   optionId: { type: String, default: () => randomUUID() },
   label: { type: String, required: true },
   value: { type: String, required: true },
   orderIndex: { type: Number, required: true }
-}, { _id: false }); // On désactive _id car on utilise optionId
+}, { _id: false });
 
-// 2. Schéma pour les questions (Questions)
 const QuestionSchema = new mongoose.Schema({
   questionId: { type: String, default: () => randomUUID() },
   text: { type: String, required: true },
@@ -20,19 +18,20 @@ const QuestionSchema = new mongoose.Schema({
   },
   isRequired: { type: Boolean, default: true },
   orderIndex: { type: Number, required: true },
-  options: [QuestionOptionSchema], // Imbriqué
+  options: {
+    type: [QuestionOptionSchema],
+    default: [],
+    validate: {
+      validator: function (options) {
+        const needsOptions = ['MULTIPLE_CHOICE', 'SINGLE_CHOICE'].includes(this.questionType);
+        return needsOptions ? Array.isArray(options) && options.length > 0 : true;
+      },
+      message: 'SINGLE_CHOICE and MULTIPLE_CHOICE questions must include at least one option.'
+    }
+  },
   createdAt: { type: Date, default: Date.now }
 }, { _id: false });
 
-// 3. Schéma pour le formulaire (Form)
-const FormSchema = new mongoose.Schema({
-  formId: { type: String, default: () => randomUUID() },
-  title: { type: String, required: true },
-  description: { type: String },
-  questions: [QuestionSchema] // Imbriqué
-}, { _id: false, timestamps: true });
-
-// 4. Schéma pour les phases (Study Phases)
 const StudyPhaseSchema = new mongoose.Schema({
   phaseId: { type: String, default: () => randomUUID() },
   phaseOrder: { type: Number, required: true },
@@ -42,10 +41,12 @@ const StudyPhaseSchema = new mongoose.Schema({
   rewardAmount: { type: mongoose.Schema.Types.Decimal128, required: true },
   maxParticipants: { type: Number, required: true },
   status: { type: String, enum: ['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELLED'], default: 'PENDING' },
-  form: FormSchema // Un seul formulaire par phase
+  questions: {
+    type: [QuestionSchema],
+    default: []
+  }
 }, { _id: false, timestamps: true });
 
-// 5. Schéma Principal (Study)
 const StudySchema = new mongoose.Schema({
   studyId: { type: String, default: () => randomUUID(), unique: true, required: true },
   creatorId: { type: String, required: true },
@@ -64,7 +65,7 @@ const StudySchema = new mongoose.Schema({
   totalBudget: { type: mongoose.Schema.Types.Decimal128, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
-  phases: [StudyPhaseSchema] // Toutes les phases sont ici !
+  phases: [StudyPhaseSchema]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Study', StudySchema);

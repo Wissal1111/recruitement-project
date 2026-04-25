@@ -15,6 +15,9 @@ router.get('/my-studies', authMiddleware, studyController.getStudiesByCreator);
 // GET: /api/studies/:studyId - Get a single study by ID
 router.get('/:studyId', authMiddleware, studyController.getStudyById);
 
+// PUT: /api/studies/:studyId - Update a study
+router.put('/:studyId', authMiddleware, studyController.updateStudy);
+
 // DELETE: /api/studies/:studyId - Delete a study by ID (Owner only)
 router.delete('/:studyId', authMiddleware, studyController.deleteStudy);
 
@@ -24,8 +27,14 @@ router.patch('/:studyId/status', authMiddleware, studyController.updateStudyStat
 // PUT: /api/studies/:studyId/phases/:phaseId - Update a specific phase
 router.put('/:studyId/phases/:phaseId', authMiddleware, studyController.updatePhase);
 
-// POST: /api/studies/:studyId/phases/:phaseId/questions - Add a question to a form
-router.post('/:studyId/phases/:phaseId/questions', authMiddleware, studyController.addQuestionToForm);
+// POST: /api/studies/:studyId/phases - Add a new phase
+router.post('/:studyId/phases', authMiddleware, studyController.addPhase);
+
+// DELETE: /api/studies/:studyId/phases/:phaseId - Delete a phase
+router.delete('/:studyId/phases/:phaseId', authMiddleware, studyController.deletePhase);
+
+// POST: /api/studies/:studyId/phases/:phaseId/questions - Add a question to a phase
+router.post('/:studyId/phases/:phaseId/questions', authMiddleware, studyController.addQuestionToPhase);
 
 // DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - Remove a question
 router.delete('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.removeQuestion);

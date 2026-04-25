@@ -1,5 +1,5 @@
 const prisma = require('../config/prisma');
-
+const { RoleName } = require('@prisma/client');
 /**
  * Role Management Controller
  * Implements clean code principles with optimized database access
@@ -134,9 +134,126 @@ const getMyRoles = async (req, res) => {
   }
 };
 
+/**
+ * Add CREATOR role to the current authenticated user
+ */
+const addCreatorRoleToMe = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const user = await prisma.user.findUnique({
+      where: { userId },
+      select: { userId: true, email: true, firstname: true, lastname: true, isActive: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.isActive) {
+      return res.status(400).json({ message: 'Cannot assign CREATOR role to an inactive user' });
+    }
+
+    let creatorRole = await prisma.role.findUnique({
+      where: { name: 'CREATOR' },
+      select: { roleId: true, name: true }
+    });
+
+    if (!creatorRole) {
+      creatorRole = await prisma.role.create({
+        data: { name: 'CREATOR' },
+        select: { roleId: true, name: true }
+      });
+    }
+
+    const existingAssignment = await prisma.userRole.findFirst({
+      where: { userId, roleId: creatorRole.roleId }
+    });
+
+    if (existingAssignment) {
+      return res.status(409).json({
+        message: 'User already has CREATOR role',
+        userId,
+        roleName: creatorRole.name
+      });
+    }
+
+    const assignment = await prisma.userRole.create({
+      data: {
+        userId,
+        roleId: creatorRole.roleId
+      },
+      select: {
+        assignedAt: true
+      }
+    });
+
+    res.status(201).json({
+      message: 'CREATOR role added successfully',
+      user: {
+        userId: user.userId,
+        email: user.email,
+        name: `${user.firstname} ${user.lastname}`
+      },
+      role: {
+        roleName: creatorRole.name,
+        assignedAt: assignment.assignedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error adding CREATOR role:', error);
+    res.status(500).json({ message: 'Failed to add CREATOR role' });
+  }
+};
+
+/**
+ * Add role CREATOR to user
+ */
+// hadi drtha ana (malek)
+const becomeCreator = async (req, res) => {
+  const roles = await prisma.role.findMany();
+console.log("ALL ROLES IN DB:", roles);
+  try {
+    let role = await prisma.role.findFirst({
+      where: { name: RoleName.CREATOR }
+    });
+
+    if (!role) {
+      role = await prisma.role.create({
+        data: { name: RoleName.CREATOR }
+      });
+    }
+
+    const existing = await prisma.userRole.findFirst({
+      where: {
+        userId: req.userId,
+        roleId: role.roleId
+      }
+    });
+
+    if (existing) {
+      return res.json({ message: "Already a creator" });
+    }
+
+    await prisma.userRole.create({
+      data: {
+        userId: req.userId,
+        roleId: role.roleId
+      }
+    });
+
+    return res.json({ message: "You are now a CREATOR 🎉" });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed" });
+  }
+};
 module.exports = {
   getRoles,
   removeRole,
   getUserRoles,
-  getMyRoles
+  getMyRoles,
+  addCreatorRoleToMe,
+  becomeCreator
 };

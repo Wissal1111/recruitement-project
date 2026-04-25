@@ -1,0 +1,71 @@
+.main-sidebar{
+    background-color: #F9FBFF;
+    width: 240px;
+    height: 100vh;
+    position: fixed;
+    z-index: 1;
+    padding: 80px 24px 30px 24px;
+    border-right:1px solid #F0F0F0 ;
+}
+.main-sidebar p{
+    font-size: 11px;
+    font-weight: bold;
+    color: #94A3B8;
+}
+.main-sidebar ul{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0px;
+}
+.main-sidebar ul li{
+    color: var(--gray);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.main-sidebar ul li:hover{
+    color: var(--blue-text);
+}
+.main-sidebar ul .selected-page{
+    background-color: rgba(112, 115, 255, 0.2);
+    color:var(--blue-text);
+}
+.main-sidebar ul .selected-page .icon{
+    color: var(--blue-text);
+}
+
+.main-sidebar {
+    transition: transform 0.25s ease;
+}
+
+/* overlay behind drawer */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+@media (max-width: 760px) {
+    .main-sidebar {
+        transform: translateX(-100%);
+        z-index: 1;
+        top: 50px;
+        height: calc(100vh - 50px);
+        box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .main-sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        display: block;
+    }
+}
