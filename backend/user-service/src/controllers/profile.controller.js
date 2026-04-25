@@ -11,7 +11,7 @@ exports.getProfile = async (req, res) => {
         email: true,
         profilePictureUrl: true,
         isActive: true,
-        ceratedAt: true,
+        createdAt: true,
         lastLogin: true,
         profile: true,
         roles: { include: { role: true } },
@@ -125,5 +125,38 @@ exports.updateEarnings = async (req, res) => {
   } catch (err) {
     console.error('Error updating earnings:', err);
     return res.status(500).json({ message: 'Server error' });
+  }
+};
+exports.searchProfiles = async (req, res) => {
+  try {
+    const { ageMin, ageMax, gender, country, education } = req.body;
+    const where = {};
+    if (ageMin !== undefined || ageMax !== undefined) {
+      where.age = {};
+      if (ageMin !== undefined) where.age.gte = ageMin;
+      if (ageMax !== undefined) where.age.lte = ageMax;
+    }
+    if (gender) where.gender = gender;
+    if (country) where.country = country;
+    if (education) where.education = education;
+
+    const profiles = await prisma.userProfile.findMany({
+      where,
+      include: { user: { select: { userId: true, firstname: true, lastname: true, email: true } } }
+    });
+
+    return res.json(profiles.map(p => ({
+      userId: p.userId,
+      age: p.age,
+      gender: p.gender,
+      country: p.country,
+      education: p.education,
+      firstname: p.user?.firstname,
+      lastname: p.user?.lastname,
+      email: p.user?.email
+    })));
+  } catch (err) {
+    console.error('searchProfiles error:', err);
+    return res.status(500).json({ message: 'Server error', detail: err.message });
   }
 };
