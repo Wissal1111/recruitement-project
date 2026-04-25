@@ -69,7 +69,7 @@ api.interceptors.response.use(
 
       try {
         console.log("🔄 Attempting token refresh...");
-        const res = await authApi.post("/auth/refresh", { refreshToken });
+        const res = await authApi.post("/auth/refresh-token", { refreshToken });
 
         const newAccessToken = res.data.accessToken;
 
