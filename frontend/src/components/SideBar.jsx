@@ -46,7 +46,7 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                 {part === "recruit" && <>
                     <p>SURVEYS</p>
                     <ul>
-                        <li className={page === "mysurveys" ? 'selected-page' : ''} onClick={() => go("/recruit/surveys")}>
+                        <li className={page === "mysurveys" ? 'selected-page' : ''} onClick={() => go("/recruit")}>
                             <Files size={16} /> My Surveys
                         </li>
                         <li className={page === "createsurvey" ? 'selected-page' : ''} onClick={() => go("/recruit/create")}>

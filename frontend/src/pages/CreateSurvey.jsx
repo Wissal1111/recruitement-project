@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BecomecreatorIl from "../components/mysurveys/BecomeCreatorIl";
 import { getMyRoles } from "../api/Role";
+import StudyInfo from "../components/create/StudyInfo";
 
-export default function MySurveys() {
+export default function CreateSurvey() {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isCreator, setIsCreator] = useState(false);
-    const [loading, setLoading] = useState(true);
+   
 
     useEffect(() => {
         getMyRoles()
@@ -19,11 +20,14 @@ export default function MySurveys() {
     typeof r === "string" ? r === "CREATOR" : r?.roleName === "CREATOR"
 );
                 setIsCreator(hasCreator);
+                if(!hasCreator){
+                    navigate("/recruit");
+                }
             })
             .catch((err) => console.log("roles error:", err))
-            .finally(() => setLoading(false));
+            
     }, []);
-    if (loading) return null;
+   
 
     return (
         <div className="dashboard">
@@ -32,20 +36,18 @@ export default function MySurveys() {
                 sidebarOpen={sidebarOpen}
                 setSidebarOpen={setSidebarOpen}
             />
-            {isCreator ? (
-                <>
+               
                     <SideBar
-                        page="mysurveys"
+                        page="createsurvey"
                         part="recruit"
                         isOpen={sidebarOpen}
                         onClose={() => setSidebarOpen(false)}
                     />
-                    <div className="wrapper">
+                    <div className="wrapper centered">
+                        <StudyInfo/>
                     </div>
-                </>
-            ) : (
-                <BecomecreatorIl setIsCreator={setIsCreator}/>
-            )}
+               
+            
         </div>
     );
 }

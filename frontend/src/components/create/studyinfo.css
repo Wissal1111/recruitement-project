@@ -1,0 +1,245 @@
+/* StudyIdentityCard.css */
+
+.study-card {
+  background: #fff;
+  border-radius: 48px;
+  padding: 36px;
+  max-width: 680px;
+  overflow: visible;
+  margin: 20px 0;
+  box-shadow: 0 2px 12px rgba(60, 60, 120, 0.07);
+}
+
+/* Header */
+.study-card__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.study-card__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--title);
+}
+
+.study-card__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-bottom: 10px;
+}
+
+/* Field group */
+.study-card__field {
+  margin-bottom: 22px;
+  overflow: visible;
+
+}
+
+/* Two-column row */
+.study-card__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 22px;
+  overflow: visible;
+}
+
+/* Inputs & textarea & select */
+.study-card__input,
+.study-card__textarea,
+.study-card__select {
+  width: 100%;
+  background: #eef0fa;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--title);
+  outline: none;
+  transition: background 0.16s, box-shadow 0.16s;
+}
+
+.study-card__input::placeholder,
+.study-card__textarea::placeholder {
+  color: #a0a8c0;
+}
+.study-card div{
+  overflow: visible;
+}
+.study-card__input:focus,
+.study-card__textarea:focus,
+.study-card__select:focus {
+  background: #e8eafc;
+  box-shadow: 0 0 0 2px rgba(74, 75, 215, 0.18);
+}
+
+.study-card__textarea {
+  height: 86px;
+  resize: none;
+}
+
+.study-card__select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='11' height='7' viewBox='0 0 11 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5.5 5.5L10 1' stroke='%23A0A8C0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  cursor: pointer;
+}
+
+/* Budget prefix wrapper */
+.study-card__budget-wrap {
+  position: relative;
+}
+
+.study-card__budget-wrap .study-card__input {
+  padding-left: 28px;
+}
+
+.study-card__budget-sym {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #a0a8c0;
+  pointer-events: none;
+}
+
+/* Phase pills */
+.study-card__phases {
+  display: flex;
+  gap: 14px;
+}
+
+.study-card__phase {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  background: #f1f2f8;
+  border: 2px solid transparent;
+  border-radius: 40px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color 0.16s, background 0.16s;
+}
+
+.study-card__phase:hover {
+  background: #eaebf8;
+}
+
+.study-card__phase--selected {
+  border-color: var(--blue-text);
+  background: #fff;
+}
+
+.study-card__phase-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd0e0;
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.16s, background 0.16s;
+}
+
+.study-card__phase--selected .study-card__phase-radio {
+  border-color: var(--blue-text);
+  background: var(--blue-text);
+}
+
+.study-card__phase-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  display: none;
+}
+
+.study-card__phase--selected .study-card__phase-dot {
+  display: block;
+}
+
+.study-card__phase-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--title);
+  margin-bottom: 4px;
+}
+
+.study-card__phase-desc {
+  font-size: 12.5px;
+  color: var(--content);
+  line-height: 1.5;
+}
+
+/* Footer */
+.study-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 28px;
+}
+
+.study-card__autosave {
+  font-size: 12px;
+  color: #a0a8c0;
+  font-style: italic;
+}
+
+.study-card__footer-btns {
+  display: flex;
+  gap: 10px;
+}
+
+
+.study-card__btn-next {
+  background: var(--linear-blue);
+  border: none;
+  border-radius: var(--medium-radius);
+  padding: 10px 20px;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 3px 12px rgba(74, 75, 215, 0.3);
+  transition: opacity 0.14s, transform 0.1s;
+}
+
+.study-card__btn-next:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.study-card__btn-next:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+  .study-card__row {
+    grid-template-columns: 1fr;
+  }
+
+  .study-card__phases {
+    flex-direction: column;
+  }
+
+  .study-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+}
