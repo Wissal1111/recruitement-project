@@ -1,5 +1,17 @@
 import './BecomeCreator.css'
+import { becomeCreator } from '../../api/Role';
+import { useNavigate } from 'react-router-dom';
+
 export default function BecomeCreatorIl(){
+  const navigate=useNavigate();
+  const handleBecomeCreator = async () => {
+  try {
+    await becomeCreator();
+    navigate("/recruit");
+  } catch (err) {
+    console.log("becomeCreator error:", err);
+  }
+};
     return(<div className="become-creator">
     <div className="bc-card">
       <div className="bc-illustration">
@@ -72,9 +84,9 @@ export default function BecomeCreatorIl(){
         </p>
 
         <div className="bc-actions">
-          <button className="bc-btn bc-btn--primary" onClick={() => navigate("/recruit/apply")}>
-            Apply as Creator
-          </button>
+          <button className="bc-btn bc-btn--primary" onClick={handleBecomeCreator}>
+  Become a Creator
+</button>
           <button className="bc-btn bc-btn--ghost" onClick={() => navigate("/recruit")}>
             Learn more
           </button>

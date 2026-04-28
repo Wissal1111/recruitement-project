@@ -1,13 +1,12 @@
 import SideBar from "../components/SideBar";
 import TopNavBar from "../components/TopNavBar";
-import { useState } from "react";
-import { clearSession } from "../utils/AuthSession"
+import { useState, useEffect } from "react";
+import { clearSession, getSession } from "../utils/AuthSession";
 import { useNavigate } from "react-router-dom";
 import Info from "../components/profile/info/Info";
 import Biography from "../components/profile/biography/Biography";
 import BottomCards from "../components/profile/bottomcards/BottomCards";
 import { getProfile } from "../api/ProfileApi";
-import { useEffect } from "react";
 
 export default function Profile() {
     const navigate = useNavigate();
@@ -24,9 +23,10 @@ export default function Profile() {
     }
 
     useEffect(() => {
+        console.log("📦 Session on mount:", getSession());
         getProfile()
             .then(data => SaveData(data))
-            .catch(err => console.log(err));
+            .catch(err => console.log("getProfile error:", err));
     }, []);
 
     return (
@@ -53,19 +53,19 @@ export default function Profile() {
                 />
 
                 <Biography
-    email={profile?.email}
-    location={
-        `${profile?.profile?.city || ""}, ${profile?.profile?.country || ""}`
-    }
-    bio={profile?.profile?.bio}
-    interests={profile?.profile?.interests || []}
-/>
+                    email={profile?.email}
+                    location={
+                        `${profile?.profile?.city || ""}, ${profile?.profile?.country || ""}`
+                    }
+                    bio={profile?.profile?.bio}
+                    interests={profile?.profile?.interests || []}
+                />
 
-               <BottomCards
-    onLogout={logout}
-    education={profile?.profile?.education}
-    dateOfBirth={profile?.profile?.dateOfBirth}
-/>
+                <BottomCards
+                    onLogout={logout}
+                    education={profile?.profile?.education}
+                    dateOfBirth={profile?.profile?.dateOfBirth}
+                />
             </div>
         </>
     );

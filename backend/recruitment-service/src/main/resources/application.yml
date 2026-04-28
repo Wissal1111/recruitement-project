@@ -1,0 +1,45 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: recruitment-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/recruitment_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres123}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+jwt:
+  secret: ${JWT_SECRET:your_super_secret_key}
+
+services:
+  user-service:
+    url: ${SERVICES_USER_SERVICE_URL:http://localhost:3001}
+  survey-service:
+    url: ${SERVICES_SURVEY_SERVICE_URL:http://localhost:4000}
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+
+logging:
+  level:
+    com.recruitment: DEBUG
