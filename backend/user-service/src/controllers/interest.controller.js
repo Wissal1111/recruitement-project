@@ -70,6 +70,85 @@ exports.addUserInterest = async (req, res) => {
   }
 };
 
+exports.addUserInterestByNames = async (req, res) => {
+  try {
+    const { interests } = req.body;
+
+    if (!Array.isArray(interests) || interests.length === 0) {
+      return res.status(400).json({ message: 'interests must be a non-empty array' });
+    }
+
+    const cleanedNames = Array.from(
+      new Set(
+        interests
+          .map((name) => (name ? name.toString().trim() : ''))
+          .filter(Boolean)
+      )
+    );
+
+    if (cleanedNames.length === 0) {
+      return res.status(400).json({ message: 'interests contains no valid names' });
+    }
+
+    const foundInterests = await prisma.interest.findMany({
+      where: {
+        OR: cleanedNames.map((name) => ({
+          name: {
+            equals: name,
+            mode: 'insensitive'
+          }
+        }))
+      },
+      select: {
+        interestId: true,
+        name: true
+      }
+    });
+
+    const foundNames = foundInterests.map((interest) => interest.name.toLowerCase());
+    const invalidNames = cleanedNames.filter((name) => !foundNames.includes(name.toLowerCase()));
+
+    if (invalidNames.length > 0) {
+      return res.status(404).json({ message: 'Some interests not found', invalidNames });
+    }
+
+    const foundIds = foundInterests.map((interest) => interest.interestId);
+
+    const existingUserInterests = await prisma.userInterest.findMany({
+      where: {
+        userId: req.userId,
+        interestId: { in: foundIds }
+      },
+      select: { interestId: true }
+    });
+
+    const existingIds = existingUserInterests.map((item) => item.interestId);
+    const newIds = foundIds.filter((interestId) => !existingIds.includes(interestId));
+
+    if (newIds.length === 0) {
+      return res.status(409).json({ message: 'All interests already added' });
+    }
+
+    await prisma.userInterest.createMany({
+      data: newIds.map((interestId) => ({ userId: req.userId, interestId })),
+      skipDuplicates: true
+    });
+
+    const addedInterests = await prisma.userInterest.findMany({
+      where: { userId: req.userId, interestId: { in: newIds } },
+      include: { interest: true }
+    });
+
+    return res.status(201).json({
+      message: `${newIds.length} interest(s) added`,
+      addedInterests: addedInterests.map((ui) => ({ id: ui.id, interest: ui.interest }))
+    });
+  } catch (err) {
+    console.error('Error adding user interests by names:', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 exports.deleteUserInterest = async (req, res) => {
   try {
     const { id } = req.params;

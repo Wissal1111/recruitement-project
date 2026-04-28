@@ -65,6 +65,10 @@ const StudySchema = new mongoose.Schema({
   totalBudget: { type: mongoose.Schema.Types.Decimal128, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
+  isMultiPhase:{
+    type:Boolean,
+    required:true
+  },
   phases: [StudyPhaseSchema]
 }, { timestamps: true });
 
