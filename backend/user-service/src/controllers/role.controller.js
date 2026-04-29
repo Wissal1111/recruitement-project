@@ -183,7 +183,7 @@ const addCreatorRoleToMe = async (req, res) => {
         userId,
         roleId: creatorRole.roleId
       },
-      select: {
+      select: {w
         assignedAt: true
       }
     });
