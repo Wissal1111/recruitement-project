@@ -11,7 +11,7 @@ function SurveyIcon() {
     );
 }
 
-export default function StudyInfo({ onNext, onDiscard }) {  // ADD PROPS HERE
+export default function StudyInfo({ onDiscard }) {  // ADD PROPS HERE
     const navigate = useNavigate();
     const [phase, setPhase] = useState("single");
     const [form, setForm] = useState({
@@ -25,6 +25,14 @@ export default function StudyInfo({ onNext, onDiscard }) {  // ADD PROPS HERE
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
+    function setNextStep() {
+    if (phase === "multi") {        
+        navigate("./phases");
+    } else {
+        navigate("./questions");
+
+    }
+}
 
     return (
         <div className="study-card">
@@ -109,7 +117,9 @@ export default function StudyInfo({ onNext, onDiscard }) {  // ADD PROPS HERE
             <div className="study-card__phases">
                 <div
                     className={`study-card__phase ${phase === "single" ? "study-card__phase--selected" : ""}`}
-                    onClick={() => setPhase("single")}
+                    onClick={() => {
+                        setPhase("single");
+                    }}
                 >
                     <div className="study-card__phase-radio">
                         <div className="study-card__phase-dot" />
@@ -122,7 +132,10 @@ export default function StudyInfo({ onNext, onDiscard }) {  // ADD PROPS HERE
 
                 <div
                     className={`study-card__phase ${phase === "multi" ? "study-card__phase--selected" : ""}`}
-                    onClick={() => setPhase("multi")}
+                    onClick={() => {
+                        setPhase("multi");
+                       
+                    }}
                 >
                     <div className="study-card__phase-radio">
                         <div className="study-card__phase-dot" />
@@ -140,7 +153,7 @@ export default function StudyInfo({ onNext, onDiscard }) {  // ADD PROPS HERE
                     All changes are saved automatically in real-time.
                 </span>
                 <div className="study-card__footer-btns">
-                    <button className="study-card__btn-next" onClick={onNext}>  {/* ADD onClick */}
+                    <button className="study-card__btn-next" onClick={()=>setNextStep()}>  {/* ADD onClick */}
                         Next: Build Questions
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M5 12h14M13 6l6 6-6 6" />

@@ -26,7 +26,7 @@ export default function Questions({ questions, onAdd, onDelete, onDuplicate, onB
             </div>
 
             <button className="create-questions__back-btn" onClick={onBack}>
-                ← Back to Study Identity
+                ← Back 
             </button>
         </div>
     );

@@ -7,10 +7,21 @@ import { getMyRoles } from "../api/Role";
 import StudyInfo from "../components/create/StudyInfo";
 import Questions from "../components/create/Questions";  // ADD
 
-export default function CreateSurvey() {
+export default function QuestionsPage() {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isCreator, setIsCreator] = useState(false);
+    const [step, setStep] = useState("identity");
+    const [questions, setQuestions] = useState([{ id: Date.now() }]);
+
+    const addQuestion = () =>
+        setQuestions((prev) => [...prev, { id: Date.now() }]);
+
+    const removeQuestion = (id) =>
+        setQuestions((prev) => prev.filter((q) => q.id !== id));
+
+    const duplicateQuestion = (id) =>
+        setQuestions((prev) => [...prev, { id: Date.now() }]);
 
     useEffect(() => {
         getMyRoles()
@@ -41,10 +52,15 @@ export default function CreateSurvey() {
                 onClose={() => setSidebarOpen(false)}
             />
             <div className="wrapper centered">
-               
-                    <StudyInfo
-                        onDiscard={() => navigate(-1)}
-                    />              
+              
+                    <Questions
+                        questions={questions}
+                        onAdd={addQuestion}
+                        onDelete={removeQuestion}
+                        onDuplicate={duplicateQuestion}
+                        onBack={()=>navigate(-1)}
+                    />
+              
             </div>
         </div>
     );

@@ -2,15 +2,23 @@ import SideBar from "../components/SideBar";
 import TopNavBar from "../components/TopNavBar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import BecomecreatorIl from "../components/mysurveys/BecomeCreatorIl";
 import { getMyRoles } from "../api/Role";
-import StudyInfo from "../components/create/StudyInfo";
-import Questions from "../components/create/Questions";  // ADD
+import Phases from "../components/create/Phases";
 
-export default function CreateSurvey() {
+export default function PhasesPage() {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isCreator, setIsCreator] = useState(false);
+    const [phases, setPhases] = useState([{ id: Date.now(), name: "" }]);
+
+    const addPhase = () =>
+        setPhases((prev) => [...prev, { id: Date.now(), name: "" }]);
+
+    const removePhase = (id) =>
+        setPhases((prev) => prev.filter((p) => p.id !== id));
+
+    const updatePhase = (id, name) =>
+    setPhases((prev) => prev.map((p) => p.id === id ? { ...p, name } : p));
 
     useEffect(() => {
         getMyRoles()
@@ -20,9 +28,7 @@ export default function CreateSurvey() {
                     typeof r === "string" ? r === "CREATOR" : r?.roleName === "CREATOR"
                 );
                 setIsCreator(hasCreator);
-                if (!hasCreator) {
-                    navigate("/recruit");
-                }
+                if (!hasCreator) navigate("/recruit");
             })
             .catch((err) => console.log("roles error:", err));
     }, []);
@@ -41,10 +47,13 @@ export default function CreateSurvey() {
                 onClose={() => setSidebarOpen(false)}
             />
             <div className="wrapper centered">
-               
-                    <StudyInfo
-                        onDiscard={() => navigate(-1)}
-                    />              
+                <Phases
+                    phases={phases}
+                    onAdd={addPhase}
+                    onDelete={removePhase}
+                    onUpdate={updatePhase}
+                    onBack={() => navigate(-1)}
+                />
             </div>
         </div>
     );

@@ -12,6 +12,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import MySurveys from "./pages/MySurveys";
 import CreateSurvey from "./pages/CreateSurvey";
+import QuestionsPage from "./pages/QuestionsPage";
+import PhasesPage from "./pages/PhasesPage";
 
 function App() {
   return (
@@ -77,6 +79,30 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateSurvey />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="recruit/create/questions"
+          element={
+            <ProtectedRoute>
+              <QuestionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="recruit/create/phases"
+          element={
+            <ProtectedRoute>
+              <PhasesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="recruit/create/phases/:id/questions"
+          element={
+            <ProtectedRoute>
+              <QuestionsPage />
             </ProtectedRoute>
           }
         />
