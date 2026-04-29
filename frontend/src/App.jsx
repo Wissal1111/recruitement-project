@@ -83,7 +83,15 @@ function App() {
           }
         />
         <Route
-          path="recruit/create/questions"
+          path="/recruit/create/:id"
+          element={
+            <ProtectedRoute>
+              <CreateSurvey />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="recruit/create/:id/questions"
           element={
             <ProtectedRoute>
               <QuestionsPage />
@@ -91,7 +99,7 @@ function App() {
           }
         />
         <Route
-          path="recruit/create/phases"
+          path="recruit/create/:id/phases"
           element={
             <ProtectedRoute>
               <PhasesPage />
@@ -99,7 +107,7 @@ function App() {
           }
         />
         <Route
-          path="recruit/create/phases/:id/questions"
+          path="recruit/create/:id/phases/:id/questions"
           element={
             <ProtectedRoute>
               <QuestionsPage />

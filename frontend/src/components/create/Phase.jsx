@@ -74,7 +74,7 @@ export default function Phase({ phase, index, onDelete, onUpdate }) {
                         className="phase__questions-btn"
                         onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/recruit/create/phases/${phase.id}/questions`);
+                            navigate(`./${phase.id}/questions`);
                         }}
                         title="Build Questions"
                     >

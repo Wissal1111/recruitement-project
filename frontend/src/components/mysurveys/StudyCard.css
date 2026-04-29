@@ -1,0 +1,180 @@
+.sc {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr 0.8fr 1.2fr 0.7fr;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1.5px solid #F7F7FC;
+    transition: background 0.12s;
+    cursor: pointer;
+}
+
+.sc:last-child { border-bottom: none; }
+.sc:hover { background: #FAFAFD; }
+
+.sc__title-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.sc__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sc__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--title);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+}
+
+.sc__sub {
+    font-size: 11px;
+    color: #9192B0;
+    font-weight: 500;
+}
+
+.sc__status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    padding: 4px 11px;
+    border-radius: 20px;
+}
+
+.sc__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.sc__phases-cell {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--content);
+}
+
+.sc__budget-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--title);
+    margin-bottom: 5px;
+}
+
+.sc__bar-bg {
+    height: 4px;
+    border-radius: 10px;
+    background: #EEF0FA;
+    overflow: hidden;
+    margin-bottom: 4px;
+    width: 100%;
+}
+
+.sc__bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: var(--linear-blue);
+    transition: width 0.3s ease;
+}
+
+.sc__budget-spent {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9192B0;
+    letter-spacing: 0.06em;
+}
+
+.sc__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.sc__action-wrap {
+    position: relative;
+}
+
+.sc__action-btn {
+    background: #F1F2F8;
+    border: none;
+    border-radius: 9px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #9192B0;
+    transition: background 0.12s, color 0.12s;
+    flex-shrink: 0;
+}
+
+.sc__action-btn:hover {
+    background: #EDEEFF;
+    color: var(--blue-text);
+}
+
+.sc__action-btn--active {
+    background: #EDEEFF;
+    color: var(--blue-text);
+}
+
+.sc__action-btn--danger:hover {
+    background: #FFF0F2;
+    color: var(--red);
+}
+
+.sc__status-dropdown {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(60, 60, 120, 0.14);
+    padding: 6px;
+    min-width: 150px;
+    z-index: 20;
+}
+
+.sc__status-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.sc__status-option:hover {
+    background: #F1F2F8;
+}
+
+@media (max-width: 680px) {
+    .sc {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .sc__phases-cell { display: none; }
+    .sc__budget-cell { display: none; }
+}

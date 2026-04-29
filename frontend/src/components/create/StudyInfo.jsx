@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createStudy } from "../../api/StudyApi";
 import "./studyinfo.css";
 
 function SurveyIcon() {
@@ -11,9 +12,11 @@ function SurveyIcon() {
     );
 }
 
-export default function StudyInfo({ onDiscard }) {  // ADD PROPS HERE
+export default function StudyInfo({ onDiscard }) {
     const navigate = useNavigate();
+
     const [phase, setPhase] = useState("single");
+
     const [form, setForm] = useState({
         title: "",
         description: "",
@@ -23,16 +26,42 @@ export default function StudyInfo({ onDiscard }) {  // ADD PROPS HERE
     });
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        setForm({
+            ...form,
+            [e.target.name]: e.target.value,
+        });
     };
-    function setNextStep() {
-    if (phase === "multi") {        
-        navigate("./phases");
-    } else {
-        navigate("./questions");
 
-    }
-}
+    const handleNext = async () => {
+        try {
+            const studyData = {
+                title: form.title,
+                description: form.description,
+                totalBudget: Number(form.budget),
+                studyCategory: form.category,
+                endDate: form.deadline,
+                isMultiPhase: phase === "multi",
+            };
+
+            const response = await createStudy(studyData);
+
+            console.log("Study created:", response);
+
+            const studyId = response.studyId;
+
+            if (phase === "multi") {
+                navigate(`./${studyId}/phases/`);
+            } else {
+                navigate(`./${studyId}/questions`);
+            }
+
+        } catch (error) {
+            console.error(
+                "Failed to create study:",
+                error.response?.data || error.message
+            );
+        }
+    };
 
     return (
         <div className="study-card">
@@ -71,6 +100,7 @@ export default function StudyInfo({ onDiscard }) {  // ADD PROPS HERE
             <div className="study-card__row">
                 <div>
                     <label className="study-card__label">Study Category</label>
+
                     <select
                         className="study-card__select"
                         name="category"
@@ -85,10 +115,13 @@ export default function StudyInfo({ onDiscard }) {  // ADD PROPS HERE
                         <option value="OTHER">Other</option>
                     </select>
                 </div>
+
                 <div>
                     <label className="study-card__label">Total Budget</label>
+
                     <div className="study-card__budget-wrap">
                         <span className="study-card__budget-sym">$</span>
+
                         <input
                             className="study-card__input"
                             name="budget"
@@ -103,6 +136,7 @@ export default function StudyInfo({ onDiscard }) {  // ADD PROPS HERE
             {/* Deadline */}
             <div className="study-card__field">
                 <label className="study-card__label">Deadline</label>
+
                 <input
                     type="date"
                     className="study-card__input"
@@ -113,52 +147,88 @@ export default function StudyInfo({ onDiscard }) {  // ADD PROPS HERE
             </div>
 
             {/* Research Methodology */}
-            <label className="study-card__label">Research Methodology</label>
+            <label className="study-card__label">
+                Research Methodology
+            </label>
+
             <div className="study-card__phases">
+
                 <div
-                    className={`study-card__phase ${phase === "single" ? "study-card__phase--selected" : ""}`}
-                    onClick={() => {
-                        setPhase("single");
-                    }}
+                    className={`study-card__phase ${
+                        phase === "single"
+                            ? "study-card__phase--selected"
+                            : ""
+                    }`}
+                    onClick={() => setPhase("single")}
                 >
                     <div className="study-card__phase-radio">
                         <div className="study-card__phase-dot" />
                     </div>
+
                     <div>
-                        <p className="study-card__phase-name">Single Phase</p>
-                        <p className="study-card__phase-desc">Standard one-time questionnaire for immediate results.</p>
+                        <p className="study-card__phase-name">
+                            Single Phase
+                        </p>
+
+                        <p className="study-card__phase-desc">
+                            Standard one-time questionnaire for immediate results.
+                        </p>
                     </div>
                 </div>
 
                 <div
-                    className={`study-card__phase ${phase === "multi" ? "study-card__phase--selected" : ""}`}
-                    onClick={() => {
-                        setPhase("multi");
-                       
-                    }}
+                    className={`study-card__phase ${
+                        phase === "multi"
+                            ? "study-card__phase--selected"
+                            : ""
+                    }`}
+                    onClick={() => setPhase("multi")}
                 >
                     <div className="study-card__phase-radio">
                         <div className="study-card__phase-dot" />
                     </div>
+
                     <div>
-                        <p className="study-card__phase-name">Multi-Phase</p>
-                        <p className="study-card__phase-desc">Sequential waves for longitudinal behavioral tracking.</p>
+                        <p className="study-card__phase-name">
+                            Multi-Phase
+                        </p>
+
+                        <p className="study-card__phase-desc">
+                            Sequential waves for longitudinal behavioral tracking.
+                        </p>
                     </div>
                 </div>
             </div>
 
             {/* Footer */}
             <div className="study-card__footer">
+
                 <span className="study-card__autosave">
                     All changes are saved automatically in real-time.
                 </span>
+
                 <div className="study-card__footer-btns">
-                    <button className="study-card__btn-next" onClick={()=>setNextStep()}>  {/* ADD onClick */}
+
+                    <button
+                        className="study-card__btn-next"
+                        onClick={handleNext}
+                    >
                         Next: Build Questions
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+
+                        <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
                             <path d="M5 12h14M13 6l6 6-6 6" />
                         </svg>
                     </button>
+
                 </div>
             </div>
 
