@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Monitor, Users, FlaskConical, MessageSquare, HelpCircle, Pencil, Trash2, RefreshCw } from "lucide-react";
 import "./StudyCard.css";
 
@@ -22,6 +23,8 @@ const STATUSES = ["DRAFT", "PUBLISHED", "ACTIVE", "COMPLETED", "ARCHIVED"];
 
 export default function StudyCard({ study, onEdit, onDelete, onStatusChange }) {
     const [statusOpen, setStatusOpen] = useState(false);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+    const btnRef = useRef(null);
 
     const statusStyle  = STATUS_COLORS[study.studyStatus]    || STATUS_COLORS.DRAFT;
     const categoryConf = CATEGORY_ICONS[study.studyCategory] || CATEGORY_ICONS.OTHER;
@@ -35,6 +38,30 @@ export default function StudyCard({ study, onEdit, onDelete, onStatusChange }) {
     const formatMoney = (n) => `$${parseFloat(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 
     const nextStatuses = STATUSES.filter((s) => s !== study.studyStatus);
+
+    const handleStatusBtnClick = (e) => {
+        e.stopPropagation();
+        if (!statusOpen && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect();
+            setDropdownPos({
+                top:  rect.bottom + window.scrollY + 6,
+                left: rect.right  + window.scrollX,   // right-align: subtract dropdown width in CSS via transform
+            });
+        }
+        setStatusOpen((v) => !v);
+    };
+
+    // Close on outside click
+    useEffect(() => {
+        if (!statusOpen) return;
+        const handler = (e) => {
+            if (btnRef.current && !btnRef.current.contains(e.target)) {
+                setStatusOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [statusOpen]);
 
     return (
         <div className="sc" onClick={onEdit}>
@@ -74,23 +101,31 @@ export default function StudyCard({ study, onEdit, onDelete, onStatusChange }) {
 
             {/* Actions cell */}
             <div className="sc__actions" onClick={(e) => e.stopPropagation()}>
-
-                {/* Change status */}
                 <div className="sc__action-wrap">
                     <button
+                        ref={btnRef}
                         className={`sc__action-btn ${statusOpen ? "sc__action-btn--active" : ""}`}
                         title="Change Status"
-                        onClick={(e) => { e.stopPropagation(); setStatusOpen((v) => !v); }}
+                        onClick={handleStatusBtnClick}
                     >
                         <RefreshCw size={13} strokeWidth={2} />
                     </button>
-                    {statusOpen && (
-                        <div className="sc__status-dropdown">
+
+                    {statusOpen && createPortal(
+                        <div
+                            className="sc__status-dropdown"
+                            style={{
+                                position: "absolute",
+                                top:      dropdownPos.top,
+                                left:     dropdownPos.left,
+                                transform: "translateX(-100%)",
+                            }}
+                        >
                             {nextStatuses.map((s) => (
                                 <div
                                     key={s}
                                     className="sc__status-option"
-                                    onClick={(e) => {
+                                    onMouseDown={(e) => {   // onMouseDown fires before the outside-click handler
                                         e.stopPropagation();
                                         onStatusChange(study.studyId, s);
                                         setStatusOpen(false);
@@ -100,7 +135,8 @@ export default function StudyCard({ study, onEdit, onDelete, onStatusChange }) {
                                     <span style={{ color: STATUS_COLORS[s]?.color, fontWeight: 700 }}>{s}</span>
                                 </div>
                             ))}
-                        </div>
+                        </div>,
+                        document.body
                     )}
                 </div>
 

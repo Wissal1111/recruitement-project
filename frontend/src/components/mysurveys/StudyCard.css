@@ -143,15 +143,12 @@
 .sc__status-dropdown {
     display: flex;
     flex-direction: column;
-    position: absolute;
-    right: 0;
-    top: calc(100% + 6px);
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(60, 60, 120, 0.14);
     padding: 6px;
     min-width: 150px;
-    z-index: 20;
+    z-index: 9999;
 }
 
 .sc__status-option {

@@ -4,39 +4,81 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BecomecreatorIl from "../components/mysurveys/BecomeCreatorIl";
 import { getMyRoles } from "../api/Role";
+import { getMyStudies,deleteStudy } from "../api/StudyApi";
 import Surveys from "../components/mysurveys/Surveys";
+import SurveysSkeleton from "../components/mysurveys/SurveysSkeleton";
 
-const MOCK_STUDIES = [
-    { studyId: "1", title: "Q4 Consumer Tech Sentiment Analysis", studyCategory: "USABILITY",  studyStatus: "ACTIVE",    totalBudget: 500,  spent: 300,  endDate: "2025-05-15", phases: [{}, {}, {}] },
-    { studyId: "2", title: "Remote Work Behavioral Study 2024",   studyCategory: "INTERVIEW",  studyStatus: "COMPLETED", totalBudget: 1200, spent: 1200, endDate: "2025-01-30", phases: [{}, {}, {}, {}, {}] },
-    { studyId: "3", title: "UX Friction Points — Checkout Flow",  studyCategory: "SURVEY",     studyStatus: "PUBLISHED", totalBudget: 850,  spent: 127,  endDate: "2025-06-01", phases: [{}, {}] },
-    { studyId: "4", title: "Employee Engagement Experiment 2025", studyCategory: "EXPERIMENT", studyStatus: "ARCHIVED",  totalBudget: 500,  spent: 500,  endDate: "2025-12-01", phases: [{}, {}, {}, {}] },
-];
+const normalizeStudy = (s) => ({
+    ...s,
+    totalBudget: parseFloat(s.totalBudget?.$numberDecimal ?? s.totalBudget ?? 0),
+    spent: parseFloat(s.spent?.$numberDecimal ?? s.spent ?? 0),
+});
 
 export default function MySurveys() {
     const navigate = useNavigate();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isCreator,   setIsCreator]   = useState(false);
-    const [studies,     setStudies]     = useState(MOCK_STUDIES);
+    const [sidebarOpen,  setSidebarOpen]  = useState(false);
+    const [isCreator,    setIsCreator]    = useState(false);
+    const [studies,      setStudies]      = useState([]);
+    const [loading,      setLoading]      = useState(true);
+    const [studiesCount, setStudiesCount] = useState(
+        () => parseInt(localStorage.getItem("studiesCount") || "5")
+    );
 
     useEffect(() => {
-        getMyRoles()
-            .then((data) => {
-                const roles = data?.roles || [];
+        Promise.all([getMyRoles(), getMyStudies()])
+            .then(([rolesData, studiesData]) => {
+                const roles = rolesData?.roles || [];
                 const hasCreator = roles.some((r) =>
                     typeof r === "string" ? r === "CREATOR" : r?.roleName === "CREATOR"
                 );
                 setIsCreator(hasCreator);
-                console.log(hasCreator);
+
+                const normalized = (studiesData?.studies || []).map(normalizeStudy);
+                setStudies(normalized);
+
+                const count = studiesData?.count ?? normalized.length;
+                setStudiesCount(count);
+                localStorage.setItem("studiesCount", count);
             })
-            .catch((err) => console.log("roles error:", err));
+            .catch((err) => console.error("MySurveys init error:", err))
+            .finally(() => setLoading(false));
     }, []);
 
     const handleStatusChange = (studyId, newStatus) =>
         setStudies((prev) => prev.map((s) => s.studyId === studyId ? { ...s, studyStatus: newStatus } : s));
 
-    const handleDelete = (studyId) =>
+    const handleDelete = async (studyId) => {
+    try {
+        await deleteStudy(studyId);
         setStudies((prev) => prev.filter((s) => s.studyId !== studyId));
+        setStudiesCount((prev) => {
+            const next = prev - 1;
+            localStorage.setItem("studiesCount", next);
+            return next;
+        });
+    } catch (err) {
+        console.error("Failed to delete study:", err);
+    }
+};
+
+    if (loading) return (
+        <div className="dashboard">
+            <TopNavBar
+                page="recruit"
+                sidebarOpen={sidebarOpen}
+                setSidebarOpen={setSidebarOpen}
+            />
+            <SideBar
+                page="mysurveys"
+                part="recruit"
+                isOpen={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+            />
+            <div className="wrapper">
+                <SurveysSkeleton count={studiesCount} />
+            </div>
+        </div>
+    );
 
     return (
         <div className="dashboard">

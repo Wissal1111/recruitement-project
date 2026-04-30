@@ -52,9 +52,6 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                         <li className={page === "createsurvey" ? 'selected-page' : ''} onClick={() => go("/recruit/create")}>
                             <SquarePlus size={16} /> Create Survey
                         </li>
-                        <li className={page === "drafts" ? 'selected-page' : ''} onClick={() => go("/recruit/drafts")}>
-                            <SquarePen size={16} /> Drafts
-                        </li>
                     </ul>
                     <p>CANDIDATES</p>
                     <ul>

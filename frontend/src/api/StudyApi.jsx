@@ -26,6 +26,17 @@ export const getStudies = async () => {
   }
 };
 
+/* /api/studies/my-studies */
+export const getMyStudies = async () => {
+  try {
+    const response = await api.get("/studies/my-studies");
+    return response.data;
+  } catch (error) {
+    console.error("getMyStudies error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 /**
  * Get Study By ID
  */

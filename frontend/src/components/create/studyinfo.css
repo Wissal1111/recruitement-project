@@ -1,6 +1,4 @@
-/* StudyIdentityCard.css */
-
-.study-card {
+.si {
   background: #fff;
   border-radius: 48px;
   padding: 36px;
@@ -10,21 +8,20 @@
   box-shadow: 0 2px 12px rgba(60, 60, 120, 0.07);
 }
 
-/* Header */
-.study-card__header {
+.si__header {
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 28px;
 }
 
-.study-card__title {
+.si__title {
   font-size: 22px;
   font-weight: 700;
   color: var(--title);
 }
 
-.study-card__label {
+.si__label {
   display: block;
   font-size: 11px;
   font-weight: 700;
@@ -33,15 +30,12 @@
   margin-bottom: 10px;
 }
 
-/* Field group */
-.study-card__field {
+.si__field {
   margin-bottom: 22px;
   overflow: visible;
-
 }
 
-/* Two-column row */
-.study-card__row {
+.si__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -49,10 +43,9 @@
   overflow: visible;
 }
 
-/* Inputs & textarea & select */
-.study-card__input,
-.study-card__textarea,
-.study-card__select {
+.si__input,
+.si__textarea,
+.si__select {
   width: 100%;
   background: #eef0fa;
   border: none;
@@ -64,26 +57,28 @@
   transition: background 0.16s, box-shadow 0.16s;
 }
 
-.study-card__input::placeholder,
-.study-card__textarea::placeholder {
+.si__input::placeholder,
+.si__textarea::placeholder {
   color: #a0a8c0;
 }
-.study-card div{
+
+.si div {
   overflow: visible;
 }
-.study-card__input:focus,
-.study-card__textarea:focus,
-.study-card__select:focus {
+
+.si__input:focus,
+.si__textarea:focus,
+.si__select:focus {
   background: #e8eafc;
   box-shadow: 0 0 0 2px rgba(74, 75, 215, 0.18);
 }
 
-.study-card__textarea {
+.si__textarea {
   height: 86px;
   resize: none;
 }
 
-.study-card__select {
+.si__select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='11' height='7' viewBox='0 0 11 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5.5 5.5L10 1' stroke='%23A0A8C0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -91,16 +86,15 @@
   cursor: pointer;
 }
 
-/* Budget prefix wrapper */
-.study-card__budget-wrap {
+.si__budget-wrap {
   position: relative;
 }
 
-.study-card__budget-wrap .study-card__input {
+.si__budget-wrap .si__input {
   padding-left: 28px;
 }
 
-.study-card__budget-sym {
+.si__budget-sym {
   position: absolute;
   left: 16px;
   top: 50%;
@@ -110,13 +104,12 @@
   pointer-events: none;
 }
 
-/* Phase pills */
-.study-card__phases {
+.si__phases {
   display: flex;
   gap: 14px;
 }
 
-.study-card__phase {
+.si__phase {
   flex: 1;
   display: flex;
   align-items: flex-start;
@@ -129,16 +122,16 @@
   transition: border-color 0.16s, background 0.16s;
 }
 
-.study-card__phase:hover {
+.si__phase:hover {
   background: #eaebf8;
 }
 
-.study-card__phase--selected {
+.si__phase--selected {
   border-color: var(--blue-text);
   background: #fff;
 }
 
-.study-card__phase-radio {
+.si__phase-radio {
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -151,12 +144,12 @@
   transition: border-color 0.16s, background 0.16s;
 }
 
-.study-card__phase--selected .study-card__phase-radio {
+.si__phase--selected .si__phase-radio {
   border-color: var(--blue-text);
   background: var(--blue-text);
 }
 
-.study-card__phase-dot {
+.si__phase-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -164,44 +157,42 @@
   display: none;
 }
 
-.study-card__phase--selected .study-card__phase-dot {
+.si__phase--selected .si__phase-dot {
   display: block;
 }
 
-.study-card__phase-name {
+.si__phase-name {
   font-size: 14px;
   font-weight: 700;
   color: var(--title);
   margin-bottom: 4px;
 }
 
-.study-card__phase-desc {
+.si__phase-desc {
   font-size: 12.5px;
   color: var(--content);
   line-height: 1.5;
 }
 
-/* Footer */
-.study-card__footer {
+.si__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 28px;
 }
 
-.study-card__autosave {
+.si__autosave {
   font-size: 12px;
   color: #a0a8c0;
   font-style: italic;
 }
 
-.study-card__footer-btns {
+.si__footer-btns {
   display: flex;
   gap: 10px;
 }
 
-
-.study-card__btn-next {
+.si__btn-next {
   background: var(--linear-blue);
   border: none;
   border-radius: var(--medium-radius);
@@ -218,26 +209,34 @@
   transition: opacity 0.14s, transform 0.1s;
 }
 
-.study-card__btn-next:hover {
+.si__btn-next:hover {
   opacity: 0.92;
   transform: translateY(-1px);
 }
 
-.study-card__btn-next:active {
+.si__btn-next:active {
   transform: translateY(0);
 }
 
-/* Responsive */
+.si__input--error {
+  border: 1.5px solid rgba(179, 0, 26, 0.6) !important;
+  background: rgba(179, 0, 26, 0.04);
+}
+
+.si__error {
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--red);
+}
+
 @media (max-width: 520px) {
-  .study-card__row {
+  .si__row {
     grid-template-columns: 1fr;
   }
-
-  .study-card__phases {
+  .si__phases {
     flex-direction: column;
   }
-
-  .study-card__footer {
+  .si__footer {
     flex-direction: column;
     align-items: flex-start;
     gap: 14px;

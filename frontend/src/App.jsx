@@ -91,7 +91,7 @@ function App() {
           }
         />
         <Route
-          path="recruit/create/:id/questions"
+          path="recruit/create/study/:id/questions"
           element={
             <ProtectedRoute>
               <QuestionsPage />
@@ -99,7 +99,7 @@ function App() {
           }
         />
         <Route
-          path="recruit/create/:id/phases"
+          path="recruit/create/study/:id/phases"
           element={
             <ProtectedRoute>
               <PhasesPage />
@@ -107,7 +107,7 @@ function App() {
           }
         />
         <Route
-          path="recruit/create/:id/phases/:id/questions"
+          path="recruit/create/study/:id/phases/:id/questions"
           element={
             <ProtectedRoute>
               <QuestionsPage />
