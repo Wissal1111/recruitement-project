@@ -13,7 +13,11 @@ class CreateSurveyScreen extends StatefulWidget {
 
 class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
   final _titleCtrl = TextEditingController();
+  final _budgetCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final _otherProfCtrl = TextEditingController();
+  final _otherEduCtrl = TextEditingController();
+
   bool _isMultiPhase = false;
   RangeValues _ageRange = const RangeValues(18, 45);
   String? _profession = 'Technology & Design';
@@ -75,9 +79,8 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceLow,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                        color: AppTheme.surfaceLow,
+                        borderRadius: BorderRadius.circular(10)),
                     child: const Icon(Icons.close,
                         size: 18, color: AppTheme.textPrimary),
                   ),
@@ -101,21 +104,33 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     _Label('SURVEY NAME'),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: _titleCtrl,
-                      decoration: const InputDecoration(
-                          hintText: 'e.g. Q4 Consumer Trend Analysis'),
-                    ),
+                        controller: _titleCtrl,
+                        decoration: const InputDecoration(
+                            hintText: 'e.g. Q4 Consumer Trend Analysis')),
                     const SizedBox(height: 16),
 
                     // Description
                     _Label('DESCRIPTION'),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: _descCtrl,
-                      maxLines: 3,
+                        controller: _descCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                            hintText:
+                                'Define the primary objective of this research...')),
+                    const SizedBox(height: 24),
+
+                    _Label('TOTAL BUDGET (\$)'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _budgetCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
-                          hintText:
-                              'Define the primary objective of this research...'),
+                        hintText: 'e.g. 1500',
+                        prefixIcon: Icon(Icons.attach_money,
+                            color: AppTheme.textSecondary),
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -145,13 +160,12 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                   const SizedBox(width: 6),
                                   Text('SINGLE PHASE',
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.8,
-                                        color: !_isMultiPhase
-                                            ? Colors.white
-                                            : AppTheme.textSecondary,
-                                      )),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.8,
+                                          color: !_isMultiPhase
+                                              ? Colors.white
+                                              : AppTheme.textSecondary)),
                                 ]),
                           ),
                         ),
@@ -181,13 +195,12 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                   const SizedBox(width: 6),
                                   Text('MULTI-PHASE',
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.8,
-                                        color: _isMultiPhase
-                                            ? Colors.white
-                                            : AppTheme.textSecondary,
-                                      )),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.8,
+                                          color: _isMultiPhase
+                                              ? Colors.white
+                                              : AppTheme.textSecondary)),
                                 ]),
                           ),
                         ),
@@ -199,9 +212,8 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20)),
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -258,6 +270,13 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                               items: _professions,
                               onChanged: (v) => setState(() => _profession = v),
                             ),
+                            if (_profession == 'Other') ...[
+                              const SizedBox(height: 8),
+                              TextField(
+                                  controller: _otherProfCtrl,
+                                  decoration: const InputDecoration(
+                                      hintText: 'Type custom profession...')),
+                            ],
                             const SizedBox(height: 16),
 
                             // Education
@@ -267,6 +286,13 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                               items: _educationLevels,
                               onChanged: (v) => setState(() => _education = v),
                             ),
+                            if (_education == 'Other') ...[
+                              const SizedBox(height: 8),
+                              TextField(
+                                  controller: _otherEduCtrl,
+                                  decoration: const InputDecoration(
+                                      hintText: 'Type custom education...')),
+                            ],
                             const SizedBox(height: 16),
 
                             // Key interests
@@ -315,8 +341,8 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                               label: 'COUNTRY',
                               value: _country,
                               items: _countries,
-                              onChanged: (v) => setState(() => _country = v),
                               trailingIcon: Icons.public_outlined,
+                              onChanged: (v) => setState(() => _country = v),
                             ),
                           ]),
                     ),
@@ -327,10 +353,9 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF2D2D6B), Color(0xFF4A4BD7)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                            colors: [Color(0xFF2D2D6B), Color(0xFF4A4BD7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
@@ -363,7 +388,21 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     GradientButton(
                       label: 'Continue to Questions',
                       onPressed: _titleCtrl.text.isNotEmpty
-                          ? () => context.push('/surveys/build')
+                          ? () {
+                              context.push('/surveys/build', extra: {
+                                'title': _titleCtrl.text,
+                                'description': _descCtrl.text,
+                                'totalBudget':
+                                    double.tryParse(_budgetCtrl.text.trim()) ??
+                                        0.0,
+                                'profession': _profession == 'Other'
+                                    ? _otherProfCtrl.text
+                                    : _profession,
+                                'education': _education == 'Other'
+                                    ? _otherEduCtrl.text
+                                    : _education,
+                              });
+                            }
                           : null,
                       trailingIcon: Icons.arrow_forward,
                     ),
@@ -398,13 +437,12 @@ class _DropdownField extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final IconData? trailingIcon;
 
-  const _DropdownField({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    this.trailingIcon,
-  });
+  const _DropdownField(
+      {required this.label,
+      required this.value,
+      required this.items,
+      required this.onChanged,
+      this.trailingIcon});
 
   @override
   Widget build(BuildContext context) => Column(

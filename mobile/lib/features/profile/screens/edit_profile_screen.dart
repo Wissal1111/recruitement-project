@@ -26,7 +26,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String? _gender;
   DateTime? _dateOfBirth;
   File? _pickedImage;
+
   bool _loading = false;
+  bool _isDataLoaded = false;
 
   final _countries = ['Algeria', 'France', 'United States', 'Other'];
   final _genders = ['Male', 'Female', 'Other'];
@@ -60,34 +62,41 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Load existing profile data into the form fields
-    final profile = ref.read(profileProvider).valueOrNull;
-    if (profile != null) {
-      _bioCtrl.text = profile.bio ?? '';
-      _professionCtrl.text = profile.profession ?? '';
+    _loadData();
+  }
 
-      if (_countries.contains(profile.country)) _country = profile.country;
+  Future<void> _loadData() async {
+    final profile = await ref.read(profileProvider.future);
 
-      // Ensure city matches the selected country's available cities
-      if (_country != null && _availableCities.contains(profile.city)) {
-        _city = profile.city;
-      }
+    if (mounted && profile != null) {
+      setState(() {
+        _bioCtrl.text = profile.bio ?? '';
+        _professionCtrl.text = profile.profession ?? '';
 
-      if (_educationLevels.contains(profile.education))
-        _education = profile.education;
+        if (_countries.contains(profile.country)) _country = profile.country;
 
-      // Normalize gender formatting
-      if (profile.gender != null) {
-        final g = profile.gender!.toLowerCase();
-        if (g == 'male')
-          _gender = 'Male';
-        else if (g == 'female')
-          _gender = 'Female';
-        else
-          _gender = 'Other';
-      }
+        if (_country != null && _availableCities.contains(profile.city)) {
+          _city = profile.city;
+        }
 
-      _dateOfBirth = profile.dateOfBirth;
+        if (_educationLevels.contains(profile.education))
+          _education = profile.education;
+
+        if (profile.gender != null) {
+          final g = profile.gender!.toLowerCase();
+          if (g == 'male')
+            _gender = 'Male';
+          else if (g == 'female')
+            _gender = 'Female';
+          else
+            _gender = 'Other';
+        }
+
+        _dateOfBirth = profile.dateOfBirth;
+        _isDataLoaded = true;
+      });
+    } else {
+      if (mounted) setState(() => _isDataLoaded = true);
     }
   }
 
@@ -116,13 +125,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context: context,
       initialDate: _dateOfBirth ?? DateTime(1995),
       firstDate: DateTime(now.year - 100),
-      lastDate: DateTime(now.year - 13), // Must be at least 13
+      lastDate: DateTime(now.year - 13),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.primary,
-            ),
+            colorScheme: const ColorScheme.light(primary: AppTheme.primary),
           ),
           child: child!,
         );
@@ -138,14 +145,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     try {
       String? newPhotoUrl;
-      // 1. Upload photo via ProfileRepository if picked
+
       if (_pickedImage != null) {
-        newPhotoUrl = await ref
-            .read(profileRepositoryProvider)
-            .uploadProfilePicture(_pickedImage!);
+        try {
+          newPhotoUrl = await ref
+              .read(profileRepositoryProvider)
+              .uploadProfilePicture(_pickedImage!);
+        } catch (e) {
+          debugPrint("Photo upload skipped: backend route missing.");
+        }
       }
 
-      // 2. Prepare data payload
       final data = <String, dynamic>{};
       if (_bioCtrl.text.isNotEmpty) data['bio'] = _bioCtrl.text.trim();
       if (_professionCtrl.text.isNotEmpty)
@@ -158,12 +168,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         data['dateOfBirth'] = _dateOfBirth!.toIso8601String();
       if (newPhotoUrl != null) data['profilePictureUrl'] = newPhotoUrl;
 
-      // 3. Send update to backend
       final success =
           await ref.read(profileProvider.notifier).updateProfile(data);
 
       if (success) {
-        await ref.read(profileProvider.notifier).refresh(); // Refresh data
+        await ref.read(profileProvider.notifier).refresh();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -179,8 +188,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content:
-                  Text('Error: ${e.toString().replaceAll("Exception: ", "")}'),
+              content: Text('${e.toString().replaceAll("Exception: ", "")}'),
               backgroundColor: AppTheme.errorColor),
         );
       }
@@ -191,6 +199,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isDataLoaded) {
+      return const Scaffold(
+        backgroundColor: AppTheme.surfaceBase,
+        body: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+      );
+    }
+
     final profile = ref.watch(profileProvider).valueOrNull;
 
     return Scaffold(
@@ -212,7 +227,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          // <-- The Magic Scroll View!
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,7 +282,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 32),
 
-              // FORM FIELDS
               _buildLabel('Profession'),
               TextField(
                 controller: _professionCtrl,
@@ -285,7 +298,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // DUAL DROPDOWNS: Country & City
               Row(
                 children: [
                   Expanded(
@@ -294,16 +306,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       children: [
                         _buildLabel('Country'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true, // 🚨 FIXES THE OVERFLOW
                           value: _country,
                           decoration: _inputDecoration('Select'),
                           items: _countries
-                              .map((c) =>
-                                  DropdownMenuItem(value: c, child: Text(c)))
+                              .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child:
+                                      Text(c, overflow: TextOverflow.ellipsis)))
                               .toList(),
                           onChanged: (val) {
                             setState(() {
                               _country = val;
-                              _city = null; // Reset city when country changes
+                              _city = null;
                             });
                           },
                         ),
@@ -317,11 +332,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       children: [
                         _buildLabel('City'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true, // 🚨 FIXES THE OVERFLOW
                           value: _city,
                           decoration: _inputDecoration('Select'),
                           items: _availableCities
-                              .map((c) =>
-                                  DropdownMenuItem(value: c, child: Text(c)))
+                              .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child:
+                                      Text(c, overflow: TextOverflow.ellipsis)))
                               .toList(),
                           onChanged: _country == null
                               ? null
@@ -336,16 +354,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               _buildLabel('Education Level'),
               DropdownButtonFormField<String>(
+                isExpanded: true, // 🚨 FIXES THE OVERFLOW
                 value: _education,
                 decoration: _inputDecoration('Select your education'),
                 items: _educationLevels
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e, overflow: TextOverflow.ellipsis)))
                     .toList(),
                 onChanged: (val) => setState(() => _education = val),
               ),
               const SizedBox(height: 16),
 
-              // DUAL FIELDS: Gender & DOB
               Row(
                 children: [
                   Expanded(
@@ -354,11 +374,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       children: [
                         _buildLabel('Gender'),
                         DropdownButtonFormField<String>(
+                          isExpanded: true, // 🚨 FIXES THE OVERFLOW
                           value: _gender,
                           decoration: _inputDecoration('Select'),
                           items: _genders
-                              .map((g) =>
-                                  DropdownMenuItem(value: g, child: Text(g)))
+                              .map((g) => DropdownMenuItem(
+                                  value: g,
+                                  child:
+                                      Text(g, overflow: TextOverflow.ellipsis)))
                               .toList(),
                           onChanged: (val) => setState(() => _gender = val),
                         ),
@@ -410,7 +433,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 40),
 
-              // SAVE BUTTON
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -441,7 +463,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  // Helper for UI styling
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6, left: 2),

@@ -10,7 +10,7 @@ import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/reset_password_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/interests/screens/interests_screen.dart';
-import '../features/profile/notifications/screens/alerts_screen.dart';
+import '../features/notifications/screens/alerts_screen.dart';
 import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 
