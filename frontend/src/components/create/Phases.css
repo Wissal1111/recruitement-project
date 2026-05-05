@@ -6,6 +6,7 @@
     max-width: 740px;
     gap: 20px;
     margin-bottom: 80px;
+    overflow: visible;
 }
 
 /* Banner */

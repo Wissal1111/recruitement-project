@@ -107,7 +107,23 @@ function App() {
           }
         />
         <Route
-          path="recruit/create/study/:id/phases/:id/questions"
+          path="recruit/study/:id/phases"
+          element={
+            <ProtectedRoute>
+              <PhasesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="recruit/create/study/:id/phases/:phaseId/questions"
+          element={
+            <ProtectedRoute>
+              <QuestionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="recruit/study/:id/phases/:phaseId/questions"
           element={
             <ProtectedRoute>
               <QuestionsPage />

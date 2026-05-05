@@ -448,3 +448,29 @@ exports.removeQuestion = async (req, res) => {
     res.status(500).json({ message: "Error removing question", error: error.message });
   }
 };
+
+// Update a specific question in a phase
+exports.updateQuestion = async (req, res) => {
+  try {
+    const { studyId, phaseId, questionId } = req.params;
+    const updateData = req.body;
+    const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
+
+    const study = await Study.findOne({ studyId });
+    if (!study) return res.status(404).json({ message: "Study not found" });
+    if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
+
+    const phase = study.phases.find(p => p.phaseId === phaseId);
+    if (!phase) return res.status(404).json({ message: "Phase not found" });
+
+    const question = phase.questions.find(q => q.questionId === questionId);
+    if (!question) return res.status(404).json({ message: "Question not found" });
+
+    Object.assign(question, updateData);
+    await study.save();
+
+    res.status(200).json({ message: "Question updated", study });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating question", error: error.message });
+  }
+};

@@ -50,7 +50,7 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                             <Files size={16} /> My Surveys
                         </li>
                         <li className={page === "createsurvey" ? 'selected-page' : ''} onClick={() => go("/recruit/create")}>
-                            <SquarePlus size={16} /> Create Survey
+                            <SquarePlus size={16} /> Build Survey
                         </li>
                     </ul>
                     <p>CANDIDATES</p>

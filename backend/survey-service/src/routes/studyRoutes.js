@@ -39,4 +39,7 @@ router.post('/:studyId/phases/:phaseId/questions', authMiddleware, studyControll
 // DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - Remove a question
 router.delete('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.removeQuestion);
 
+// DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - update a question
+router.put('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.updateQuestion);
+
 module.exports = router;

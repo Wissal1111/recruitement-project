@@ -343,7 +343,198 @@
   color: var(--red);
   background: #fff0f2;
 }
+.qc__save-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--linear-blue);
+    border: none;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    box-shadow: 0 3px 10px rgba(74, 75, 215, 0.25);
+    transition: opacity 0.14s, transform 0.1s;
+}
 
+.qc__save-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.qc__save-btn:active {
+    transform: translateY(0);
+}
+/* Toasts — top right */
+.qc__toasts {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+}
+
+.qc__toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  box-shadow: 0 6px 24px rgba(60, 60, 120, 0.14);
+  animation: qc__toast-in 0.25s ease;
+  min-width: 260px;
+  max-width: 360px;
+}
+
+@keyframes qc__toast-in {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.qc__toast--success {
+  background: #E8F5E9;
+  color: #22C55E;
+  border: 1.5px solid #22C55E33;
+}
+
+.qc__toast--error {
+  background: #FFF0F2;
+  color: var(--red);
+  border: 1.5px solid rgba(179, 0, 26, 0.2);
+}
+
+.qc__toast--warn {
+  background: #FFF8E1;
+  color: #F59E0B;
+  border: 1.5px solid #F59E0B33;
+}
+
+.qc__toast-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.qc__toast--success .qc__toast-icon { background: #22C55E; color: #fff; }
+.qc__toast--error   .qc__toast-icon { background: var(--red); color: #fff; }
+.qc__toast--warn    .qc__toast-icon { background: #F59E0B; color: #fff; }
+
+/* Confirm Modal — simple */
+.qc__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 30, 60, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+  animation: qc__fade-in 0.18s ease;
+}
+
+@keyframes qc__fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.qc__modal {
+  background: #fff;
+  border-radius: 24px;
+  padding: 28px 24px;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(60, 60, 120, 0.15);
+  animation: qc__modal-in 0.2s ease;
+}
+
+@keyframes qc__modal-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.qc__modal-msg {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--title);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.qc__modal-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.qc__modal-cancel {
+  flex: 1;
+  background: #F1F2F8;
+  border: none;
+  border-radius: 14px;
+  padding: 10px 0;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--content);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+
+.qc__modal-cancel:hover { background: #E5E6F0; }
+
+.qc__modal-confirm {
+  flex: 1;
+  background: #FFF0F2;
+  border: none;
+  border-radius: 14px;
+  padding: 10px 0;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+
+.qc__modal-confirm:hover { background: #FFE0E5; }
+
+/* Save btn */
+.qc__save-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--linear-blue);
+  border: none;
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  box-shadow: 0 3px 10px rgba(74, 75, 215, 0.25);
+  transition: opacity 0.14s, transform 0.1s;
+}
+
+.qc__save-btn:hover  { opacity: 0.9; transform: translateY(-1px); }
+.qc__save-btn:active { transform: translateY(0); }
 /* Responsive */
 @media (max-width:890px) {
   .qc__top {

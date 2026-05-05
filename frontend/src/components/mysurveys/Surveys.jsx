@@ -90,7 +90,7 @@ export default function Surveys({ studies = [], onStatusChange, onDelete }) {
                     <StudyCard
                         key={study.studyId}
                         study={study}
-                        onEdit={() => navigate(`/recruit/study/${study.studyId}`)}
+                        onEdit={() => navigate(`/recruit/study/${study.studyId}/phases`)}
                         onDelete={() => onDelete(study.studyId)}
                         onStatusChange={onStatusChange}
                     />
