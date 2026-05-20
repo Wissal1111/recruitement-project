@@ -71,7 +71,6 @@ export default function QuestionCard({ question, orderIndex = 1, onDelete, onDup
   questionType: updatedForm.type,
   isRequired:   updatedForm.required,
   options:      updatedForm.options, 
-  ù
 });
     setOriginal(updatedForm); 
     isDirty.current = false;
@@ -91,7 +90,7 @@ export default function QuestionCard({ question, orderIndex = 1, onDelete, onDup
         : [],
     };
     saveForm(formToSave, currentOriginal);
-  }, 1000);
+  }, 800);
 }, [saveForm]);
 
   const handleChange = (field, value) => {

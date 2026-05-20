@@ -4,7 +4,7 @@ import { Monitor, TrendingUp, DollarSign, Plus, ChevronLeft, ChevronRight } from
 import StudyCard from "./StudyCard";
 import "./Surveys.css";
 
-const STATUS_TABS = ["All", "DRAFT","ACTIVE", "PUBLISHED", "COMPLETED", "ARCHIVED"];
+const STATUS_TABS = ["All", "DRAFT", "PUBLISHED", "COMPLETED"];
 const PAGE_SIZE = 8;
 
 export default function Surveys({ studies = [], onStatusChange, onDelete }) {

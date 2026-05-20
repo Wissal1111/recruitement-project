@@ -1,5 +1,6 @@
 const { Study } = require('../models');
 
+//linked
 exports.createStudy = async (req, res) => {
   try {
     // 1. Extract data from request body
@@ -109,7 +110,7 @@ exports.createStudy = async (req, res) => {
     });
   }
 };
-
+//linked
 // Get all studies by a specific creator (from token)
 exports.getStudiesByCreator = async (req, res) => {
   try {
@@ -137,7 +138,7 @@ exports.getStudiesByCreator = async (req, res) => {
     });
   }
 };
-
+//linked
 // Get a single study by its studyId
 exports.getStudyById = async (req, res) => {
   try {
@@ -161,6 +162,7 @@ exports.getStudyById = async (req, res) => {
     });
   }
 };
+
 
 // Update a study (survey) by studyId (Owner only)
 exports.updateStudy = async (req, res) => {
@@ -248,6 +250,7 @@ exports.updateStudy = async (req, res) => {
   }
 };
 
+//linked
 // Delete a study by its studyId (Owner only)
 exports.deleteStudy = async (req, res) => {
   try {
@@ -305,6 +308,7 @@ exports.updateStudyStatus = async (req, res) => {
   }
 };
 
+//linked
 // Update a specific phase within a study
 exports.updatePhase = async (req, res) => {
   try {
@@ -329,6 +333,7 @@ exports.updatePhase = async (req, res) => {
   }
 };
 
+//linked
 // Add a new phase to an existing study
 exports.addPhase = async (req, res) => {
   try {
@@ -376,6 +381,7 @@ exports.addPhase = async (req, res) => {
   }
 };
 
+//linked
 // Delete a phase from an existing study
 exports.deletePhase = async (req, res) => {
   try {
@@ -404,6 +410,7 @@ exports.deletePhase = async (req, res) => {
   }
 };
 
+//linked
 // Add a question to a specific phase
 exports.addQuestionToPhase = async (req, res) => {
   try {
@@ -426,7 +433,7 @@ exports.addQuestionToPhase = async (req, res) => {
     res.status(500).json({ message: "Error adding question", error: error.message });
   }
 };
-
+//linked 
 // Remove a question from a phase
 exports.removeQuestion = async (req, res) => {
   try {
@@ -449,6 +456,7 @@ exports.removeQuestion = async (req, res) => {
   }
 };
 
+//linked
 // Update a specific question in a phase
 exports.updateQuestion = async (req, res) => {
   try {

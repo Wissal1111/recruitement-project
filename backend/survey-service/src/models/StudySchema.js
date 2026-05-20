@@ -54,7 +54,7 @@ const StudySchema = new mongoose.Schema({
   description: { type: String },
   studyStatus: {
     type: String,
-    enum: ['DRAFT', 'PUBLISHED', 'ACTIVE', 'COMPLETED', 'ARCHIVED'],
+    enum: ['DRAFT', 'PUBLISHED', 'COMPLETED'],
     default: 'DRAFT'
   },
   studyCategory: {
