@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 
 const connectDB = require("./config/db");
 const studyRoutes = require("./routes/studyRoutes");
@@ -23,6 +24,6 @@ app.get("/", (req, res) => {
   res.send("API working with MongoDB + Mongoose");
 });
 
-app.listen(4000, () => {
-  console.log("Server running on port 4000");
+app.listen(process.env.PORT || 4000, () => {
+  console.log(`Server running on port ${process.env.PORT || 4000}`);
 });
