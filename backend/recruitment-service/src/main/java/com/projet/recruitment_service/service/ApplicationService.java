@@ -1,16 +1,20 @@
-// service/ApplicationService.java
 package com.projet.recruitment_service.service;
 
+import com.projet.recruitment_service.client.SurveyServiceClient;
 import com.projet.recruitment_service.dto.request.ApplicationRequest;
 import com.projet.recruitment_service.dto.request.ReviewRequest;
+import com.projet.recruitment_service.dto.response.PhaseInfoDto;
 import com.projet.recruitment_service.entity.RecruitmentSlot;
 import com.projet.recruitment_service.entity.StudyApplication;
 import com.projet.recruitment_service.enums.ApplicationStatus;
+import com.projet.recruitment_service.enums.ParticipationStatus;
 import com.projet.recruitment_service.exception.BusinessException;
 import com.projet.recruitment_service.repository.ParticipantBlacklistRepository;
+import com.projet.recruitment_service.repository.ParticipationRepository;
 import com.projet.recruitment_service.repository.RecruitmentSlotRepository;
 import com.projet.recruitment_service.repository.StudyApplicationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,48 +24,78 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationService {
 
     private final StudyApplicationRepository applicationRepository;
     private final ParticipantBlacklistRepository blacklistRepository;
     private final RecruitmentSlotRepository slotRepository;
+    private final ParticipationRepository participationRepository;
     private final EligibilityService eligibilityService;
+    private final SurveyServiceClient surveyServiceClient;
 
-    // RC-10: Voluntary application (pull flow)
     @Transactional
     public StudyApplication apply(UUID participantId, ApplicationRequest request, String authToken) {
         UUID studyId = request.getStudyId();
         UUID phaseId = request.getPhaseId();
 
-        // RC-17 check: Blacklist
+        // 1. Blacklist check
         if (blacklistRepository.existsByStudyIdAndParticipantId(studyId, participantId)) {
-            throw new BusinessException("You are blacklisted from this study", HttpStatus.FORBIDDEN);
+            throw new BusinessException("Vous êtes blacklisté de cette étude", HttpStatus.FORBIDDEN);
         }
 
-        // RC-16: Duplicate check
-        boolean isDuplicate = applicationRepository
-                .existsByParticipantIdAndPhaseIdAndStatusNot(
-                        participantId, phaseId, ApplicationStatus.REJECTED);
-        if (isDuplicate) {
+        // 2. Duplicate check
+        if (applicationRepository.existsByParticipantIdAndPhaseIdAndStatusNot(
+                participantId, phaseId, ApplicationStatus.REJECTED)) {
             throw new BusinessException(
-                    "You already have an active application for this phase", HttpStatus.CONFLICT);
+                    "Candidature déjà existante pour cette phase", HttpStatus.CONFLICT);
         }
 
-        // Check slot availability
+        // 3. Slot check
         RecruitmentSlot slot = slotRepository.findByPhaseId(phaseId)
-                .orElseThrow(() -> new BusinessException("Phase slots not configured", HttpStatus.BAD_REQUEST));
-
+                .orElseThrow(() -> new BusinessException(
+                        "Slots non configurés pour cette phase", HttpStatus.BAD_REQUEST));
         if (!slot.hasAvailableSlot()) {
-            throw new BusinessException("No available slots for this phase", HttpStatus.CONFLICT);
+            throw new BusinessException("Aucune place disponible", HttpStatus.CONFLICT);
         }
 
-        // RC-05: Eligibility check via User Service
+        // 4. Vérification ordre des phases via survey-service
+        try {
+            PhaseInfoDto phaseInfo = surveyServiceClient.getPhaseInfo(authToken, phaseId.toString());
+
+            if (Boolean.TRUE.equals(phaseInfo.getIsMultiPhase())
+                    && phaseInfo.getPhaseOrder() != null
+                    && phaseInfo.getPhaseOrder() > 1
+                    && phaseInfo.getPreviousPhaseId() != null) {
+
+                boolean previousCompleted = participationRepository
+                        .existsByParticipantIdAndPhaseIdAndStatus(
+                                participantId,
+                                phaseInfo.getPreviousPhaseId(),
+                                ParticipationStatus.COMPLETED);
+
+                if (!previousCompleted) {
+                    throw new BusinessException(
+                            "Vous devez compléter la phase "
+                                    + (phaseInfo.getPhaseOrder() - 1)
+                                    + " avant de postuler à cette phase",
+                            HttpStatus.FORBIDDEN);
+                }
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Survey-service indisponible, vérification phase ignorée: {}", e.getMessage());
+        }
+
+        // 5. Eligibility check
         boolean eligible = eligibilityService.isUserEligible(participantId, studyId, authToken);
         if (!eligible) {
             throw new BusinessException(
-                    "You do not meet the eligibility criteria for this study", HttpStatus.FORBIDDEN);
+                    "Vous ne satisfaites pas les critères d'éligibilité", HttpStatus.FORBIDDEN);
         }
 
+        // 6. Créer candidature
         StudyApplication application = StudyApplication.builder()
                 .participantId(participantId)
                 .studyId(studyId)
@@ -72,7 +106,6 @@ public class ApplicationService {
         return applicationRepository.save(application);
     }
 
-    // RC-11: Get applications for a study
     public List<StudyApplication> getApplicationsByStudy(UUID studyId, ApplicationStatus status) {
         if (status != null) {
             return applicationRepository.findByStudyIdAndStatus(studyId, status);
@@ -80,7 +113,6 @@ public class ApplicationService {
         return applicationRepository.findByStudyId(studyId);
     }
 
-    // RC-12: Cancel application
     @Transactional
     public void cancelApplication(UUID applicationId, UUID participantId) {
         StudyApplication application = applicationRepository.findById(applicationId)
@@ -98,7 +130,6 @@ public class ApplicationService {
         applicationRepository.delete(application);
     }
 
-    // RC-30: Manual review
     @Transactional
     public StudyApplication reviewApplication(UUID applicationId, ReviewRequest request) {
         StudyApplication application = applicationRepository.findById(applicationId)
