@@ -1,31 +1,5 @@
 const Response = require("../models/ResponseSchema");
 
-/**
- * PUT /api/responses/:responseId
- * Update a DRAFT response only
- */
-exports.updateResponse = async (req, res) => {
-  try {
-    const { responseId } = req.params;
-    const participantId = req.user.userId;
-    const { answers } = req.body;
-
-    const response = await Response.findOneAndUpdate(
-      { responseId, participantId, status: "DRAFT" }, // ← only drafts
-      { $set: { answers } },
-      { new: true }
-    );
-
-    if (!response) {
-      return res.status(404).json({ message: "Draft not found or already submitted" });
-    }
-
-    return res.json({ message: "Draft updated", data: response });
-
-  } catch (err) {
-    return res.status(500).json({ message: "Error updating response", error: err.message });
-  }
-};
 
 /**
  * DELETE /api/responses/:responseId

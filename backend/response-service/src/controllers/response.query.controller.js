@@ -1,5 +1,6 @@
 const Response = require("../models/ResponseSchema");
 
+
 exports.getMyResponses = async (req, res) => {
   try {
     const participantId = req.user.userId;
@@ -173,3 +174,158 @@ exports.getResponsesByParticipant = async (req, res) => {
     return res.status(500).json({ message: "Error fetching responses", error: err.message });
   }
 };
+
+// drafts
+exports.getMyDrafts = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+
+    const drafts = await Response.find({
+      participantId,
+      status: "DRAFT"
+    }).sort({ createdAt: -1 });
+
+    return res.json({
+      count: drafts.length,
+      data: drafts
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching drafts",
+      error: err.message
+    });
+  }
+};
+exports.getMyDraftsGroupedByStudy = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+
+    const grouped = await Response.aggregate([
+      {
+        $match: {
+          participantId,
+          status: "DRAFT"
+        }
+      },
+      {
+        $group: {
+          _id: "$studyId",
+          drafts: {
+            $push: {
+              responseId: "$responseId",
+              phaseId: "$phaseId",
+              answers: "$answers",
+              snapshot: "$snapshot",
+              createdAt: "$createdAt"
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          studyId: "$_id",
+          drafts: 1
+        }
+      }
+    ]);
+
+    return res.json({
+      count: grouped.length,
+      data: grouped
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error grouping drafts",
+      error: err.message
+    });
+  }
+};
+exports.getMyDraftsByStudyId = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const { studyId } = req.params;
+
+    const drafts = await Response.find({
+      participantId,
+      studyId,
+      status: "DRAFT"
+    }).sort({ createdAt: -1 });
+
+    return res.json({
+      count: drafts.length,
+      data: drafts
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching study drafts",
+      error: err.message
+    });
+  }
+};
+exports.getMyDraftsByStudyAndPhaseId = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const { studyId, phaseId } = req.params;
+
+    const draft = await Response.findOne({
+      participantId,
+      studyId,
+      phaseId,
+      status: "DRAFT"
+    });
+
+    if (!draft) {
+      return res.status(404).json({
+        message: "Draft not found for this study/phase"
+      });
+    }
+
+    return res.json(draft);
+
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching draft",
+      error: err.message
+    });
+  }
+};
+exports.getMyDraftById = async (req, res) => {
+  try {
+    const { responseId } = req.params;
+    const participantId = req.user.userId;
+
+    const draft = await Response.findOne({
+      responseId,
+      participantId,
+      status: "DRAFT"
+    });
+
+    if (!draft) {
+      return res.status(404).json({ message: "Draft not found" });
+    }
+
+    return res.json(draft);
+
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching draft",
+      error: err.message
+    });
+  }
+};
+// submitted
+exports.getMySubmitted = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const submitted = await Response.find({ participantId, status: "SUBMITTED" }).sort({ submittedAt: -1 });
+    return res.json({ count: submitted.length, data: submitted });
+  }
+    catch (err) {
+    return res.status(500).json({ message: "Error fetching submitted responses", error: err.message });
+  }
+};
+
