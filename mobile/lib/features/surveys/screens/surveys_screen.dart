@@ -1,50 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme.dart';
+import '../models/survey_model.dart';
+import '../providers/survey_provider.dart';
 
-class SurveysScreen extends StatefulWidget {
+class SurveysScreen extends ConsumerStatefulWidget {
   const SurveysScreen({super.key});
 
   @override
-  State<SurveysScreen> createState() => _SurveysScreenState();
+  ConsumerState<SurveysScreen> createState() => _SurveysScreenState();
 }
 
-class _SurveysScreenState extends State<SurveysScreen> {
+class _SurveysScreenState extends ConsumerState<SurveysScreen> {
   int _filterIndex = 0;
   final _filters = ['All Surveys', 'Active', 'Drafts', 'Completed'];
 
-  final _surveys = [
-    {
-      'title': 'Q4 Product Engagement Analysis',
-      'responses': 1284,
-      'phases': 3,
-      'status': 'priority',
-      'updated': '2h ago',
-      'progress': 0.7,
-    },
-    {
-      'title': 'Beta User Feedback',
-      'phases': 2,
-      'responses': 432,
-      'status': 'active',
-    },
-    {
-      'title': 'Employee Satisfaction 2024',
-      'phases': 5,
-      'responses': 89,
-      'status': 'active',
-    },
-    {
-      'title': 'Brand Awareness Study',
-      'phases': 1,
-      'responses': 0,
-      'status': 'draft',
-    },
-  ];
+  // Helper function to format dates like "2h ago" or "Oct 12"
+  String _formatDate(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    // 🔥 1. Fetch real surveys from the backend
+    final surveysAsync = ref.watch(mySurveysProvider);
+
     return Scaffold(
       backgroundColor: AppTheme.surfaceBase,
       floatingActionButton: Container(
@@ -63,6 +48,7 @@ class _SurveysScreenState extends State<SurveysScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Top Header & Filters
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(children: [
@@ -138,69 +124,63 @@ class _SurveysScreenState extends State<SurveysScreen> {
               ]),
             ),
             const SizedBox(height: 16),
+
+            // 🔥 2. Display Real Data
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  // Priority card
-                  _PrioritySurveyCard(
-                    survey: _surveys[0],
-                    onTap: () => context.push('/surveys/detail'),
-                  ),
-                  const SizedBox(height: 12),
-                  // Regular cards
-                  ..._surveys.skip(1).map((s) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _SurveyListCard(
-                          survey: s,
-                          onTap: () => context.push('/surveys/detail'),
-                        ),
-                      )),
-                  const SizedBox(height: 12),
-                  // Promo card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3A3BB5), Color(0xFF6366F1)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+              child: surveysAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Center(child: Text('Error: $err')),
+                data: (allSurveys) {
+                  // Filter logic
+                  var filtered = allSurveys;
+                  if (_filterIndex == 1) {
+                    filtered = allSurveys
+                        .where((s) =>
+                            s.studyStatus == 'ACTIVE' ||
+                            s.studyStatus == 'PUBLISHED')
+                        .toList();
+                  } else if (_filterIndex == 2) {
+                    filtered = allSurveys
+                        .where((s) => s.studyStatus == 'DRAFT')
+                        .toList();
+                  } else if (_filterIndex == 3) {
+                    filtered = allSurveys
+                        .where((s) => s.studyStatus == 'COMPLETED')
+                        .toList();
+                  }
+
+                  if (filtered.isEmpty) {
+                    return const Center(
+                        child: Text('No surveys found.',
+                            style: TextStyle(color: AppTheme.textSecondary)));
+                  }
+
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      // Priority card (First item)
+                      _PrioritySurveyCard(
+                        survey: filtered[0],
+                        dateString: _formatDate(filtered[0].updatedAt),
+                        onTap: () => context.push('/surveys/detail',
+                            extra:
+                                filtered[0]), // <--- Add "extra: filtered[0]"
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Gain Deeper Insights',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 6),
-                          Text(
-                              'Unlock AI-powered sentiment analysis for all your surveys.',
-                              style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 13)),
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(9999),
+                      const SizedBox(height: 12),
+
+                      // Regular cards (Remaining items)
+                      ...filtered.skip(1).map((s) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _SurveyListCard(
+                              survey: s,
+                              onTap: () =>
+                                  context.push('/surveys/detail', extra: s),
                             ),
-                            child: const Text('GO PRO',
-                                style: TextStyle(
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                    letterSpacing: 1)),
-                          ),
-                        ]),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                          )),
+                      const SizedBox(height: 24),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -210,10 +190,14 @@ class _SurveysScreenState extends State<SurveysScreen> {
   }
 }
 
+// ---- UPDATED WIDGETS TO USE THE REAL MODEL ----
+
 class _PrioritySurveyCard extends StatelessWidget {
-  final Map<String, dynamic> survey;
+  final Study survey;
+  final String dateString;
   final VoidCallback onTap;
-  const _PrioritySurveyCard({required this.survey, required this.onTap});
+  const _PrioritySurveyCard(
+      {required this.survey, required this.dateString, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -222,33 +206,28 @@ class _PrioritySurveyCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
+            color: Colors.white, borderRadius: BorderRadius.circular(20)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppTheme.primaryContainer,
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              child: const Text('PRIORITY',
-                  style: TextStyle(
+                  color: AppTheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(9999)),
+              child: Text(survey.studyStatus,
+                  style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.primary,
                       letterSpacing: 1)),
             ),
             const SizedBox(width: 10),
-            Text('Updated ${survey['updated']}',
+            Text('Updated $dateString',
                 style: const TextStyle(
                     fontSize: 12, color: AppTheme.textSecondary)),
-            const Spacer(),
-            const Icon(Icons.auto_awesome, color: AppTheme.primary, size: 20),
           ]),
           const SizedBox(height: 12),
-          Text(survey['title'],
+          Text(survey.title,
               style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -256,27 +235,15 @@ class _PrioritySurveyCard extends StatelessWidget {
           const SizedBox(height: 16),
           Row(children: [
             _StatPill(
-              value: '${survey['responses']}',
-              label: 'RESPONSES',
-              color: AppTheme.primary,
-            ),
+                value: '${survey.phaseCount}',
+                label: 'PHASES',
+                color: AppTheme.primary),
             const SizedBox(width: 16),
             _StatPill(
-              value: '${survey['phases']}',
-              label: 'PHASES',
-              color: AppTheme.textSecondary,
-            ),
+                value: survey.studyCategory,
+                label: 'CATEGORY',
+                color: AppTheme.textSecondary),
           ]),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(
-              value: (survey['progress'] as double? ?? 0.5),
-              minHeight: 5,
-              backgroundColor: AppTheme.surfaceHigh,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
-            ),
-          ),
         ]),
       ),
     );
@@ -284,13 +251,13 @@ class _PrioritySurveyCard extends StatelessWidget {
 }
 
 class _SurveyListCard extends StatelessWidget {
-  final Map<String, dynamic> survey;
+  final Study survey;
   final VoidCallback onTap;
   const _SurveyListCard({required this.survey, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final isDraft = survey['status'] == 'draft';
+    final isDraft = survey.studyStatus == 'DRAFT';
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -313,9 +280,8 @@ class _SurveyListCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceHigh,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+                        color: AppTheme.surfaceHigh,
+                        borderRadius: BorderRadius.circular(6)),
                     child: const Text('DRAFT',
                         style: TextStyle(
                             fontSize: 10,
@@ -323,7 +289,7 @@ class _SurveyListCard extends StatelessWidget {
                             color: AppTheme.textSecondary,
                             letterSpacing: 1)),
                   ),
-                Text(survey['title'],
+                Text(survey.title,
                     style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
@@ -335,32 +301,19 @@ class _SurveyListCard extends StatelessWidget {
                   const Icon(Icons.layers_outlined,
                       size: 13, color: AppTheme.textTertiary),
                   const SizedBox(width: 4),
-                  Text('${survey['phases']} PHASES',
+                  Text('${survey.phaseCount} PHASES',
                       style: const TextStyle(
                           fontSize: 11, color: AppTheme.textTertiary)),
-                  if (!isDraft) ...[
-                    const SizedBox(width: 12),
-                    const Icon(Icons.people_outline,
-                        size: 13, color: AppTheme.textTertiary),
-                    const SizedBox(width: 4),
-                    Text('${survey['responses']} RESPONSES',
-                        style: const TextStyle(
-                            fontSize: 11, color: AppTheme.primary)),
-                  ],
                 ]),
               ])),
           Container(
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppTheme.surfaceLow,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              isDraft ? Icons.more_horiz : Icons.arrow_forward_ios,
-              size: 14,
-              color: AppTheme.textSecondary,
-            ),
+                color: AppTheme.surfaceLow,
+                borderRadius: BorderRadius.circular(10)),
+            child: Icon(isDraft ? Icons.more_horiz : Icons.arrow_forward_ios,
+                size: 14, color: AppTheme.textSecondary),
           ),
         ]),
       ),
@@ -380,7 +333,7 @@ class _StatPill extends StatelessWidget {
         children: [
           Text(value,
               style: TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w800, color: color)),
+                  fontSize: 18, fontWeight: FontWeight.w800, color: color)),
           Text(label,
               style: const TextStyle(
                   fontSize: 10,

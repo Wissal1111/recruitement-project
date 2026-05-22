@@ -10,7 +10,8 @@ exports.createStudy = async (req, res) => {
       studyCategory,
       phases,
       startDate,
-      endDate
+      endDate,
+      isMultiPhase
     } = req.body;
 
     const defaultPhase = {
@@ -87,7 +88,8 @@ exports.createStudy = async (req, res) => {
       phases: preparedPhases,
       startDate: startDate || new Date(),
       endDate: endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      studyStatus: 'DRAFT'
+      studyStatus: 'DRAFT',
+      isMultiPhase
     });
 
     const savedStudy = await newStudy.save();

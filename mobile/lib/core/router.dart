@@ -15,8 +15,10 @@ import '../features/interests/screens/interests_screen.dart';
 import '../features/notifications/screens/alerts_screen.dart';
 import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/surveys/models/survey_model.dart';
 import '../features/surveys/screens/create_survey_screen.dart';
 import '../features/surveys/screens/survey_builder_screen.dart';
+import '../features/surveys/screens/survey_detail_screen.dart';
 import '../features/surveys/screens/surveys_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -59,11 +61,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/surveys/list', builder: (_, __) => const SurveysScreen()),
           GoRoute(
+              path: '/surveys/detail',
+              builder: (context, state) {
+                final survey = state.extra as Study;
+                return SurveyDetailScreen(survey: survey);
+              }),
+          GoRoute(
               path: '/surveys/create',
               builder: (_, __) => const CreateSurveyScreen()),
           GoRoute(
               path: '/surveys/build',
-              builder: (_, __) => const SurveyBuilderScreen()),
+              builder: (context, state) {
+                // Accept the extra data passed from the Create screen
+                final data = state.extra as Map<String, dynamic>? ?? {};
+                return SurveyBuilderScreen(surveyData: data);
+              }),
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
           GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
           GoRoute(

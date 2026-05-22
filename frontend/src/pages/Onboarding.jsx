@@ -7,46 +7,38 @@ import Profile from "../components/onboarding/profile/Profile";
 import Preference from "../components/onboarding/preferences/Preference";
 import Birthday from "../components/onboarding/birthday/Birthday";
 import { updateProfile } from "../api/ProfileApi";
+import { addUserInterests } from "../api/Intrests";
 import { useNavigate } from "react-router-dom";
+
 export default function Onboarding() {
     const [step, setStep] = useState(1);
     const navigate = useNavigate();
-    
+
     const [gender, setGender] = useState("OTHER");
     const [age, setAge] = useState(0);
     const [dateOfBirth, setDateOfBirth] = useState("");
-
     const [education, setEducation] = useState("");
     const [city, setCity] = useState("");
     const [country, setCountry] = useState("");
     const [profession, setProfession] = useState("");
+    const [selectedInterests, setSelectedInterests] = useState([]);
 
     const percentage = Math.round((step - 1) / 4 * 100) + "%";
 
     const handleSubmitProfile = async () => {
-    try {
-        const token = localStorage.getItem("accessToken");
+        try {
+            await updateProfile({ gender, age, dateOfBirth, education, city, country, profession });
 
-        const data = await updateProfile(
-            {
-                gender,
-                age,
-                dateOfBirth,
-                education,
-                city,
-                country,
-                profession
-            },
-            token
-        );
+            if (selectedInterests.length > 0) {
+                await addUserInterests(selectedInterests);
+            }
 
-        console.log("Profile updated", data);
-        navigate("/home")
-
-    } catch (err) {
-        console.error("Profile update failed", err);
-    }
-};
+            console.log("Profile updated");
+            navigate("/home");
+        } catch (err) {
+            console.error("Profile update failed", err);
+        }
+    };
 
     return (
         <>
@@ -76,13 +68,17 @@ export default function Onboarding() {
                 )}
 
                 {step === 3 && (
-                    <Intrests setStep={setStep} />
+                    <Intrests
+                        setStep={setStep}
+                        selectedInterests={selectedInterests}
+                        setSelectedInterests={setSelectedInterests}
+                    />
                 )}
 
                 {step === 4 && (
                     <Profile
                         setStep={setStep}
-                        setCountry={setCountry}   // ✅ FIXED
+                        setCountry={setCountry}
                         setCity={setCity}
                         setEducation={setEducation}
                         setProfession={setProfession}
@@ -90,7 +86,7 @@ export default function Onboarding() {
                 )}
 
                 {step === 5 && (
-                    <Preference setStep={setStep} handleSubmitProfile={handleSubmitProfile}/>
+                    <Preference setStep={setStep} handleSubmitProfile={handleSubmitProfile} />
                 )}
 
             </div>

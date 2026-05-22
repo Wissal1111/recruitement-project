@@ -15,9 +15,11 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/roles', require('./routes/role.routes'));
 
- 
+
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'user-service' }));
 
 const PORT = process.env.PORT || 3002;
-app.listen(PORT, () => console.log(`🚀 user-service running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 user-service running on port ${PORT}`);
+});
