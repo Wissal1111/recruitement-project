@@ -38,5 +38,6 @@ router.post('/:studyId/phases/:phaseId/questions', authMiddleware, studyControll
 
 // DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - Remove a question
 router.delete('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.removeQuestion);
-
+//récupérer une phase par son phaseId seul
+router.get('/phase/:phaseId', auth, ctrl.getPhaseById);
 module.exports = router;
