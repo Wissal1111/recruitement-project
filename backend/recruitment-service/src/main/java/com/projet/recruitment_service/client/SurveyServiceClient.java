@@ -1,5 +1,6 @@
 package com.projet.recruitment_service.client;
-
+import java.util.List;
+import java.util.Map;
 import com.projet.recruitment_service.dto.response.PhaseInfoDto;
 import com.projet.recruitment_service.config.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;

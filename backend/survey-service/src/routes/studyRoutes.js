@@ -49,5 +49,11 @@ router.delete('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware,
 router.put('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.updateQuestion);
 
 //récupérer une phase par son phaseId seul
+
 router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
+
+
+router.get('/active', studyController.getActiveStudies);
+
+
 module.exports = router;

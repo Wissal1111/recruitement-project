@@ -496,7 +496,6 @@ exports.getPhaseById = async (req, res) => {
 
     const phase = study.phases.find(p => p.phaseId === phaseId);
 
-    // Trouver la phase précédente
     const previousPhase = study.phases.find(
         p => p.phaseOrder === phase.phaseOrder - 1
     );
@@ -511,5 +510,14 @@ exports.getPhaseById = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+exports.getActiveStudies = async (req, res) => {
+  try {
+    const studies = await Study.find({ studyStatus: 'ACTIVE' });
+    res.json(studies);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

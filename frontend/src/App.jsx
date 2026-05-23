@@ -1,19 +1,24 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
-
+import BrowseStudies from "./pages/participant/BrowseStudies";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
-
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import MySurveys from "./pages/MySurveys";
 import CreateSurvey from "./pages/CreateSurvey";
 import QuestionsPage from "./pages/QuestionsPage";
 import PhasesPage from "./pages/PhasesPage";
+import Applications from "./pages/recruit/Applications";
+import Invitations from "./pages/recruit/Invitations";
+import Targeting from "./pages/recruit/Targeting";
+import MyInvitations from "./pages/participant/MyInvitations";
+import MyParticipations from "./pages/participant/MyParticipations";
+import HomeParticipant from "./pages/participant/HomeParticipant";
 
 function App() {
   return (
@@ -138,7 +143,13 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+          <Route path="/recruit/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
+          <Route path="/recruit/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
+          <Route path="/recruit/targeting" element={<ProtectedRoute><Targeting /></ProtectedRoute>} />
+          <Route path="/home/invitations" element={<ProtectedRoute><MyInvitations /></ProtectedRoute>} />
+          <Route path="/home/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
+          <Route path="/home/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
+          <Route path="/home" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

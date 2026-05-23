@@ -41,6 +41,48 @@ services:
       - ./backend/response-service:/app
       - /app/node_modules
 
+  recruitment-db:
+    image: postgres:16-alpine
+    container_name: recruitment_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: recruitment_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - recruitment_pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  recruitment-service:
+    build: ./backend/recruitment-service
+    container_name: recruitment_service
+    restart: on-failure
+    ports:
+      - "8083:8083"
+    depends_on:
+      recruitment-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://recruitment-db:5432/recruitment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: your_super_secret_key
+      SERVICES_USER_SERVICE_URL: http://user-service:3002
+      SERVICES_SURVEY_SERVICE_URL: http://survey-service:4000
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   gateway:
     image: nginx:alpine
     container_name: api_gateway
@@ -52,6 +94,7 @@ services:
     depends_on:
       - user-service
       - survey-service
+      - recruitment-service
     networks:
       - app-network
 
@@ -61,3 +104,4 @@ networks:
 
 volumes:
   mongo_data:
+  recruitment_pgdata:
