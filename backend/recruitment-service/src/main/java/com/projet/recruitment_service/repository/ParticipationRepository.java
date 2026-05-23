@@ -1,14 +1,25 @@
-// repository/ParticipationRepository.java
 package com.projet.recruitment_service.repository;
 
 import com.projet.recruitment_service.entity.Participation;
 import com.projet.recruitment_service.enums.ParticipationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 import java.util.UUID;
 
+@Repository
 public interface ParticipationRepository extends JpaRepository<Participation, UUID> {
+
     List<Participation> findByParticipantId(UUID participantId);
+
+    boolean existsByApplicationId(UUID applicationId);
+
     List<Participation> findByPhaseId(UUID phaseId);
-    List<Participation> findByPhaseIdAndStatus(UUID phaseId, ParticipationStatus status);
+
+    boolean existsByParticipantIdAndPhaseIdAndStatus(
+            UUID participantId,
+            UUID phaseId,
+            ParticipationStatus status
+    );
 }

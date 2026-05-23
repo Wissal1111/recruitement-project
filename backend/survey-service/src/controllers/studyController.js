@@ -482,3 +482,34 @@ exports.updateQuestion = async (req, res) => {
     res.status(500).json({ message: "Error updating question", error: error.message });
   }
 };
+exports.getPhaseById = async (req, res) => {
+  try {
+    const { phaseId } = req.params;
+
+    const study = await Study.findOne({
+      'phases.phaseId': phaseId
+    }).select('studyId phases isMultiPhase').lean();
+
+    if (!study) {
+      return res.status(404).json({ message: "Phase not found" });
+    }
+
+    const phase = study.phases.find(p => p.phaseId === phaseId);
+
+    // Trouver la phase précédente
+    const previousPhase = study.phases.find(
+        p => p.phaseOrder === phase.phaseOrder - 1
+    );
+
+    res.status(200).json({
+      studyId: study.studyId,
+      phaseId: phase.phaseId,
+      phaseOrder: phase.phaseOrder,
+      phaseType: phase.phaseType,
+      isMultiPhase: study.isMultiPhase,
+      previousPhaseId: previousPhase ? previousPhase.phaseId : null
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
