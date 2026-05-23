@@ -17,4 +17,6 @@ public interface SurveyServiceClient {
             @RequestHeader("Authorization") String token,
             @PathVariable("phaseId") String phaseId
     );
+    @GetMapping("/api/studies/active")
+    List<Map<String, Object>> getActiveStudies(@RequestHeader("Authorization") String token);
 }
