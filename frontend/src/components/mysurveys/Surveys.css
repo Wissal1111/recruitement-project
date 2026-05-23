@@ -1,0 +1,223 @@
+.ms__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.ms__title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--title);
+    margin-bottom: 4px;
+}
+
+.ms__sub {
+    font-size: 13px;
+    color: #9192B0;
+}
+
+.ms__stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ms__stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 12px 18px;
+    box-shadow: 0 2px 8px rgba(60, 60, 120, 0.07);
+}
+
+.ms__stat-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(112, 115, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ms__stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9192B0;
+}
+
+.ms__stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--title);
+}
+
+.ms__filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ms__tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.ms__tab {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #9192B0;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.13s, color 0.13s;
+}
+
+.ms__tab:hover:not(.ms__tab--active) {
+    background: #EDEEFF;
+    color: var(--blue-text);
+}
+
+.ms__tab--active {
+    background: var(--blue-text);
+    color: #fff;
+}
+
+.ms__filter-icon-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--linear-blue);
+    border: none;
+    border-radius: 14px;
+    padding: 10px 18px;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(74, 75, 215, 0.28);
+    transition: opacity 0.14s, transform 0.1s;
+}
+
+.ms__filter-icon-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.ms__table-card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 2px 10px rgba(60, 60, 120, 0.07);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.ms__table-head {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr 0.8fr 1.2fr 0.7fr;
+    padding: 12px 24px;
+    border-bottom: 1.5px solid #F0F0F8;
+}
+
+.ms__th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9192B0;
+}
+
+.ms__th--right { text-align: right; }
+
+.ms__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px;
+    gap: 8px;
+}
+
+.ms__empty-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--title);
+}
+
+.ms__empty-sub {
+    font-size: 13px;
+    color: #9192B0;
+}
+
+.ms__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ms__pagination-info {
+    font-size: 12px;
+    color: #9192B0;
+    font-weight: 600;
+}
+
+.ms__pagination-info b { color: var(--title); }
+
+.ms__pagination-btns {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.ms__pg-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: none;
+    background: #fff;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #9192B0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(60, 60, 120, 0.08);
+    transition: background 0.12s, color 0.12s;
+}
+
+.ms__pg-btn:hover:not(.ms__pg-btn--active):not(:disabled) {
+    background: #EDEEFF;
+    color: var(--blue-text);
+}
+
+.ms__pg-btn--active {
+    background: var(--blue-text);
+    color: #fff;
+}
+
+.ms__pg-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+    .ms__header { flex-direction: column; }
+    .ms__table-head { display: none; }
+    .ms__tabs { flex-wrap: wrap; }
+}

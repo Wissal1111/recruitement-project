@@ -2,12 +2,12 @@ import './BecomeCreator.css'
 import { becomeCreator } from '../../api/Role';
 import { useNavigate } from 'react-router-dom';
 
-export default function BecomeCreatorIl(){
+export default function BecomeCreatorIl({setIsCreator}){
   const navigate=useNavigate();
   const handleBecomeCreator = async () => {
   try {
     await becomeCreator();
-    navigate("/recruit");
+    setIsCreator(true);
   } catch (err) {
     console.log("becomeCreator error:", err);
   }

@@ -1,5 +1,6 @@
 const { Study } = require('../models');
 
+//linked
 exports.createStudy = async (req, res) => {
   try {
     // 1. Extract data from request body
@@ -109,7 +110,7 @@ exports.createStudy = async (req, res) => {
     });
   }
 };
-
+//linked
 // Get all studies by a specific creator (from token)
 exports.getStudiesByCreator = async (req, res) => {
   try {
@@ -137,7 +138,7 @@ exports.getStudiesByCreator = async (req, res) => {
     });
   }
 };
-
+//linked
 // Get a single study by its studyId
 exports.getStudyById = async (req, res) => {
   try {
@@ -161,6 +162,7 @@ exports.getStudyById = async (req, res) => {
     });
   }
 };
+
 
 // Update a study (survey) by studyId (Owner only)
 exports.updateStudy = async (req, res) => {
@@ -248,6 +250,7 @@ exports.updateStudy = async (req, res) => {
   }
 };
 
+//linked
 // Delete a study by its studyId (Owner only)
 exports.deleteStudy = async (req, res) => {
   try {
@@ -305,6 +308,7 @@ exports.updateStudyStatus = async (req, res) => {
   }
 };
 
+//linked
 // Update a specific phase within a study
 exports.updatePhase = async (req, res) => {
   try {
@@ -329,6 +333,7 @@ exports.updatePhase = async (req, res) => {
   }
 };
 
+//linked
 // Add a new phase to an existing study
 exports.addPhase = async (req, res) => {
   try {
@@ -376,6 +381,7 @@ exports.addPhase = async (req, res) => {
   }
 };
 
+//linked
 // Delete a phase from an existing study
 exports.deletePhase = async (req, res) => {
   try {
@@ -404,6 +410,7 @@ exports.deletePhase = async (req, res) => {
   }
 };
 
+//linked
 // Add a question to a specific phase
 exports.addQuestionToPhase = async (req, res) => {
   try {
@@ -426,7 +433,7 @@ exports.addQuestionToPhase = async (req, res) => {
     res.status(500).json({ message: "Error adding question", error: error.message });
   }
 };
-
+//linked 
 // Remove a question from a phase
 exports.removeQuestion = async (req, res) => {
   try {
@@ -446,6 +453,33 @@ exports.removeQuestion = async (req, res) => {
     res.status(200).json({ message: "Question removed", study });
   } catch (error) {
     res.status(500).json({ message: "Error removing question", error: error.message });
+  }
+};
+
+//linked
+// Update a specific question in a phase
+exports.updateQuestion = async (req, res) => {
+  try {
+    const { studyId, phaseId, questionId } = req.params;
+    const updateData = req.body;
+    const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
+
+    const study = await Study.findOne({ studyId });
+    if (!study) return res.status(404).json({ message: "Study not found" });
+    if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
+
+    const phase = study.phases.find(p => p.phaseId === phaseId);
+    if (!phase) return res.status(404).json({ message: "Phase not found" });
+
+    const question = phase.questions.find(q => q.questionId === questionId);
+    if (!question) return res.status(404).json({ message: "Question not found" });
+
+    Object.assign(question, updateData);
+    await study.save();
+
+    res.status(200).json({ message: "Question updated", study });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating question", error: error.message });
   }
 };
 exports.getPhaseById = async (req, res) => {

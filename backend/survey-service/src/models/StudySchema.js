@@ -40,7 +40,7 @@ const StudyPhaseSchema = new mongoose.Schema({
   phaseType: { type: String, enum: ['SCREENING', 'NORMAL'], required: true },
   rewardAmount: { type: mongoose.Schema.Types.Decimal128, required: true },
   maxParticipants: { type: Number, required: true },
-  status: { type: String, enum: ['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELLED'], default: 'PENDING' },
+  status: { type: String, enum: ['PENDING', 'ACTIVE', 'COMPLETED'], default: 'PENDING' },
   questions: {
     type: [QuestionSchema],
     default: []
@@ -54,7 +54,7 @@ const StudySchema = new mongoose.Schema({
   description: { type: String },
   studyStatus: {
     type: String,
-    enum: ['DRAFT', 'PUBLISHED', 'ACTIVE', 'COMPLETED', 'ARCHIVED'],
+    enum: ['DRAFT', 'PUBLISHED', 'COMPLETED'],
     default: 'DRAFT'
   },
   studyCategory: {

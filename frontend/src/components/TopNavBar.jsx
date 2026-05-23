@@ -28,7 +28,7 @@ export default function TopNavBar({ page, sidebarOpen, setSidebarOpen }) {
                     </div>
                     <Bell />
                     <Settings />
-                    <img src={profileImg} alt="profile" className='profile-pic' />
+                    <img src={profileImg} alt="profile" className='profile-pic' onClick={()=>navigate("/home/profile")} />
                     <button
                         className="hamburger"
                         onClick={() => setSidebarOpen(prev => !prev)}

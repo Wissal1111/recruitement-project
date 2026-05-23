@@ -1,15 +1,16 @@
 const mongoose = require("mongoose");
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') }); // Chemin absolu vers le .env dans backend/
+
+require("dotenv").config();
 
 const connectDB = async () => {
   try {
-    // 1. Cherche dans le .env (votre URL admin)
-    // 2. Sinon, cherche l'URL Docker (mongo)
-    // 3. Sinon, utilise localhost par défaut
-    const dbUrl = process.env.MONGO_URI || "mongodb://mongo:27017/mydb";
-    
-    await mongoose.connect(dbUrl);
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI is not defined");
+    }
+
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("Mongo URI:", process.env.MONGO_URI);
+
     console.log("✅ MongoDB connected successfully");
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
