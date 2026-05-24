@@ -77,7 +77,7 @@ class InvitationsScreen extends ConsumerWidget {
                             onPressed: () async {
                               await ref
                                   .read(recruitmentRepositoryProvider)
-                                  .respondToInvitation(inviteId, false);
+                                  .declineInvitation(inviteId.toString());
                               ref.invalidate(myInvitationsProvider);
                             },
                             style: OutlinedButton.styleFrom(
@@ -93,7 +93,7 @@ class InvitationsScreen extends ConsumerWidget {
                             onPressed: () async {
                               await ref
                                   .read(recruitmentRepositoryProvider)
-                                  .respondToInvitation(inviteId, true);
+                                  .acceptInvitation(inviteId.toString());
                               ref.invalidate(myInvitationsProvider);
                             },
                             style: ElevatedButton.styleFrom(

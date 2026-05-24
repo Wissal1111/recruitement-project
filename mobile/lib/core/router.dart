@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucid_curator/features/notifications/screens/alerts_screen.dart';
 import 'package:lucid_curator/features/surveys/models/survey_model.dart';
+import 'package:lucid_curator/features/surveys/screens/answer_phase_screen.dart';
 import 'package:lucid_curator/features/surveys/screens/create_survey_screen.dart';
 import 'package:lucid_curator/features/surveys/screens/invitations_screen.dart';
+import 'package:lucid_curator/features/surveys/screens/participant_survey_detail_screen.dart';
 import 'package:lucid_curator/features/surveys/screens/survey_builder_screen.dart';
 import 'package:lucid_curator/features/surveys/screens/survey_detail_screen.dart';
 import 'package:lucid_curator/features/surveys/screens/surveys_screen.dart';
@@ -18,6 +20,7 @@ import '../features/auth/screens/reset_password_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/surveys/screens/applications_screen.dart';
 import '../features/surveys/screens/invite_participants_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -67,11 +70,32 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/surveys/create',
               builder: (_, __) => const CreateSurveyScreen()),
+                    GoRoute(
+              path: '/surveys/participant-detail',
+              builder: (context, state) {
+                final survey = state.extra as Study;
+                return ParticipantSurveyDetailScreen(survey: survey);
+              }),
+          GoRoute(
+              path: '/surveys/answer',
+              builder: (context, state) {
+                final data = state.extra as Map<String, dynamic>;
+                return AnswerPhaseScreen(
+                  survey: data['survey'] as Study,
+                  phaseIndex: data['phaseIndex'] as int,
+                );
+              }),
           GoRoute(
               path: '/surveys/build',
               builder: (context, state) {
                 final data = state.extra as Map<String, dynamic>? ?? {};
                 return SurveyBuilderScreen(surveyData: data);
+              }),
+          GoRoute(
+              path: '/surveys/applications',
+              builder: (context, state) {
+                final survey = state.extra as Study;
+                return ApplicationsScreen(survey: survey);
               }),
           GoRoute(
               path: '/surveys/detail',

@@ -13,8 +13,9 @@ class CreateSurveyScreen extends StatefulWidget {
 
 class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
   final _titleCtrl = TextEditingController();
-  final _budgetCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  final _budgetCtrl = TextEditingController();
+  final _maxParticipantsCtrl = TextEditingController();
   final _otherProfCtrl = TextEditingController();
   final _otherEduCtrl = TextEditingController();
 
@@ -62,6 +63,12 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
     return (ageSpan * 500 + _selectedInterests.length * 1200).round();
   }
 
+  bool get _isFormValid {
+    return _titleCtrl.text.isNotEmpty &&
+        _budgetCtrl.text.isNotEmpty &&
+        _maxParticipantsCtrl.text.isNotEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,7 +76,6 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(children: [
@@ -93,122 +99,135 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                         color: AppTheme.primary)),
               ]),
             ),
-
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Survey name
                     _Label('SURVEY NAME'),
                     const SizedBox(height: 8),
                     TextField(
-                        controller: _titleCtrl,
-                        decoration: const InputDecoration(
-                            hintText: 'e.g. Q4 Consumer Trend Analysis')),
+                      controller: _titleCtrl,
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                          hintText: 'e.g. Q4 Consumer Trend Analysis'),
+                    ),
                     const SizedBox(height: 16),
-
-                    // Description
                     _Label('DESCRIPTION'),
                     const SizedBox(height: 8),
                     TextField(
                         controller: _descCtrl,
                         maxLines: 3,
                         decoration: const InputDecoration(
-                            hintText:
-                                'Define the primary objective of this research...')),
-                    const SizedBox(height: 24),
-
-                    _Label('TOTAL BUDGET (\$)'),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _budgetCtrl,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. 1500',
-                        prefixIcon: Icon(Icons.attach_money,
-                            color: AppTheme.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Phase type toggle
+                            hintText: 'Define the primary objective...')),
+                    const SizedBox(height: 16),
                     Row(children: [
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _isMultiPhase = false),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            height: 52,
-                            decoration: BoxDecoration(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            _Label('TOTAL BUDGET (\$)'),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _budgetCtrl,
+                              onChanged: (_) => setState(() {}),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              decoration: const InputDecoration(
+                                  hintText: 'e.g. 1500',
+                                  prefixIcon: Icon(Icons.attach_money,
+                                      color: AppTheme.textSecondary)),
+                            ),
+                          ])),
+                      const SizedBox(width: 16),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            _Label('MAX PARTICIPANTS'),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _maxParticipantsCtrl,
+                              onChanged: (_) => setState(() {}),
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                  hintText: 'e.g. 100',
+                                  prefixIcon: Icon(Icons.people_outline,
+                                      color: AppTheme.textSecondary)),
+                            ),
+                          ])),
+                    ]),
+                    const SizedBox(height: 24),
+                    Row(children: [
+                      Expanded(
+                          child: GestureDetector(
+                        onTap: () => setState(() => _isMultiPhase = false),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          height: 52,
+                          decoration: BoxDecoration(
                               gradient: !_isMultiPhase
                                   ? AppTheme.primaryGradient
                                   : null,
                               color: _isMultiPhase ? Colors.white : null,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.flash_on,
-                                      size: 18,
-                                      color: !_isMultiPhase
-                                          ? Colors.white
-                                          : AppTheme.textSecondary),
-                                  const SizedBox(width: 6),
-                                  Text('SINGLE PHASE',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.8,
-                                          color: !_isMultiPhase
-                                              ? Colors.white
-                                              : AppTheme.textSecondary)),
-                                ]),
-                          ),
+                              borderRadius: BorderRadius.circular(14)),
+                          child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.flash_on,
+                                    size: 18,
+                                    color: !_isMultiPhase
+                                        ? Colors.white
+                                        : AppTheme.textSecondary),
+                                const SizedBox(width: 6),
+                                Text('SINGLE PHASE',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                        color: !_isMultiPhase
+                                            ? Colors.white
+                                            : AppTheme.textSecondary)),
+                              ]),
                         ),
-                      ),
+                      )),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _isMultiPhase = true),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            height: 52,
-                            decoration: BoxDecoration(
+                          child: GestureDetector(
+                        onTap: () => setState(() => _isMultiPhase = true),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          height: 52,
+                          decoration: BoxDecoration(
                               gradient: _isMultiPhase
                                   ? AppTheme.primaryGradient
                                   : null,
                               color: !_isMultiPhase ? Colors.white : null,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.layers_outlined,
-                                      size: 18,
-                                      color: _isMultiPhase
-                                          ? Colors.white
-                                          : AppTheme.textSecondary),
-                                  const SizedBox(width: 6),
-                                  Text('MULTI-PHASE',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.8,
-                                          color: _isMultiPhase
-                                              ? Colors.white
-                                              : AppTheme.textSecondary)),
-                                ]),
-                          ),
+                              borderRadius: BorderRadius.circular(14)),
+                          child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.layers_outlined,
+                                    size: 18,
+                                    color: _isMultiPhase
+                                        ? Colors.white
+                                        : AppTheme.textSecondary),
+                                const SizedBox(width: 6),
+                                Text('MULTI-PHASE',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                        color: _isMultiPhase
+                                            ? Colors.white
+                                            : AppTheme.textSecondary)),
+                              ]),
                         ),
-                      ),
+                      )),
                     ]),
                     const SizedBox(height: 24),
-
-                    // Target participants card
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -228,8 +247,6 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                       color: AppTheme.textPrimary)),
                             ]),
                             const SizedBox(height: 20),
-
-                            // Age range
                             Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -249,53 +266,47 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                 ]),
                             SliderTheme(
                               data: SliderThemeData(
-                                activeTrackColor: AppTheme.primary,
-                                inactiveTrackColor: AppTheme.surfaceHigh,
-                                thumbColor: AppTheme.primary,
-                                overlayColor: AppTheme.primary.withOpacity(0.1),
-                              ),
+                                  activeTrackColor: AppTheme.primary,
+                                  inactiveTrackColor: AppTheme.surfaceHigh,
+                                  thumbColor: AppTheme.primary,
+                                  overlayColor:
+                                      AppTheme.primary.withOpacity(0.1)),
                               child: RangeSlider(
-                                values: _ageRange,
-                                min: 13,
-                                max: 80,
-                                onChanged: (v) => setState(() => _ageRange = v),
-                              ),
+                                  values: _ageRange,
+                                  min: 13,
+                                  max: 80,
+                                  onChanged: (v) =>
+                                      setState(() => _ageRange = v)),
                             ),
                             const SizedBox(height: 16),
-
-                            // Profession
                             _DropdownField(
-                              label: 'PROFESSION',
-                              value: _profession,
-                              items: _professions,
-                              onChanged: (v) => setState(() => _profession = v),
-                            ),
+                                label: 'PROFESSION',
+                                value: _profession,
+                                items: _professions,
+                                onChanged: (v) =>
+                                    setState(() => _profession = v)),
                             if (_profession == 'Other') ...[
                               const SizedBox(height: 8),
                               TextField(
                                   controller: _otherProfCtrl,
                                   decoration: const InputDecoration(
-                                      hintText: 'Type custom profession...')),
+                                      hintText: 'Type custom profession...'))
                             ],
                             const SizedBox(height: 16),
-
-                            // Education
                             _DropdownField(
-                              label: 'EDUCATION',
-                              value: _education,
-                              items: _educationLevels,
-                              onChanged: (v) => setState(() => _education = v),
-                            ),
+                                label: 'EDUCATION',
+                                value: _education,
+                                items: _educationLevels,
+                                onChanged: (v) =>
+                                    setState(() => _education = v)),
                             if (_education == 'Other') ...[
                               const SizedBox(height: 8),
                               TextField(
                                   controller: _otherEduCtrl,
                                   decoration: const InputDecoration(
-                                      hintText: 'Type custom education...')),
+                                      hintText: 'Type custom education...'))
                             ],
                             const SizedBox(height: 16),
-
-                            // Key interests
                             const Text('KEY INTERESTS',
                                 style: TextStyle(
                                     fontSize: 11,
@@ -304,51 +315,46 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                     color: AppTheme.textSecondary)),
                             const SizedBox(height: 8),
                             Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _interests.map((interest) {
-                                final selected =
-                                    _selectedInterests.contains(interest);
-                                return GestureDetector(
-                                  onTap: () => setState(() => selected
-                                      ? _selectedInterests.remove(interest)
-                                      : _selectedInterests.add(interest)),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 150),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 7),
-                                    decoration: BoxDecoration(
-                                      color: selected
-                                          ? AppTheme.primary
-                                          : AppTheme.surfaceLow,
-                                      borderRadius: BorderRadius.circular(9999),
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _interests.map((interest) {
+                                  final selected =
+                                      _selectedInterests.contains(interest);
+                                  return GestureDetector(
+                                    onTap: () => setState(() => selected
+                                        ? _selectedInterests.remove(interest)
+                                        : _selectedInterests.add(interest)),
+                                    child: AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 150),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 7),
+                                      decoration: BoxDecoration(
+                                          color: selected
+                                              ? AppTheme.primary
+                                              : AppTheme.surfaceLow,
+                                          borderRadius:
+                                              BorderRadius.circular(9999)),
+                                      child: Text(interest,
+                                          style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: selected
+                                                  ? Colors.white
+                                                  : AppTheme.textSecondary)),
                                     ),
-                                    child: Text(interest,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: selected
-                                                ? Colors.white
-                                                : AppTheme.textSecondary)),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
+                                  );
+                                }).toList()),
                             const SizedBox(height: 16),
-
-                            // Country
                             _DropdownField(
-                              label: 'COUNTRY',
-                              value: _country,
-                              items: _countries,
-                              trailingIcon: Icons.public_outlined,
-                              onChanged: (v) => setState(() => _country = v),
-                            ),
+                                label: 'COUNTRY',
+                                value: _country,
+                                items: _countries,
+                                trailingIcon: Icons.public_outlined,
+                                onChanged: (v) => setState(() => _country = v)),
                           ]),
                     ),
                     const SizedBox(height: 16),
-
-                    // Audience estimator
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -376,7 +382,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                     color: Colors.white)),
                             const SizedBox(height: 4),
                             const Text(
-                                'Qualified participants matching your criteria within our curated network.',
+                                'Qualified participants matching your criteria.',
                                 style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.white70,
@@ -384,10 +390,9 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                           ]),
                     ),
                     const SizedBox(height: 32),
-
                     GradientButton(
                       label: 'Continue to Questions',
-                      onPressed: _titleCtrl.text.isNotEmpty
+                      onPressed: _isFormValid
                           ? () {
                               context.push('/surveys/build', extra: {
                                 'title': _titleCtrl.text,
@@ -395,12 +400,21 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                 'totalBudget':
                                     double.tryParse(_budgetCtrl.text.trim()) ??
                                         0.0,
+                                'maxParticipants': int.tryParse(
+                                        _maxParticipantsCtrl.text.trim()) ??
+                                    0,
+                                'isMultiPhase': _isMultiPhase,
                                 'profession': _profession == 'Other'
                                     ? _otherProfCtrl.text
                                     : _profession,
                                 'education': _education == 'Other'
                                     ? _otherEduCtrl.text
                                     : _education,
+                                // ✅ NEW: pass all criteria fields
+                                'ageMin': _ageRange.start.round(),
+                                'ageMax': _ageRange.end.round(),
+                                'country': _country,
+                                'interests': _selectedInterests.toList(),
                               });
                             }
                           : null,
@@ -436,7 +450,6 @@ class _DropdownField extends StatelessWidget {
   final List<String> items;
   final ValueChanged<String?> onChanged;
   final IconData? trailingIcon;
-
   const _DropdownField(
       {required this.label,
       required this.value,
@@ -457,12 +470,11 @@ class _DropdownField extends StatelessWidget {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: value,
-            decoration: InputDecoration(
-              suffixIcon: trailingIcon != null
-                  ? Icon(trailingIcon, color: AppTheme.textTertiary, size: 18)
-                  : null,
-            ),
             isExpanded: true,
+            decoration: InputDecoration(
+                suffixIcon: trailingIcon != null
+                    ? Icon(trailingIcon, color: AppTheme.textTertiary, size: 18)
+                    : null),
             items: items
                 .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                 .toList(),

@@ -13,8 +13,13 @@ router.post('/', authMiddleware, studyController.createStudy);
 // GET: /api/studies/my-studies - Get all studies for the logged-in creator
 router.get('/my-studies', authMiddleware, studyController.getStudiesByCreator);
 
+router.get('/active', studyController.getActiveStudies);
+
 // GET: /api/studies/extern/:studyId - Get a single study by ID
 router.get('/extern/:studyId', studyController.getStudyById);
+
+
+
 
 // GET: /api/studies/:studyId - Get a single study by ID auth
 router.get('/:studyId', authMiddleware, studyController.getStudyById);
@@ -53,5 +58,7 @@ router.put('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, st
 router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
 
 router.get('/active', studyController.getActiveStudies);
+
+
 
 module.exports = router;
