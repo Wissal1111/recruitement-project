@@ -1,5 +1,5 @@
 import api from "./axiosInstance";
-import api from "./recruitmentAxios";
+
 
 // SLOTS
 export const createSlot = (phaseId, studyId, data) =>
