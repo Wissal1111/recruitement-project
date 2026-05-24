@@ -19,6 +19,7 @@ import Targeting from "./pages/recruit/Targeting";
 import MyInvitations from "./pages/participant/MyInvitations";
 import MyParticipations from "./pages/participant/MyParticipations";
 import HomeParticipant from "./pages/participant/HomeParticipant";
+import Candidates from "./pages/recruit/Candidates";
 
 function App() {
   return (
@@ -150,6 +151,7 @@ function App() {
           <Route path="/home/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
           <Route path="/home/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
           <Route path="/home" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
+          <Route path="/recruit/candidates" element={<ProtectedRoute><Candidates /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
