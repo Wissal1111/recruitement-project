@@ -11,8 +11,6 @@ services:
       - "5433:5432"
     volumes:
       - recruitment_pgdata:/var/lib/postgresql/data
-    networks:
-      - recruitment-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -34,16 +32,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       JWT_SECRET: your_super_secret_key
-      SERVICES_USER_SERVICE_URL: http://host.docker.internal:3001
+      SERVICES_USER_SERVICE_URL: http://host.docker.internal:3002
       SERVICES_SURVEY_SERVICE_URL: http://host.docker.internal:4000
-    networks:
-      - recruitment-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
-networks:
-  recruitment-network:
-    driver: bridge
 
 volumes:
   recruitment_pgdata:

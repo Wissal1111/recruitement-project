@@ -13,8 +13,14 @@ router.post('/', authMiddleware, studyController.createStudy);
 // GET: /api/studies/my-studies - Get all studies for the logged-in creator
 router.get('/my-studies', authMiddleware, studyController.getStudiesByCreator);
 
-// GET: /api/studies/:studyId - Get a single study by ID
+// GET: /api/studies/extern/:studyId - Get a single study by ID
+router.get('/extern/:studyId', studyController.getStudyById);
+
+// GET: /api/studies/:studyId - Get a single study by ID auth
 router.get('/:studyId', authMiddleware, studyController.getStudyById);
+
+
+
 
 // PUT: /api/studies/:studyId - Update a study
 router.put('/:studyId', authMiddleware, studyController.updateStudy);
@@ -39,6 +45,13 @@ router.post('/:studyId/phases/:phaseId/questions', authMiddleware, studyControll
 
 // DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - Remove a question
 router.delete('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.removeQuestion);
-//récupérer une phase par son phaseId seul
+
+// DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - update a question
+router.put('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.updateQuestion);
+
+///récupérer une phase par son phaseId seul
 router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
+
+router.get('/active', studyController.getActiveStudies);
+
 module.exports = router;

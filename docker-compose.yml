@@ -1,18 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: user_service_db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
-      POSTGRES_DB: user_service_db
-    ports:
-      - "5444:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - app-network
   user-service:
     build: ./backend/user-service
     container_name: user_service
@@ -21,30 +7,11 @@ services:
       - "3002:3002"
     env_file:
       - ./backend/user-service/.env
-    depends_on:
-      - postgres
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/user_service_db
+    networks:
+      - app-network
     volumes:
       - ./backend/user-service:/app
       - /app/node_modules
-    networks:
-      - app-network
-
-  # --- SURVEY SERVICE (MongoDB) ---
-  mongodb:
-    image: mongo:latest
-    container_name: survey_db
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: 123456
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - app-network
 
   survey-service:
     build: ./backend/survey-service
@@ -54,15 +21,68 @@ services:
       - "4000:4000"
     env_file:
       - ./backend/survey-service/.env
-    depends_on:
-      - mongodb
     networks:
       - app-network
     volumes:
       - ./backend/survey-service:/app
       - /app/node_modules
 
-  # --- API GATEWAY (NGINX) ---
+  response-service:
+    build: ./backend/response-service
+    container_name: response_service
+    restart: always
+    ports:
+      - "4003:4003"
+    env_file:
+      - ./backend/response-service/.env
+    networks:
+      - app-network
+    volumes:
+      - ./backend/response-service:/app
+      - /app/node_modules
+
+  recruitment-db:
+    image: postgres:16-alpine
+    container_name: recruitment_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: recruitment_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - recruitment_pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  recruitment-service:
+    build: ./backend/recruitment-service
+    container_name: recruitment_service
+    restart: on-failure
+    ports:
+      - "8083:8083"
+    depends_on:
+      recruitment-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://recruitment-db:5432/recruitment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: your_super_secret_key
+      SERVICES_USER_SERVICE_URL: http://user-service:3002
+      SERVICES_SURVEY_SERVICE_URL: http://survey-service:4000
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   gateway:
     image: nginx:alpine
     container_name: api_gateway
@@ -74,6 +94,7 @@ services:
     depends_on:
       - user-service
       - survey-service
+      - recruitment-service
     networks:
       - app-network
 
@@ -82,5 +103,5 @@ networks:
     driver: bridge
 
 volumes:
-  pgdata:
   mongo_data:
+  recruitment_pgdata:
