@@ -78,7 +78,15 @@ export default function StudyInfo({ onDiscard }) {
             if (phase === "multi") {
                 navigate(`./study/${studyId}/phases/`);
             } else {
-                navigate(`./study/${studyId}/questions`);
+                // Single phase — récupère le phaseId auto-créé
+                const phases = response.phases || [];
+                if (phases.length > 0) {
+                    const phaseId = phases[0].phaseId;
+                    navigate(`./study/${studyId}/phases/${phaseId}/questions`);
+                } else {
+                    // Fallback si pas de phase auto-créée
+                    navigate(`./study/${studyId}/phases/`);
+                }
             }
         } catch (error) {
             console.error("Failed to create study:", error.response?.data || error.message);

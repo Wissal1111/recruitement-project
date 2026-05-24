@@ -515,9 +515,14 @@ exports.getPhaseById = async (req, res) => {
 
 exports.getActiveStudies = async (req, res) => {
   try {
-    const studies = await Study.find({ studyStatus: 'ACTIVE' });
-    res.json(studies);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const studies = await Study.find({
+      studyStatus: { $in: ['ACTIVE', 'PUBLISHED'] }
+    })
+        .select('studyId title description studyCategory phases startDate endDate')
+        .lean();
+
+    res.status(200).json(studies);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

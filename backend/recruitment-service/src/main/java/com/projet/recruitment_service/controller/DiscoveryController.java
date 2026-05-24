@@ -33,7 +33,7 @@ public class DiscoveryController {
         List<Map<String, Object>> eligible = allStudies.stream()
                 .filter(study -> {
                     try {
-                        UUID studyId = UUID.fromString(study.get("_id").toString());
+                        UUID studyId = UUID.fromString(study.get("studyId").toString());
                         return eligibilityService.isUserEligible(participantId, studyId, token);
                     } catch (Exception e) {
                         return false;

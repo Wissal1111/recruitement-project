@@ -5,7 +5,6 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
-import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
@@ -16,145 +15,48 @@ import PhasesPage from "./pages/PhasesPage";
 import Applications from "./pages/recruit/Applications";
 import Invitations from "./pages/recruit/Invitations";
 import Targeting from "./pages/recruit/Targeting";
+import Candidates from "./pages/recruit/Candidates";
 import MyInvitations from "./pages/participant/MyInvitations";
 import MyParticipations from "./pages/participant/MyParticipations";
 import HomeParticipant from "./pages/participant/HomeParticipant";
-import Candidates from "./pages/recruit/Candidates";
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
+    return (
+        <BrowserRouter>
+            <Routes>
 
-        {/* 🌍 Public routes (only when logged OUT) */}
-        <Route
-          path="/"
-          element={
-            <PublicRoute>
-              <Landing />
-            </PublicRoute>
-          }
-        />
+                {/* Public */}
+                <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
+                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
+                {/* Participant */}
+                <Route path="/home" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
+                <Route path="/home/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/home/invitations" element={<ProtectedRoute><MyInvitations /></ProtectedRoute>} />
+                <Route path="/home/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
+                <Route path="/home/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
 
-        <Route
-          path="/signup"
-          element={
-            <PublicRoute>
-              <Signup />
-            </PublicRoute>
-          }
-        />
+                {/* Onboarding */}
+                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
-        {/* 🔐 Protected routes (only when logged IN) */}
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+                {/* Chercheur */}
+                <Route path="/recruit" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />
+                <Route path="/recruit/create" element={<ProtectedRoute><CreateSurvey /></ProtectedRoute>} />
+                <Route path="/recruit/create/:id" element={<ProtectedRoute><CreateSurvey /></ProtectedRoute>} />
+                <Route path="/recruit/create/study/:id/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
+                <Route path="/recruit/create/study/:id/phases" element={<ProtectedRoute><PhasesPage /></ProtectedRoute>} />
+                <Route path="/recruit/study/:id/phases" element={<ProtectedRoute><PhasesPage /></ProtectedRoute>} />
+                <Route path="/recruit/create/study/:id/phases/:phaseId/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
+                <Route path="/recruit/study/:id/phases/:phaseId/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
+                <Route path="/recruit/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
+                <Route path="/recruit/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
+                <Route path="/recruit/targeting" element={<ProtectedRoute><Targeting /></ProtectedRoute>} />
+                <Route path="/recruit/candidates" element={<ProtectedRoute><Candidates /></ProtectedRoute>} />
 
-        <Route
-          path="/onboarding"
-          element={
-            <ProtectedRoute>
-              <Onboarding />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recruit"
-          element={
-            <ProtectedRoute>
-              <MySurveys />
-            </ProtectedRoute>
-          }
-        />
-         <Route
-          path="/recruit/create"
-          element={
-            <ProtectedRoute>
-              <CreateSurvey />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recruit/create/:id"
-          element={
-            <ProtectedRoute>
-              <CreateSurvey />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="recruit/create/study/:id/questions"
-          element={
-            <ProtectedRoute>
-              <QuestionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="recruit/create/study/:id/phases"
-          element={
-            <ProtectedRoute>
-              <PhasesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="recruit/study/:id/phases"
-          element={
-            <ProtectedRoute>
-              <PhasesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="recruit/create/study/:id/phases/:phaseId/questions"
-          element={
-            <ProtectedRoute>
-              <QuestionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="recruit/study/:id/phases/:phaseId/questions"
-          element={
-            <ProtectedRoute>
-              <QuestionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/home/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-          <Route path="/recruit/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
-          <Route path="/recruit/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
-          <Route path="/recruit/targeting" element={<ProtectedRoute><Targeting /></ProtectedRoute>} />
-          <Route path="/home/invitations" element={<ProtectedRoute><MyInvitations /></ProtectedRoute>} />
-          <Route path="/home/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
-          <Route path="/home/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
-          <Route path="/home" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
-          <Route path="/recruit/candidates" element={<ProtectedRoute><Candidates /></ProtectedRoute>} />
-      </Routes>
-    </BrowserRouter>
-  );
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;
