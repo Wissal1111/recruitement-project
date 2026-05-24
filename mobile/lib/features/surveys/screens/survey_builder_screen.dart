@@ -174,6 +174,7 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
         'description': widget.surveyData['description'] ?? '',
         'studyCategory': 'SURVEY',
         'totalBudget': widget.surveyData['totalBudget'] ?? 500.0,
+        'isMultiPhase': _phases > 1,
         'phases': phasesPayload,
       };
 

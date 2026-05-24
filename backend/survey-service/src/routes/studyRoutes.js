@@ -3,6 +3,7 @@ const router = express.Router();
 const studyController = require('../controllers/studyController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
+
 // All study routes are protected with authMiddleware
 //router.use(authMiddleware);
 
@@ -39,5 +40,5 @@ router.post('/:studyId/phases/:phaseId/questions', authMiddleware, studyControll
 // DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - Remove a question
 router.delete('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.removeQuestion);
 //récupérer une phase par son phaseId seul
-router.get('/phase/:phaseId', auth, ctrl.getPhaseById);
+router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
 module.exports = router;

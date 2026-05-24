@@ -15,11 +15,30 @@ class SurveysScreen extends ConsumerStatefulWidget {
 
 class _SurveysScreenState extends ConsumerState<SurveysScreen> {
   int _filterIndex = 0;
-  final _filters = ['All Surveys', 'Active', 'Drafts', 'Completed'];
+  final _filters = ['Browse', 'My Surveys', 'Completed'];
 
-  // Helper function to format dates like "2h ago" or "Oct 12"
+  // Static Data for "Completed" (Showing phase point breakdown)
+  final List<Map<String, dynamic>> _completedSurveys = [
+    {
+      'title': 'Consumer Spending Habits 2024',
+      'totalEarned': '\$15',
+      'phases': [
+        {'name': 'Phase 0: Screening', 'amount': '\$5', 'status': 'Paid'},
+        {'name': 'Phase 1: Deep Dive', 'amount': '\$10', 'status': 'Paid'},
+      ]
+    },
+    {
+      'title': 'Smart Home Devices Feedback',
+      'totalEarned': '\$5',
+      'phases': [
+        {'name': 'Phase 0: Initial Survey', 'amount': '\$5', 'status': 'Paid'},
+      ]
+    },
+  ];
+
   String _formatDate(DateTime date) {
     final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${date.day}/${date.month}/${date.year}';
@@ -27,8 +46,8 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 1. Fetch real surveys from the backend
-    final surveysAsync = ref.watch(mySurveysProvider);
+    final mySurveys = ref.watch(mySurveysProvider);
+    final browsable = ref.watch(browseSurveysProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceBase,
@@ -48,7 +67,7 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top Header & Filters
+            // Header & Search
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(children: [
@@ -79,7 +98,7 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
                 const SizedBox(height: 16),
                 TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search your projects...',
+                    hintText: 'Search surveys...',
                     prefixIcon:
                         const Icon(Icons.search, color: AppTheme.textTertiary),
                     filled: true,
@@ -110,12 +129,11 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
                           ),
                           child: Text(_filters[i],
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: selected
-                                    ? Colors.white
-                                    : AppTheme.textSecondary,
-                              )),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: selected
+                                      ? Colors.white
+                                      : AppTheme.textSecondary)),
                         ),
                       );
                     },
@@ -125,135 +143,223 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 🔥 2. Display Real Data
+            // Dynamic Body
             Expanded(
-              child: surveysAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Center(child: Text('Error: $err')),
-                data: (allSurveys) {
-                  // Filter logic
-                  var filtered = allSurveys;
-                  if (_filterIndex == 1) {
-                    filtered = allSurveys
-                        .where((s) =>
-                            s.studyStatus == 'ACTIVE' ||
-                            s.studyStatus == 'PUBLISHED')
-                        .toList();
-                  } else if (_filterIndex == 2) {
-                    filtered = allSurveys
-                        .where((s) => s.studyStatus == 'DRAFT')
-                        .toList();
-                  } else if (_filterIndex == 3) {
-                    filtered = allSurveys
-                        .where((s) => s.studyStatus == 'COMPLETED')
-                        .toList();
-                  }
-
-                  if (filtered.isEmpty) {
-                    return const Center(
-                        child: Text('No surveys found.',
-                            style: TextStyle(color: AppTheme.textSecondary)));
-                  }
-
-                  return ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
-                      // Priority card (First item)
-                      _PrioritySurveyCard(
-                        survey: filtered[0],
-                        dateString: _formatDate(filtered[0].updatedAt),
-                        onTap: () => context.push('/surveys/detail',
-                            extra:
-                                filtered[0]), // <--- Add "extra: filtered[0]"
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Regular cards (Remaining items)
-                      ...filtered.skip(1).map((s) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _SurveyListCard(
-                              survey: s,
-                              onTap: () =>
-                                  context.push('/surveys/detail', extra: s),
-                            ),
-                          )),
-                      const SizedBox(height: 24),
-                    ],
-                  );
-                },
-              ),
+              child: _buildBodyContent(mySurveys, browsable),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-// ---- UPDATED WIDGETS TO USE THE REAL MODEL ----
+  Widget _buildBodyContent(
+      AsyncValue<List<Study>> mySurveys, AsyncValue<List<Study>> browsable) {
+    // =============================================
+    // TAB 0: BROWSE (Real surveys from other people)
+    // =============================================
+    if (_filterIndex == 0) {
+      return browsable.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => const Center(child: Text('Failed to load surveys')),
+        data: (surveys) {
+          if (surveys.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.explore_outlined,
+                        size: 64, color: AppTheme.textTertiary),
+                    SizedBox(height: 16),
+                    Text('No surveys to browse yet.',
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w600)),
+                    SizedBox(height: 8),
+                    Text(
+                        'When other creators publish surveys that match your profile, they will appear here.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 13, color: AppTheme.textTertiary)),
+                  ],
+                ),
+              ),
+            );
+          }
 
-class _PrioritySurveyCard extends StatelessWidget {
-  final Study survey;
-  final String dateString;
-  final VoidCallback onTap;
-  const _PrioritySurveyCard(
-      {required this.survey, required this.dateString, required this.onTap});
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: surveys.length,
+            itemBuilder: (context, index) {
+              return _BrowseCard(survey: surveys[index]);
+            },
+          );
+        },
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(20)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                  color: AppTheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(9999)),
-              child: Text(survey.studyStatus,
-                  style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primary,
-                      letterSpacing: 1)),
-            ),
-            const SizedBox(width: 10),
-            Text('Updated $dateString',
-                style: const TextStyle(
-                    fontSize: 12, color: AppTheme.textSecondary)),
-          ]),
-          const SizedBox(height: 12),
-          Text(survey.title,
-              style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary)),
-          const SizedBox(height: 16),
-          Row(children: [
-            _StatPill(
-                value: '${survey.phaseCount}',
-                label: 'PHASES',
-                color: AppTheme.primary),
-            const SizedBox(width: 16),
-            _StatPill(
-                value: survey.studyCategory,
-                label: 'CATEGORY',
-                color: AppTheme.textSecondary),
-          ]),
-        ]),
-      ),
+    // =============================================
+    // TAB 2: COMPLETED (Static phase breakdown)
+    // =============================================
+    if (_filterIndex == 2) {
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: _completedSurveys.length,
+        itemBuilder: (context, index) {
+          return _CompletedCard(survey: _completedSurveys[index]);
+        },
+      );
+    }
+
+    // =============================================
+    // TAB 1: MY SURVEYS (ALL your created surveys)
+    // =============================================
+    return mySurveys.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, _) => Center(child: Text('Error: $err')),
+      data: (allSurveys) {
+        if (allSurveys.isEmpty) {
+          return const Center(
+              child: Text('No surveys created yet.',
+                  style: TextStyle(color: AppTheme.textSecondary)));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: allSurveys.length,
+          itemBuilder: (context, index) {
+            final s = allSurveys[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _MySurveyCard(
+                survey: s,
+                dateString: _formatDate(s.updatedAt),
+                onTap: () => context.push('/surveys/detail', extra: s),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
 
-class _SurveyListCard extends StatelessWidget {
+// ---------------------------------------------------------
+// WIDGETS
+// ---------------------------------------------------------
+
+// 1. Browse Card (Real data from other creators)
+class _BrowseCard extends StatelessWidget {
   final Study survey;
+  const _BrowseCard({required this.survey});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.surfaceHigh, width: 1.5)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+                color: const Color(0xFFD1FAE5),
+                borderRadius: BorderRadius.circular(9999)),
+            child: Text(survey.studyStatus,
+                style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF059669),
+                    letterSpacing: 1)),
+          ),
+          const Spacer(),
+          Text('\$${survey.totalBudget.toStringAsFixed(0)}',
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primary)),
+        ]),
+        const SizedBox(height: 12),
+        Text(survey.title,
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary)),
+        const SizedBox(height: 4),
+        Text(survey.description ?? 'No description.',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style:
+                const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+        const SizedBox(height: 12),
+        Row(children: [
+          const Icon(Icons.layers_outlined,
+              size: 14, color: AppTheme.textTertiary),
+          const SizedBox(width: 4),
+          Text('${survey.phaseCount} PHASES',
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+        ]),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.textPrimary,
+                  side: const BorderSide(color: AppTheme.surfaceHigh),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
+              child: const Text('Details'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
+              child: const Text('Participate'),
+            ),
+          ),
+        ])
+      ]),
+    );
+  }
+}
+
+// 2. My Surveys Card (Real Data - Shows ALL statuses with budget)
+class _MySurveyCard extends StatelessWidget {
+  final Study survey;
+  final String dateString;
   final VoidCallback onTap;
-  const _SurveyListCard({required this.survey, required this.onTap});
+  const _MySurveyCard(
+      {required this.survey, required this.dateString, required this.onTap});
+
+  Color _statusColor() {
+    switch (survey.studyStatus) {
+      case 'DRAFT':
+        return AppTheme.textSecondary;
+      case 'PUBLISHED':
+        return AppTheme.primary;
+      case 'ACTIVE':
+        return AppTheme.successColor;
+      case 'COMPLETED':
+        return const Color(0xFF059669);
+      default:
+        return AppTheme.textSecondary;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,82 +369,121 @@ class _SurveyListCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: isDraft
-              ? Border.all(color: AppTheme.surfaceHigh, width: 1.5)
-              : null,
-        ),
-        child: Row(children: [
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                if (isDraft)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                        color: AppTheme.surfaceHigh,
-                        borderRadius: BorderRadius.circular(6)),
-                    child: const Text('DRAFT',
-                        style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textSecondary,
-                            letterSpacing: 1)),
-                  ),
-                Text(survey.title,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: isDraft
-                            ? AppTheme.textSecondary
-                            : AppTheme.textPrimary)),
-                const SizedBox(height: 4),
-                Row(children: [
-                  const Icon(Icons.layers_outlined,
-                      size: 13, color: AppTheme.textTertiary),
-                  const SizedBox(width: 4),
-                  Text('${survey.phaseCount} PHASES',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textTertiary)),
-                ]),
-              ])),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-                color: AppTheme.surfaceLow,
-                borderRadius: BorderRadius.circular(10)),
-            child: Icon(isDraft ? Icons.more_horiz : Icons.arrow_forward_ios,
-                size: 14, color: AppTheme.textSecondary),
-          ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppTheme.ambientShadow),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                  color: _statusColor().withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6)),
+              child: Text(survey.studyStatus,
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _statusColor(),
+                      letterSpacing: 1)),
+            ),
+            const Spacer(),
+            Text(dateString,
+                style: const TextStyle(
+                    fontSize: 12, color: AppTheme.textTertiary)),
+          ]),
+          const SizedBox(height: 12),
+          Text(survey.title,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary)),
+          const SizedBox(height: 12),
+          Row(children: [
+            const Icon(Icons.layers_outlined,
+                size: 14, color: AppTheme.textTertiary),
+            const SizedBox(width: 4),
+            Text('${survey.phaseCount} PHASES',
+                style: const TextStyle(
+                    fontSize: 12, color: AppTheme.textTertiary)),
+            const SizedBox(width: 16),
+            const Icon(Icons.monetization_on_outlined,
+                size: 14, color: AppTheme.primary),
+            const SizedBox(width: 4),
+            Text('\$${survey.totalBudget.toStringAsFixed(0)} BUDGET',
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.bold)),
+          ]),
         ]),
       ),
     );
   }
 }
 
-class _StatPill extends StatelessWidget {
-  final String value, label;
-  final Color color;
-  const _StatPill(
-      {required this.value, required this.label, required this.color});
+// 3. Completed Surveys Card (Phase Breakdown)
+class _CompletedCard extends StatelessWidget {
+  final Map<String, dynamic> survey;
+  const _CompletedCard({required this.survey});
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(value,
+  Widget build(BuildContext context) {
+    final phases = survey['phases'] as List;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.surfaceHigh, width: 1.5)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.check_circle,
+              color: AppTheme.successColor, size: 20),
+          const SizedBox(width: 8),
+          const Text('COMPLETED',
               style: TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.w800, color: color)),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 10,
-                  color: AppTheme.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.successColor,
                   letterSpacing: 1)),
-        ],
-      );
+          const Spacer(),
+          Text('Total: ${survey['totalEarned']}',
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary)),
+        ]),
+        const SizedBox(height: 12),
+        Text(survey['title'],
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary)),
+        const SizedBox(height: 16),
+        const Divider(color: AppTheme.surfaceHigh),
+        const SizedBox(height: 8),
+        ...phases.map((p) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(children: [
+                Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                        color: AppTheme.primary, shape: BoxShape.circle)),
+                const SizedBox(width: 10),
+                Text(p['name'],
+                    style: const TextStyle(
+                        fontSize: 13, color: AppTheme.textSecondary)),
+                const Spacer(),
+                Text(p['amount'],
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primary)),
+              ]),
+            )),
+      ]),
+    );
+  }
 }
