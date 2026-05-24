@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import SideBar from "../../components/SideBar";
+import SideBarParticipant from "../../components/recruitment/SideBarParticipant";
 import TopNavBar from "../../components/TopNavBar";
 import { getMyParticipations, completeParticipation } from "../../api/RecruitmentApi";
 import { Activity, CheckCircle2, XCircle, Trophy } from "lucide-react";
@@ -46,7 +46,7 @@ export default function MyParticipations() {
     return (
         <div className="dashboard">
             <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <SideBar page="activity" part="home" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <SideBarParticipant page="activity" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">
                 {/* Header */}

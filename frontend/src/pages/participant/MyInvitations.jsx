@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import SideBar from "../../components/SideBar";
+import SideBarParticipant from "../../components/recruitment/SideBarParticipant";
 import TopNavBar from "../../components/TopNavBar";
 import { getMyInvitations, acceptInvitation, declineInvitation } from "../../api/RecruitmentApi";
 import { Clock, MapPin, Video, Calendar } from "lucide-react";
@@ -47,7 +47,7 @@ export default function MyInvitations() {
     return (
         <div className="dashboard">
             <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <SideBar page="invitations" part="home" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <SideBarParticipant page="invitations" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">
                 {/* Header */}

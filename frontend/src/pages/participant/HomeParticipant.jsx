@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import SideBar from "../../components/SideBar";
+import SideBarParticipant from "../../components/recruitment/SideBarParticipant";
 import TopNavBar from "../../components/TopNavBar";
 import { getMyInvitations, getMyParticipations } from "../../api/RecruitmentApi";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +43,7 @@ export default function HomeParticipant() {
     return (
         <div className="dashboard">
             <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <SideBar page="home" part="home" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <SideBarParticipant page="home" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">
                 {/* Hero Banner */}

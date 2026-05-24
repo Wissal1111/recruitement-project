@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import SideBar from "../../components/SideBar";
+import SideBarParticipant from "../../components/recruitment/SideBarParticipant";
 import TopNavBar from "../../components/TopNavBar";
-import { getEligibleStudies } from "../../api/RecruitmentApi";
-import { applyToStudy } from "../../api/RecruitmentApi";
+import { getEligibleStudies, applyToStudy } from "../../api/RecruitmentApi";
 import { Search, BookOpen, Users, Clock } from "lucide-react";
 
 export default function BrowseStudies() {
@@ -15,7 +14,7 @@ export default function BrowseStudies() {
     useEffect(() => {
         getEligibleStudies()
             .then(res => setStudies(res.data))
-            .catch(console.error)
+            .catch(() => setStudies([]))
             .finally(() => setLoading(false));
     }, []);
 
@@ -34,7 +33,7 @@ export default function BrowseStudies() {
     return (
         <div className="dashboard">
             <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <SideBar page="browse" part="home" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <SideBarParticipant page="browse" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">
                 <div style={{ marginBottom: 28 }}>
@@ -80,9 +79,12 @@ function StudyCard({ study, onApply, loading, applied }) {
              onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"}
              onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
         >
-            {/* Icon + Title */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 10, background: "var(--background-blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{
+                    width: 42, height: 42, borderRadius: 10,
+                    background: "var(--background-blue)",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                }}>
                     <BookOpen size={18} color="var(--blue-text)" />
                 </div>
                 <div>
@@ -95,34 +97,37 @@ function StudyCard({ study, onApply, loading, applied }) {
                 </div>
             </div>
 
-            {/* Description */}
             {study.description && (
-                <p style={{ fontSize: 13, color: "var(--content)", lineHeight: 1.5, margin: 0,
-                    display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                <p style={{
+                    fontSize: 13, color: "var(--content)", lineHeight: 1.5, margin: 0,
+                    display: "-webkit-box", WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical", overflow: "hidden"
+                }}>
                     {study.description}
                 </p>
             )}
 
-            {/* Meta */}
             <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--content)", flexWrap: "wrap" }}>
                 {study.maxParticipants && (
                     <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <Users size={11} /> {study.maxParticipants} spots
-          </span>
+                        <Users size={11} /> {study.maxParticipants} spots
+                    </span>
                 )}
                 {study.estimatedDuration && (
                     <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <Clock size={11} /> {study.estimatedDuration} min
-          </span>
+                        <Clock size={11} /> {study.estimatedDuration} min
+                    </span>
                 )}
             </div>
 
-            {/* Eligible badge */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ background: "#F0FDF4", color: "#15803D", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
-          ✓ You're eligible
-        </span>
-
+                <span style={{
+                    background: "#F0FDF4", color: "#15803D",
+                    padding: "3px 10px", borderRadius: 20,
+                    fontSize: 11, fontWeight: 600
+                }}>
+                    ✓ You're eligible
+                </span>
                 <button
                     onClick={onApply}
                     disabled={!!loading || applied}
@@ -130,7 +135,8 @@ function StudyCard({ study, onApply, loading, applied }) {
                         background: applied ? "#F0FDF4" : "var(--linear-blue)",
                         color: applied ? "#15803D" : "#fff",
                         border: "none", borderRadius: 8, padding: "8px 16px",
-                        fontWeight: 600, fontSize: 13, cursor: applied ? "default" : "pointer",
+                        fontWeight: 600, fontSize: 13,
+                        cursor: applied ? "default" : "pointer",
                         opacity: loading ? 0.6 : 1, transition: "all 0.2s"
                     }}>
                     {loading ? "..." : applied ? "Applied ✓" : "Apply"}
@@ -142,8 +148,17 @@ function StudyCard({ study, onApply, loading, applied }) {
 
 function EmptyState() {
     return (
-        <div style={{ textAlign: "center", padding: "70px 20px", background: "#fff", borderRadius: "var(--radius)", border: "1px solid #E8ECF4" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--background-blue)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <div style={{
+            textAlign: "center", padding: "70px 20px",
+            background: "#fff", borderRadius: "var(--radius)",
+            border: "1px solid #E8ECF4"
+        }}>
+            <div style={{
+                width: 64, height: 64, borderRadius: "50%",
+                background: "var(--background-blue)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 16px"
+            }}>
                 <Search size={28} color="var(--blue-text)" />
             </div>
             <h3 style={{ fontWeight: 700, color: "var(--title)", marginBottom: 6 }}>No studies available</h3>
@@ -157,8 +172,11 @@ function EmptyState() {
 function LoadingSkeleton() {
     return (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-            {[1,2,3].map(i => (
-                <div key={i} style={{ background: "#fff", borderRadius: "var(--medium-radius)", padding: "20px", border: "1px solid #E8ECF4", height: 180 }}>
+            {[1, 2, 3].map(i => (
+                <div key={i} style={{
+                    background: "#fff", borderRadius: "var(--medium-radius)",
+                    padding: "20px", border: "1px solid #E8ECF4", height: 180
+                }}>
                     <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
                         <div style={{ width: 42, height: 42, borderRadius: 10, background: "#F0F4FA" }} />
                         <div style={{ flex: 1 }}>
