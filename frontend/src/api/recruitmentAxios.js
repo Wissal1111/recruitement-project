@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const recruitmentApi = axios.create({
-    baseURL: "http://localhost:8083/api/recruitment",
+    baseURL: "http://localhost:90/api",
 });
 
 recruitmentApi.interceptors.request.use((config) => {
