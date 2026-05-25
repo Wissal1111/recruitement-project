@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme.dart';
 import '../models/survey_model.dart';
+import '../providers/recruitment_provider.dart';
 import '../providers/survey_provider.dart';
 
 class SurveysScreen extends ConsumerStatefulWidget {
@@ -155,9 +156,7 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
 
   Widget _buildBodyContent(
       AsyncValue<List<Study>> mySurveys, AsyncValue<List<Study>> browsable) {
-    // =============================================
-    // TAB 0: BROWSE (Real surveys from other people)
-    // =============================================
+    // TAB 0: BROWSE
     if (_filterIndex == 0) {
       return browsable.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -168,55 +167,112 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
               child: Padding(
                 padding: EdgeInsets.all(40),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.explore_outlined,
-                        size: 64, color: AppTheme.textTertiary),
-                    SizedBox(height: 16),
-                    Text('No surveys to browse yet.',
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600)),
-                    SizedBox(height: 8),
-                    Text(
-                        'When other creators publish surveys that match your profile, they will appear here.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 13, color: AppTheme.textTertiary)),
-                  ],
-                ),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.explore_outlined,
+                          size: 64, color: AppTheme.textTertiary),
+                      SizedBox(height: 16),
+                      Text('No surveys to browse yet.',
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w600)),
+                      SizedBox(height: 8),
+                      Text(
+                          'When other creators publish surveys, they will appear here.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 13, color: AppTheme.textTertiary)),
+                    ]),
               ),
             );
           }
-
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: surveys.length,
+            itemBuilder: (context, index) =>
+                _BrowseCard(survey: surveys[index]),
+          );
+        },
+      );
+    }
+
+    // TAB 2: COMPLETED (Real participations from recruitment service)
+    if (_filterIndex == 2) {
+      final participationsAsync = ref.watch(myParticipationsProvider);
+      return participationsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) =>
+            const Center(child: Text('Failed to load completed surveys')),
+        data: (participations) {
+          final completed =
+              participations.where((p) => p['status'] == 'COMPLETED').toList();
+          if (completed.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_outline,
+                          size: 64, color: AppTheme.textTertiary),
+                      SizedBox(height: 16),
+                      Text('No completed surveys yet.',
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w600)),
+                      SizedBox(height: 8),
+                      Text(
+                          'Surveys you finish will appear here with your earned rewards.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 13, color: AppTheme.textTertiary)),
+                    ]),
+              ),
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: completed.length,
             itemBuilder: (context, index) {
-              return _BrowseCard(survey: surveys[index]);
+              final p = completed[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.surfaceHigh)),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Icon(Icons.check_circle,
+                            color: AppTheme.successColor, size: 20),
+                        const SizedBox(width: 8),
+                        const Text('COMPLETED',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.successColor,
+                                letterSpacing: 1)),
+                      ]),
+                      const SizedBox(height: 12),
+                      Text('Study: ${p['studyId'] ?? 'Unknown'}',
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary)),
+                    ]),
+              );
             },
           );
         },
       );
     }
 
-    // =============================================
-    // TAB 2: COMPLETED (Static phase breakdown)
-    // =============================================
-    if (_filterIndex == 2) {
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _completedSurveys.length,
-        itemBuilder: (context, index) {
-          return _CompletedCard(survey: _completedSurveys[index]);
-        },
-      );
-    }
-
-    // =============================================
-    // TAB 1: MY SURVEYS (ALL your created surveys)
-    // =============================================
+    // TAB 1: MY SURVEYS
     return mySurveys.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, _) => Center(child: Text('Error: $err')),
@@ -226,7 +282,6 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
               child: Text('No surveys created yet.',
                   style: TextStyle(color: AppTheme.textSecondary)));
         }
-
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           itemCount: allSurveys.length,
@@ -235,10 +290,9 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _MySurveyCard(
-                survey: s,
-                dateString: _formatDate(s.updatedAt),
-                onTap: () => context.push('/surveys/detail', extra: s),
-              ),
+                  survey: s,
+                  dateString: _formatDate(s.updatedAt),
+                  onTap: () => context.push('/surveys/detail', extra: s)),
             );
           },
         );
@@ -311,7 +365,8 @@ class _BrowseCard extends StatelessWidget {
         Row(children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: () =>
+                  context.push('/surveys/participant-detail', extra: survey),
               style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.textPrimary,
                   side: const BorderSide(color: AppTheme.surfaceHigh),
@@ -323,7 +378,10 @@ class _BrowseCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () => context.push('/surveys/answer', extra: {
+                'survey': survey,
+                'phaseIndex': 0,
+              }),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,

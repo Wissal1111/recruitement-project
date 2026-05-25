@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
 import '../../../shared/theme.dart';
 import '../../surveys/providers/survey_provider.dart';
+import '../providers/recruitment_provider.dart';
 
 class SurveyBuilderScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> surveyData;
@@ -20,7 +21,6 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
   int _phases = 1;
   bool _isPublishing = false;
 
-  // We group questions by Phase. phaseQuestions[0] = questions for phase 1.
   final Map<int, List<Map<String, dynamic>>> _phaseQuestions = {
     0: [
       {
@@ -31,27 +31,22 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
     ]
   };
 
-  // 🚨 HERE IS THE MAGIC INIT STATE! 🚨
-  // This runs the moment the screen opens and loads your database data into the UI.
   @override
   void initState() {
     super.initState();
 
-    // Check if we are editing an EXISTING survey (it has a studyId and phases)
     if (widget.surveyData['studyId'] != null &&
         widget.surveyData['phases'] != null) {
       final existingPhases = widget.surveyData['phases'] as List;
 
       if (existingPhases.isNotEmpty) {
         _phases = existingPhases.length;
-        _phaseQuestions.clear(); // Clear the default blank question
+        _phaseQuestions.clear();
 
-        // Loop through the phases from the database
         for (int i = 0; i < existingPhases.length; i++) {
           final phase = existingPhases[i];
           final questions = phase['questions'] as List? ?? [];
 
-          // Convert database questions back into Flutter UI format
           _phaseQuestions[i] = questions.map<Map<String, dynamic>>((q) {
             String uiType = 'SHORT TEXT';
             if (q['questionType'] == 'SINGLE_CHOICE')
@@ -60,12 +55,11 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
               uiType = 'CHECKBOX';
             else if (q['questionType'] == 'RATING_SCALE') uiType = 'RATING';
 
-            // Clean up the backend's default blank space (' ')
             String text = q['text'] ?? '';
             if (text.trim().isEmpty) text = '';
 
             return {
-              'id': q['questionId'], // Keep ID so we update the same question
+              'id': q['questionId'],
               'type': uiType,
               'text': text,
               'required': q['isRequired'] ?? false,
@@ -83,7 +77,7 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
   void _showAddQuestion() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Prevents overflow!
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -107,13 +101,12 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
     );
   }
 
-  // Publish OR Update to Backend
   Future<void> _publish() async {
     setState(() => _isPublishing = true);
     try {
       final dio = ref.read(dioProvider);
 
-      // 1. Build the phases payload
+      // 1. Build phases payload
       final phasesPayload = [];
       for (int i = 0; i < _phases; i++) {
         final qList = _phaseQuestions[i] ?? [];
@@ -152,7 +145,7 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
           'title': 'Phase ${i + 1}',
           'phaseType': 'NORMAL',
           'rewardAmount': 0,
-          'maxParticipants': 0,
+          'maxParticipants': widget.surveyData['maxParticipants'] ?? 0,
           'questions': formattedQuestions.isNotEmpty
               ? formattedQuestions
               : [
@@ -166,7 +159,7 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
         });
       }
 
-      // 2. Build the final payload
+      // 2. Build study payload
       final payload = {
         'title': widget.surveyData['title']?.isEmpty == true
             ? 'Untitled Survey'
@@ -178,28 +171,68 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
         'phases': phasesPayload,
       };
 
-      // 3. THE SMART LOGIC: Update vs Create
       final existingStudyId = widget.surveyData['studyId'];
 
       if (existingStudyId != null) {
-        // UPDATE EXISTING SURVEY (PUT)
+        // ── UPDATE existing survey ──
         await dio.put('/api/studies/$existingStudyId', data: payload);
+
+        // Also update criteria if criteria fields are present
+        if (widget.surveyData['ageMin'] != null) {
+          try {
+            await ref
+                .read(recruitmentRepositoryProvider)
+                .setCriteria(existingStudyId, _buildCriteriaPayload());
+          } catch (e) {
+            debugPrint('Criteria update warning: $e');
+          }
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Survey Updated Successfully!'),
               backgroundColor: AppTheme.successColor));
         }
       } else {
-        // CREATE NEW SURVEY (POST)
-        await dio.post('/api/studies', data: payload);
+        // ── CREATE new survey ──
+        // Step 1: Create as DRAFT first
+        final createResponse = await dio.post('/api/studies', data: payload);
+
+        final newStudyId = createResponse.data['studyId'] ??
+            createResponse.data['study']?['studyId'];
+
+        if (newStudyId == null) {
+          throw Exception('Server did not return a studyId');
+        }
+
+        // Step 2: Set criteria in recruitment service
+        try {
+          await ref
+              .read(recruitmentRepositoryProvider)
+              .setCriteria(newStudyId.toString(), _buildCriteriaPayload());
+        } catch (e) {
+          debugPrint('Criteria save warning (non-fatal): $e');
+        }
+
+        // Step 3: Set status to ACTIVE so it appears in Browse
+        // (PATCH sets to PUBLISHED, then PUT sets studyStatus to ACTIVE)
+        try {
+          await dio.patch('/api/studies/$newStudyId/status');
+          // The PATCH sets it to PUBLISHED per backend code.
+          // Now force it to ACTIVE so /active endpoint returns it:
+          await dio
+              .put('/api/studies/$newStudyId', data: {'studyStatus': 'ACTIVE'});
+        } catch (e) {
+          debugPrint('Status update warning (non-fatal): $e');
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Survey Created Successfully!'),
+              content: Text('Survey Published Successfully!'),
               backgroundColor: AppTheme.successColor));
         }
       }
 
-      // 4. Refresh the home screen and go back
       ref.invalidate(mySurveysProvider);
       if (mounted) context.go('/home');
     } catch (e) {
@@ -211,6 +244,17 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
     } finally {
       if (mounted) setState(() => _isPublishing = false);
     }
+  }
+
+  Map<String, dynamic> _buildCriteriaPayload() {
+    return {
+      'ageMin': widget.surveyData['ageMin'] ?? 18,
+      'ageMax': widget.surveyData['ageMax'] ?? 65,
+      'profession': widget.surveyData['profession'],
+      'educationLevel': widget.surveyData['education'],
+      'country': widget.surveyData['country'],
+      'interests': widget.surveyData['interests'] ?? [],
+    };
   }
 
   @override
@@ -225,7 +269,6 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -253,8 +296,6 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
                 ),
               ]),
             ),
-
-            // Phase tabs
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -314,8 +355,6 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
                 ]),
               ),
             ),
-
-            // Questions list
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -415,9 +454,6 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
   }
 }
 
-// ----------------------------------------------------
-// EDITED QUESTION CARD: Allows editing Option Texts!
-// ----------------------------------------------------
 class _QuestionCard extends StatelessWidget {
   final int index;
   final Map<String, dynamic> question;
@@ -464,8 +500,6 @@ class _QuestionCard extends StatelessWidget {
               color: AppTheme.textTertiary, size: 20),
         ]),
         const SizedBox(height: 12),
-
-        // 1. EDITABLE QUESTION TEXT
         TextField(
           controller: TextEditingController(text: question['text'])
             ..selection = TextSelection.collapsed(
@@ -482,8 +516,6 @@ class _QuestionCard extends StatelessWidget {
           onChanged: (v) => question['text'] = v,
         ),
         const SizedBox(height: 12),
-
-        // 2. DUMMY ANSWER UI based on Type
         if (type == 'SHORT TEXT')
           Container(
               height: 48,
@@ -496,7 +528,6 @@ class _QuestionCard extends StatelessWidget {
                       padding: EdgeInsets.only(left: 12),
                       child: Text('Short answer text',
                           style: TextStyle(color: AppTheme.textTertiary))))),
-
         if (type == 'PARAGRAPH')
           Container(
               height: 90,
@@ -509,7 +540,6 @@ class _QuestionCard extends StatelessWidget {
                       padding: EdgeInsets.all(12),
                       child: Text('Long answer text...',
                           style: TextStyle(color: AppTheme.textTertiary))))),
-
         if (type == 'RATING')
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -526,8 +556,6 @@ class _QuestionCard extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.textSecondary))))),
           ),
-
-        // 3. EDITABLE OPTIONS for Choice Types
         if (hasOptions && question['options'] != null) ...[
           ...(question['options'] as List<String>).asMap().entries.map((e) {
             final optIndex = e.key;
@@ -557,7 +585,6 @@ class _QuestionCard extends StatelessWidget {
               ],
             );
           }),
-          // Add Option Button
           TextButton.icon(
             onPressed: onAddOption,
             icon: const Icon(Icons.add, size: 16),
@@ -566,11 +593,9 @@ class _QuestionCard extends StatelessWidget {
                 foregroundColor: AppTheme.primary, padding: EdgeInsets.zero),
           ),
         ],
-
         const SizedBox(height: 12),
         const Divider(height: 1, color: Color(0xFFF0F2FA)),
         const SizedBox(height: 12),
-
         Row(children: [
           GestureDetector(
               onTap: onDelete,
