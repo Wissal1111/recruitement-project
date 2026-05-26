@@ -29,7 +29,10 @@ export default function Onboarding() {
         try {
             await updateProfile({ gender, age, dateOfBirth, education, city, country, profession });
 
-           
+             {/*Soumettre les interests si sélectionnés*/}
+            if (selectedInterests.length > 0) {
+                await addUserInterests(selectedInterests);
+            }
 
             console.log("Profile updated");
             navigate("/home");
