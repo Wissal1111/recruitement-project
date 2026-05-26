@@ -29,8 +29,8 @@ export default function HomeParticipant() {
     const [eligibleStudies, setEligibleStudies] = useState([]);
     const navigate = useNavigate();
 
-    const session = JSON.parse(localStorage.getItem("session") || "{}");
-    const firstName = session?.user?.firstname || session?.user?.firstName || session?.user?.name || "Alex";
+    const session = JSON.parse(localStorage.getItem("user") || "{}");
+    const firstName = localStorage.getItem("firstname") || session?.firstname || "there";
 
     useEffect(() => {
         getMyInvitations()

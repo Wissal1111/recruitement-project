@@ -19,7 +19,9 @@ import Candidates from "./pages/recruit/Candidates";
 import MyInvitations from "./pages/participant/MyInvitations";
 import MyParticipations from "./pages/participant/MyParticipations";
 import HomeParticipant from "./pages/participant/HomeParticipant";
-
+import RecruitRouter from "./pages/RecruitRouter";
+import Rewards from "./pages/participant/Rewards";
+import Screening from "./pages/recruit/Screening";
 function App() {
     return (
         <BrowserRouter>
@@ -36,12 +38,16 @@ function App() {
                 <Route path="/home/invitations" element={<ProtectedRoute><MyInvitations /></ProtectedRoute>} />
                 <Route path="/home/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
                 <Route path="/home/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
-
+                {/* Redirige /participate vers /home */}
+                <Route path="/participate" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
+                <Route path="/home/rewards" element={<ProtectedRoute><Rewards /></ProtectedRoute>} />
                 {/* Onboarding */}
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
                 {/* Chercheur */}
-                <Route path="/recruit" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />
+                {/*<Route path="/recruit" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />*/}
+                <Route path="/recruit" element={<ProtectedRoute><RecruitRouter /></ProtectedRoute>} />
+                <Route path="/recruit/surveys" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />
                 <Route path="/recruit/create" element={<ProtectedRoute><CreateSurvey /></ProtectedRoute>} />
                 <Route path="/recruit/create/:id" element={<ProtectedRoute><CreateSurvey /></ProtectedRoute>} />
                 <Route path="/recruit/create/study/:id/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
@@ -53,7 +59,8 @@ function App() {
                 <Route path="/recruit/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
                 <Route path="/recruit/targeting" element={<ProtectedRoute><Targeting /></ProtectedRoute>} />
                 <Route path="/recruit/candidates" element={<ProtectedRoute><Candidates /></ProtectedRoute>} />
-
+                <Route path="/recruit/become-creator" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />
+                <Route path="/recruit/screening" element={<ProtectedRoute><Screening /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     );

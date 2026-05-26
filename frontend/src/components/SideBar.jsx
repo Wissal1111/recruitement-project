@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import './SideBar.css'
 import {
     Info, LayoutDashboard, UserRound, Settings, Bell,
-    Activity, Files, SquarePlus, SquarePen, UsersRound,
+    Activity, Files, SquarePlus, Search, UsersRound,
     Target, MailPlus, ClipboardList
 } from "lucide-react"
 
@@ -46,7 +46,7 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                 {part === "recruit" && <>
                     <p>SURVEYS</p>
                     <ul>
-                        <li className={page === "mysurveys" ? 'selected-page' : ''} onClick={() => go("/recruit")}>
+                        <li className={page === "mysurveys" ? 'selected-page' : ''} onClick={() => go("/recruit/surveys")}>
                             <Files size={16} /> My Surveys
                         </li>
                         <li className={page === "createsurvey" ? 'selected-page' : ''} onClick={() => go("/recruit/create")}>
@@ -66,6 +66,9 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                         </li>
                         <li className={page === "targeting" ? 'selected-page' : ''} onClick={() => go("/recruit/targeting")}>
                             <Target size={16} /> Targeting
+                        </li>
+                        <li className={page === "screening" ? 'selected-page' : ''} onClick={() => go("/recruit/screening")}>
+                            <Search size={16} /> Screening
                         </li>
                     </ul>
                 </>}

@@ -5,6 +5,7 @@ import {
     Activity, Trophy, Search
 } from "lucide-react"
 
+
 export default function SideBarParticipant({ page, isOpen, onClose }) {
     const navigate = useNavigate()
 
@@ -38,6 +39,7 @@ export default function SideBarParticipant({ page, isOpen, onClose }) {
                     <li className={page === "profile" ? 'selected-page' : ''} onClick={() => go("/home/profile")}>
                         <UserRound size={16} /> Profile
                     </li>
+
                 </ul>
             </div>
         </>
