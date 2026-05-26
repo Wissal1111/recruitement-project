@@ -3,7 +3,7 @@ import './SideBar.css'
 import {
     Info, LayoutDashboard, UserRound, Settings, Bell,
     Activity, Files, SquarePlus, Search, UsersRound,
-    Target, MailPlus, ClipboardList
+    Target, MailPlus, ClipboardList,DollarSign
 } from "lucide-react"
 
 export default function SideBar({ page, part, isOpen, onClose }) {
@@ -69,6 +69,9 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                         </li>
                         <li className={page === "screening" ? 'selected-page' : ''} onClick={() => go("/recruit/screening")}>
                             <Search size={16} /> Screening
+                        </li>
+                        <li className={page === "slotsrewards" ? 'selected-page' : ''} onClick={() => go("/recruit/slots")}>
+                            <DollarSign size={16} /> Slots & Rewards
                         </li>
                     </ul>
                 </>}

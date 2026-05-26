@@ -22,6 +22,7 @@ import HomeParticipant from "./pages/participant/HomeParticipant";
 import RecruitRouter from "./pages/RecruitRouter";
 import Rewards from "./pages/participant/Rewards";
 import Screening from "./pages/recruit/Screening";
+import SlotsRewards from "./pages/recruit/SlotsRewards";
 function App() {
     return (
         <BrowserRouter>
@@ -61,6 +62,7 @@ function App() {
                 <Route path="/recruit/candidates" element={<ProtectedRoute><Candidates /></ProtectedRoute>} />
                 <Route path="/recruit/become-creator" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />
                 <Route path="/recruit/screening" element={<ProtectedRoute><Screening /></ProtectedRoute>} />
+                <Route path="/recruit/slots" element={<ProtectedRoute><SlotsRewards /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     );
