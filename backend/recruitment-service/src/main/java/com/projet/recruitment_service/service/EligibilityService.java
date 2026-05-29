@@ -1,5 +1,6 @@
 package com.projet.recruitment_service.service;
-
+import java.util.*;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -112,10 +113,11 @@ public class EligibilityService {
                     ? authToken
                     : "Bearer " + authToken;
 
-            // Fetch broadly instead of strict criteria search
-            Map<String, Object> broadSearch = new HashMap<>();
+            UUID requesterId = extractUserIdFromToken(bearerToken);
 
-            List<UserProfileDto> users = userServiceClient.searchProfiles(bearerToken, broadSearch);
+            List<UserProfileDto> users = userServiceClient.searchProfiles(
+                    bearerToken,
+                    new HashMap<>());
 
             if (users == null) {
                 return Collections.emptyList();
@@ -124,9 +126,17 @@ public class EligibilityService {
             List<UserProfileDto> matchedUsers = new ArrayList<>();
 
             for (UserProfileDto user : users) {
+                // Do not show creator themself as eligible participant
+                if (requesterId != null && user.getUserId() != null && user.getUserId().equals(requesterId)) {
+                    continue;
+                }
+
                 MatchResult result = calculateMatch(user, criteria);
 
-                if (result.matchScore >= 70 || result.matchedCount >= 3) {
+                // Show users with good match.
+                // 60 because 2/3 criteria = 67%.
+                // Also show if at least 2 criteria matched.
+                if (result.matchScore >= 60 || result.matchedCount >= 2) {
                     user.setMatchScore(result.matchScore);
                     user.setMatchedCriteria(result.matchedCriteria);
                     matchedUsers.add(user);
@@ -149,31 +159,31 @@ public class EligibilityService {
 
     private MatchResult calculateMatch(UserProfileDto profile, EligibilityCriteria criteria) {
         int totalCriteria = 0;
-        int matchedCriteriaCount = 0;
-        List<String> matchedCriteriaNames = new ArrayList<>();
+        int matchedCount = 0;
+        List<String> matchedCriteria = new ArrayList<>();
 
         // AGE
         if (criteria.getAgeMin() != null || criteria.getAgeMax() != null) {
-            totalCriteria++;
-
             Integer age = profile.getAge();
-            boolean ageOk = true;
 
-            if (age == null) {
-                ageOk = false;
-            }
+            // If profile has no age, skip age criterion instead of failing it.
+            if (age != null) {
+                totalCriteria++;
 
-            if (age != null && criteria.getAgeMin() != null && age < criteria.getAgeMin()) {
-                ageOk = false;
-            }
+                boolean ok = true;
 
-            if (age != null && criteria.getAgeMax() != null && age > criteria.getAgeMax()) {
-                ageOk = false;
-            }
+                if (criteria.getAgeMin() != null && age < criteria.getAgeMin()) {
+                    ok = false;
+                }
 
-            if (ageOk) {
-                matchedCriteriaCount++;
-                matchedCriteriaNames.add("age");
+                if (criteria.getAgeMax() != null && age > criteria.getAgeMax()) {
+                    ok = false;
+                }
+
+                if (ok) {
+                    matchedCount++;
+                    matchedCriteria.add("age");
+                }
             }
         }
 
@@ -183,8 +193,8 @@ public class EligibilityService {
 
             if (profile.getGender() != null &&
                     criteria.getGender().equalsIgnoreCase(profile.getGender())) {
-                matchedCriteriaCount++;
-                matchedCriteriaNames.add("gender");
+                matchedCount++;
+                matchedCriteria.add("gender");
             }
         }
 
@@ -194,8 +204,8 @@ public class EligibilityService {
 
             if (profile.getCountry() != null &&
                     criteria.getCountry().equalsIgnoreCase(profile.getCountry())) {
-                matchedCriteriaCount++;
-                matchedCriteriaNames.add("country");
+                matchedCount++;
+                matchedCriteria.add("country");
             }
         }
 
@@ -204,8 +214,8 @@ public class EligibilityService {
             totalCriteria++;
 
             if (educationMatches(criteria.getEducationLevel(), profile.getEducation())) {
-                matchedCriteriaCount++;
-                matchedCriteriaNames.add("education");
+                matchedCount++;
+                matchedCriteria.add("education");
             }
         }
 
@@ -216,31 +226,63 @@ public class EligibilityService {
             List<UUID> userInterests = profile.getInterestIds();
 
             if (userInterests != null && !userInterests.isEmpty()) {
-                boolean hasCommonInterest = false;
+                boolean common = false;
 
-                for (UUID interestId : userInterests) {
-                    if (criteria.getInterestIds().contains(interestId)) {
-                        hasCommonInterest = true;
+                for (UUID id : userInterests) {
+                    if (criteria.getInterestIds().contains(id)) {
+                        common = true;
                         break;
                     }
                 }
 
-                if (hasCommonInterest) {
-                    matchedCriteriaCount++;
-                    matchedCriteriaNames.add("interests");
+                if (common) {
+                    matchedCount++;
+                    matchedCriteria.add("interests");
                 }
             }
         }
 
-        // If no criteria exists, everyone matches 100%
         if (totalCriteria == 0) {
             return new MatchResult(100, 0, List.of("all"));
         }
 
-        int score = (int) Math.round((matchedCriteriaCount * 100.0) / totalCriteria);
+        int score = (int) Math.round((matchedCount * 100.0) / totalCriteria);
 
-        return new MatchResult(score, matchedCriteriaCount, matchedCriteriaNames);
+        return new MatchResult(score, matchedCount, matchedCriteria);
     }
+
+    private UUID extractUserIdFromToken(String bearerToken) {
+    try {
+        String token = bearerToken.replace("Bearer ", "");
+        String[] parts = token.split("\\.");
+
+        if (parts.length != 3) {
+            return null;
+        }
+
+        String payload = parts[1];
+
+        int padding = (4 - payload.length() % 4) % 4;
+        payload = payload + "=".repeat(padding);
+
+        byte[] decoded = Base64.getUrlDecoder().decode(payload);
+        String json = new String(decoded);
+
+        int index = json.indexOf("\"userId\"");
+        if (index == -1) return null;
+
+        int colon = json.indexOf(":", index);
+        int firstQuote = json.indexOf("\"", colon);
+        int secondQuote = json.indexOf("\"", firstQuote + 1);
+
+        String userId = json.substring(firstQuote + 1, secondQuote);
+
+        return UUID.fromString(userId);
+    } catch (Exception e) {
+        return null;
+    }
+}
+
 
     private boolean educationMatches(EducationLevel criteriaEducation, String userEducationRaw) {
         if (criteriaEducation == null || userEducationRaw == null) {

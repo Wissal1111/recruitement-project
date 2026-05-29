@@ -15,14 +15,10 @@ public class UserProfileDto {
     private Integer age;
     private String gender;
     private String country;
-
-    // Keep this String because user-service may send:
-    // "Master's Degree", "MASTER", "Bachelor's Degree", etc.
     private String education;
 
     private List<UUID> interestIds;
 
-    // Added for matching result
     private Integer matchScore;
     private List<String> matchedCriteria;
 }

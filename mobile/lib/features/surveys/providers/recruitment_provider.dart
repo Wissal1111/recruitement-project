@@ -21,7 +21,7 @@ class RecruitmentRepository {
       return [];
     }
   }
-
+  
   Future<void> acceptInvitation(String invitationId) async {
     await _dio.put('/api/recruitment/invitations/$invitationId/accept');
   }
@@ -64,31 +64,56 @@ class RecruitmentRepository {
   }
 
   Future<List<dynamic>> getEligibleUsers(String studyId) async {
-    try {
-      final res = await _dio.get(
-        '/api/recruitment/studies/$studyId/criteria/eligible-users',
-        options: Options(receiveTimeout: const Duration(seconds: 10)),
-      );
+  try {
+    final res = await _dio.get(
+      '/api/recruitment/studies/$studyId/criteria/eligible-users',
+      options: Options(receiveTimeout: const Duration(seconds: 10)),
+    );
 
-      if (res.data is List) {
-        return res.data as List;
-      }
-
-      return [];
-    } catch (e) {
-      debugPrint('getEligibleUsers error: $e');
-      return [];
+    if (res.data is List) {
+      return res.data as List;
     }
-  }
 
+    return [];
+  } on DioException catch (e) {
+    debugPrint('getEligibleUsers status: ${e.response?.statusCode}');
+    debugPrint('getEligibleUsers data: ${e.response?.data}');
+    throw Exception(e.response?.data?.toString() ?? 'Failed to load users');
+  } catch (e) {
+    debugPrint('getEligibleUsers error: $e');
+    throw Exception(e.toString());
+  }
+}
   Future<void> setCriteria(
       String studyId, Map<String, dynamic> criteria) async {
     try {
-      await _dio.post('/api/recruitment/studies/$studyId/criteria',
+      debugPrint('SET CRITERIA PAYLOAD: $criteria');
+
+      await _dio.post(
+        '/api/recruitment/studies/$studyId/criteria',
+        data: criteria,
+        options: Options(receiveTimeout: const Duration(seconds: 10)),
+      );
+
+      debugPrint('Criteria created successfully');
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+
+      // If criteria already exists, update it
+      if (status == 409) {
+        debugPrint('Criteria exists. Updating...');
+        await _dio.put(
+          '/api/recruitment/studies/$studyId/criteria',
           data: criteria,
-          options: Options(receiveTimeout: const Duration(seconds: 5)));
-    } catch (e) {
-      debugPrint('setCriteria error: $e');
+          options: Options(receiveTimeout: const Duration(seconds: 10)),
+        );
+        debugPrint('Criteria updated successfully');
+        return;
+      }
+
+      debugPrint('setCriteria failed status: ${e.response?.statusCode}');
+      debugPrint('setCriteria failed data: ${e.response?.data}');
+      rethrow;
     }
   }
 
@@ -113,7 +138,9 @@ class RecruitmentRepository {
       return [];
     }
   }
+  
 }
+
 
 final myInvitationsProvider = FutureProvider<List<dynamic>>((ref) async {
   return ref.watch(recruitmentRepositoryProvider).getMyInvitations();

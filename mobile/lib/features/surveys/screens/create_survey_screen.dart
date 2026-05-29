@@ -480,7 +480,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                     : _education,
                                 'gender': null,
 
-                                // for now empty unless you are using real interest UUIDs
+                                // for now, until interest IDs are connected
                                 'interestIds': [],
                               });
                             }

@@ -37,6 +37,23 @@ class SurveyRepository {
     }
   }
 
+  Future<Map<String, dynamic>?> getStudyById(String studyId) async {
+    try {
+      final res = await _dio.get(
+        '/api/studies/$studyId',
+        options: Options(receiveTimeout: const Duration(seconds: 8)),
+      );
+
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<List<Study>> getActiveStudies() async {
     try {
       final res = await _dio.get('/api/studies/active',
