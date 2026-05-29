@@ -7,9 +7,10 @@ services:
       - "3002:3002"
     env_file:
       - ./backend/user-service/.env
+    environment:
+      JWT_SECRET: your_super_secret_key
     networks:
       - app-network
-
 
   survey-service:
     build: ./backend/survey-service
@@ -19,6 +20,8 @@ services:
       - "4000:4000"
     env_file:
       - ./backend/survey-service/.env
+    environment:
+      JWT_SECRET: your_super_secret_key
     networks:
       - app-network
     volumes:
@@ -48,7 +51,7 @@ services:
       POSTGRES_PASSWORD: postgres123
       POSTGRES_DB: recruitment_db
     ports:
-      - "5433:5432"
+      - "5555:5432"
     volumes:
       - recruitment_pgdata:/var/lib/postgresql/data
     networks:

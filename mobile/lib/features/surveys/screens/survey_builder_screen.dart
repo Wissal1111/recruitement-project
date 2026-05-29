@@ -247,14 +247,36 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
   }
 
   Map<String, dynamic> _buildCriteriaPayload() {
-    return {
+    final payload = <String, dynamic>{
       'ageMin': widget.surveyData['ageMin'] ?? 18,
       'ageMax': widget.surveyData['ageMax'] ?? 65,
-      'profession': widget.surveyData['profession'],
-      'educationLevel': widget.surveyData['education'],
+      'gender': widget.surveyData['gender'],
       'country': widget.surveyData['country'],
-      'interests': widget.surveyData['interests'] ?? [],
+      'educationLevel': _mapEducationToBackend(widget.surveyData['education']),
+      'interestIds': widget.surveyData['interestIds'] ?? [],
     };
+
+    payload.removeWhere((key, value) {
+      if (value == null) return true;
+      if (value is String && value.trim().isEmpty) return true;
+      if (value is List && value.isEmpty) return true;
+      return false;
+    });
+
+    return payload;
+  }
+
+  String? _mapEducationToBackend(dynamic education) {
+    if (education == null) return null;
+
+    final e = education.toString().toLowerCase();
+
+    if (e.contains('high')) return 'HIGH_SCHOOL';
+    if (e.contains('bachelor')) return 'BACHELOR';
+    if (e.contains('master')) return 'MASTER';
+    if (e.contains('phd') || e.contains('doctor')) return 'PHD';
+
+    return 'OTHER';
   }
 
   @override

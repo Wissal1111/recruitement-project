@@ -25,6 +25,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
   String? _education = "Master's Degree";
   String? _country = 'United Kingdom';
   final Set<String> _selectedInterests = {'UX Research'};
+  DateTime? _endDate; // ← NEW
 
   final _professions = [
     'Technology & Design',
@@ -67,6 +68,26 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
     return _titleCtrl.text.isNotEmpty &&
         _budgetCtrl.text.isNotEmpty &&
         _maxParticipantsCtrl.text.isNotEmpty;
+  }
+
+  String _formatEndDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Future<void> _pickEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: AppTheme.primary),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _endDate = picked);
   }
 
   @override
@@ -114,6 +135,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                           hintText: 'e.g. Q4 Consumer Trend Analysis'),
                     ),
                     const SizedBox(height: 16),
+
                     _Label('DESCRIPTION'),
                     const SizedBox(height: 8),
                     TextField(
@@ -122,6 +144,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                         decoration: const InputDecoration(
                             hintText: 'Define the primary objective...')),
                     const SizedBox(height: 16),
+
                     Row(children: [
                       Expanded(
                           child: Column(
@@ -159,7 +182,47 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                             ),
                           ])),
                     ]),
+                    const SizedBox(height: 16),
+
+                    // ── END DATE PICKER ──
+                    _Label('EXPIRY DATE (OPTIONAL)'),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: _pickEndDate,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.surfaceHigh),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.calendar_today,
+                              size: 18, color: AppTheme.textSecondary),
+                          const SizedBox(width: 12),
+                          Text(
+                            _endDate != null
+                                ? 'Expires ${_formatEndDate(_endDate!)}'
+                                : 'Pick expiry date...',
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: _endDate != null
+                                    ? AppTheme.textPrimary
+                                    : AppTheme.textTertiary),
+                          ),
+                          const Spacer(),
+                          if (_endDate != null)
+                            GestureDetector(
+                              onTap: () => setState(() => _endDate = null),
+                              child: const Icon(Icons.close,
+                                  size: 16, color: AppTheme.textTertiary),
+                            ),
+                        ]),
+                      ),
+                    ),
                     const SizedBox(height: 24),
+
                     Row(children: [
                       Expanded(
                           child: GestureDetector(
@@ -228,6 +291,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                       )),
                     ]),
                     const SizedBox(height: 24),
+
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -355,6 +419,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                           ]),
                     ),
                     const SizedBox(height: 16),
+
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -390,6 +455,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                           ]),
                     ),
                     const SizedBox(height: 32),
+
                     GradientButton(
                       label: 'Continue to Questions',
                       onPressed: _isFormValid
@@ -404,17 +470,18 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                         _maxParticipantsCtrl.text.trim()) ??
                                     0,
                                 'isMultiPhase': _isMultiPhase,
-                                'profession': _profession == 'Other'
-                                    ? _otherProfCtrl.text
-                                    : _profession,
-                                'education': _education == 'Other'
-                                    ? _otherEduCtrl.text
-                                    : _education,
-                                // ✅ NEW: pass all criteria fields
+
+                                // criteria
                                 'ageMin': _ageRange.start.round(),
                                 'ageMax': _ageRange.end.round(),
                                 'country': _country,
-                                'interests': _selectedInterests.toList(),
+                                'education': _education == 'Other'
+                                    ? _otherEduCtrl.text
+                                    : _education,
+                                'gender': null,
+
+                                // for now empty unless you are using real interest UUIDs
+                                'interestIds': [],
                               });
                             }
                           : null,
