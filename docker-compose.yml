@@ -73,7 +73,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      JWT_SECRET: my_super_secret_key_that_is_long_enough_32chars
+      JWT_SECRET: your_super_secret_key
       SERVICES_USER_SERVICE_URL: http://user-service:3002
       SERVICES_SURVEY_SERVICE_URL: http://survey-service:4000
     networks:

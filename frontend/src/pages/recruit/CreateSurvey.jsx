@@ -1,11 +1,11 @@
-import SideBar from "../components/SideBar";
-import TopNavBar from "../components/TopNavBar";
+import SideBar from "../../components/SideBar";
+import TopNavBar from "../../components/TopNavBar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import BecomecreatorIl from "../components/mysurveys/BecomeCreatorIl";
-import { getMyRoles } from "../api/Role";
-import StudyInfo from "../components/create/StudyInfo";
-import Questions from "../components/create/Questions";  // ADD
+import BecomecreatorIl from "../../components/mysurveys/BecomeCreatorIl";
+import { getMyRoles } from "../../api/Role";
+import StudyInfo from "../../components/create/StudyInfo";
+import Questions from "../../components/create/Questions";  // ADD
 
 export default function CreateSurvey() {
     const navigate = useNavigate();

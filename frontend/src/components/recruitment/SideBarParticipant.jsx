@@ -21,23 +21,17 @@ export default function SideBarParticipant({ page, isOpen, onClose }) {
             <div className={`main-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
                 <p>PARTICIPANT</p>
                 <ul>
-                    <li className={page === "home" ? 'selected-page' : ''} onClick={() => go("/home")}>
-                        <LayoutDashboard size={16} /> Home
-                    </li>
-                    <li className={page === "browse" ? 'selected-page' : ''} onClick={() => go("/home/browse")}>
+                    <li className={page === "browse" ? 'selected-page' : ''} onClick={() => go("/participate/browse")}>
                         <Search size={16} /> Browse Studies
                     </li>
-                    <li className={page === "invitations" ? 'selected-page' : ''} onClick={() => go("/home/invitations")}>
+                    <li className={page === "invitations" ? 'selected-page' : ''} onClick={() => go("/participate/invitations")}>
                         <Bell size={16} /> Invitations
                     </li>
-                    <li className={page === "activity" ? 'selected-page' : ''} onClick={() => go("/home/activity")}>
+                    <li className={page === "activity" ? 'selected-page' : ''} onClick={() => go("/participate/activity")}>
                         <Activity size={16} /> My Participations
                     </li>
-                    <li className={page === "rewards" ? 'selected-page' : ''} onClick={() => go("/home/rewards")}>
+                    <li className={page === "rewards" ? 'selected-page' : ''} onClick={() => go("/participate/rewards")}>
                         <Trophy size={16} /> Rewards
-                    </li>
-                    <li className={page === "profile" ? 'selected-page' : ''} onClick={() => go("/home/profile")}>
-                        <UserRound size={16} /> Profile
                     </li>
 
                 </ul>

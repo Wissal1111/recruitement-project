@@ -1,12 +1,12 @@
-import SideBar from "../components/SideBar";
-import TopNavBar from "../components/TopNavBar";
+import SideBar from "../../components/SideBar";
+import TopNavBar from "../../components/TopNavBar";
 import { useState, useEffect } from "react";
-import { clearSession, getSession } from "../utils/AuthSession";
+import { clearSession, getSession } from "../../utils/AuthSession";
 import { useNavigate } from "react-router-dom";
-import Info from "../components/profile/info/Info";
-import Biography from "../components/profile/biography/Biography";
-import BottomCards from "../components/profile/bottomcards/BottomCards";
-import { getProfile } from "../api/ProfileApi";
+import Info from "../../components/profile/info/Info";
+import Biography from "../../components/profile/biography/Biography";
+import BottomCards from "../../components/profile/bottomcards/BottomCards";
+import { getProfile } from "../../api/ProfileApi";
 
 export default function Profile() {
     const navigate = useNavigate();
@@ -17,6 +17,7 @@ export default function Profile() {
         clearSession();
         navigate("/login");
     };
+    
 
     function SaveData(data) {
         setProfile(data);

@@ -5,11 +5,11 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
-import Profile from "./pages/Profile";
+import Profile from "./pages/home/Profile";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import MySurveys from "./pages/MySurveys";
-import CreateSurvey from "./pages/CreateSurvey";
+import CreateSurvey from "./pages/recruit/CreateSurvey";
 import QuestionsPage from "./pages/QuestionsPage";
 import PhasesPage from "./pages/PhasesPage";
 import Applications from "./pages/recruit/Applications";
@@ -23,6 +23,7 @@ import RecruitRouter from "./pages/RecruitRouter";
 import Rewards from "./pages/participant/Rewards";
 import Screening from "./pages/recruit/Screening";
 import SlotsRewards from "./pages/recruit/SlotsRewards";
+import Dashboard from "./pages/home/Dashboard";
 function App() {
     return (
         <BrowserRouter>
@@ -33,12 +34,16 @@ function App() {
                 <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
-                {/* Participant */}
-                <Route path="/home" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
+                <Route path="/home" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/home/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/home/invitations" element={<ProtectedRoute><MyInvitations /></ProtectedRoute>} />
-                <Route path="/home/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
-                <Route path="/home/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
+
+
+
+                {/* Participant */}
+                <Route path="/participate" element={<ProtectedRoute><participateParticipant /></ProtectedRoute>} />
+                <Route path="/participate/invitations" element={<ProtectedRoute><MyInvitations /></ProtectedRoute>} />
+                <Route path="/participate/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
+                <Route path="/participate/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
                 {/* Redirige /participate vers /home */}
                 <Route path="/participate" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
                 <Route path="/home/rewards" element={<ProtectedRoute><Rewards /></ProtectedRoute>} />
