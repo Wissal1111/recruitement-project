@@ -103,29 +103,40 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
 
   Future<void> _publish() async {
     setState(() => _isPublishing = true);
+
     try {
       final dio = ref.read(dioProvider);
 
       // 1. Build phases payload
       final phasesPayload = [];
+
       for (int i = 0; i < _phases; i++) {
         final qList = _phaseQuestions[i] ?? [];
+
         final formattedQuestions = qList.asMap().entries.map((e) {
           final index = e.key;
           final q = e.value;
 
           String backendType = 'TEXT';
-          if (q['type'] == 'MULTIPLE CHOICE' || q['type'] == 'DROPDOWN')
+
+          if (q['type'] == 'MULTIPLE CHOICE' || q['type'] == 'DROPDOWN') {
             backendType = 'SINGLE_CHOICE';
-          if (q['type'] == 'CHECKBOX') backendType = 'MULTIPLE_CHOICE';
-          if (q['type'] == 'RATING') backendType = 'RATING_SCALE';
+          }
+
+          if (q['type'] == 'CHECKBOX') {
+            backendType = 'MULTIPLE_CHOICE';
+          }
+
+          if (q['type'] == 'RATING') {
+            backendType = 'RATING_SCALE';
+          }
 
           final options =
               (q['options'] as List<String>?)?.asMap().entries.map((opt) {
                     return {
                       'label': opt.value,
                       'value': opt.value,
-                      'orderIndex': opt.key + 1
+                      'orderIndex': opt.key + 1,
                     };
                   }).toList() ??
                   [];
@@ -153,9 +164,10 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
                     'text': 'Empty Phase',
                     'questionType': 'TEXT',
                     'isRequired': false,
-                    'orderIndex': 1
+                    'orderIndex': 1,
+                    'options': [],
                   }
-                ]
+                ],
         });
       }
 
@@ -173,30 +185,41 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
 
       final existingStudyId = widget.surveyData['studyId'];
 
+      // ============================================================
+      // UPDATE EXISTING SURVEY
+      // ============================================================
       if (existingStudyId != null) {
-        // ── UPDATE existing survey ──
         await dio.put('/api/studies/$existingStudyId', data: payload);
 
-        // Also update criteria if criteria fields are present
-        if (widget.surveyData['ageMin'] != null) {
-          try {
-            await ref
-                .read(recruitmentRepositoryProvider)
-                .setCriteria(existingStudyId, _buildCriteriaPayload());
-          } catch (e) {
-            debugPrint('Criteria update warning: $e');
-          }
-        }
+        // Save/update criteria too
+        final criteriaPayload = _buildCriteriaPayload();
+
+        debugPrint('CRITERIA PAYLOAD FOR UPDATE: $criteriaPayload');
+
+        await ref
+            .read(recruitmentRepositoryProvider)
+            .setCriteria(existingStudyId.toString(), criteriaPayload);
+
+        debugPrint('Criteria updated successfully');
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text('Survey Updated Successfully!'),
-              backgroundColor: AppTheme.successColor));
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
         }
-      } else {
-        // ── CREATE new survey ──
-        // Step 1: Create as DRAFT first
+      }
+
+      // ============================================================
+      // CREATE NEW SURVEY
+      // ============================================================
+      else {
+        // Step 1: Create survey as DRAFT
         final createResponse = await dio.post('/api/studies', data: payload);
+
+        debugPrint('CREATE SURVEY RESPONSE: ${createResponse.data}');
 
         final newStudyId = createResponse.data['studyId'] ??
             createResponse.data['study']?['studyId'];
@@ -205,56 +228,95 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
           throw Exception('Server did not return a studyId');
         }
 
-        // Step 2: Set criteria in recruitment service
-        try {
-          await ref
-              .read(recruitmentRepositoryProvider)
-              .setCriteria(newStudyId.toString(), _buildCriteriaPayload());
-        } catch (e) {
-          debugPrint('Criteria save warning (non-fatal): $e');
-        }
+        // Step 2: Save criteria in recruitment service
+        final criteriaPayload = _buildCriteriaPayload();
 
-        // Step 3: Set status to ACTIVE so it appears in Browse
-        // (PATCH sets to PUBLISHED, then PUT sets studyStatus to ACTIVE)
-        try {
-          await dio.patch('/api/studies/$newStudyId/status');
-          // The PATCH sets it to PUBLISHED per backend code.
-          // Now force it to ACTIVE so /active endpoint returns it:
-          await dio
-              .put('/api/studies/$newStudyId', data: {'studyStatus': 'ACTIVE'});
-        } catch (e) {
-          debugPrint('Status update warning (non-fatal): $e');
-        }
+        debugPrint('CRITERIA PAYLOAD: $criteriaPayload');
+
+        await ref
+            .read(recruitmentRepositoryProvider)
+            .setCriteria(newStudyId.toString(), criteriaPayload);
+
+        debugPrint('Criteria saved successfully');
+
+        // Step 3: Publish survey
+        await dio.patch('/api/studies/$newStudyId/status');
+
+        // Step 4: Force ACTIVE so /api/studies/active returns it
+        await dio.put(
+          '/api/studies/$newStudyId',
+          data: {
+            'studyStatus': 'ACTIVE',
+          },
+        );
+
+        debugPrint('Survey status set to ACTIVE');
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text('Survey Published Successfully!'),
-              backgroundColor: AppTheme.successColor));
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
         }
       }
 
       ref.invalidate(mySurveysProvider);
-      if (mounted) context.go('/home');
-    } catch (e) {
+      ref.invalidate(browseSurveysProvider);
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        context.go('/home');
+      }
+    } catch (e) {
+      debugPrint('PUBLISH ERROR: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text('Failed to save: $e'),
-            backgroundColor: AppTheme.errorColor));
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
       }
     } finally {
-      if (mounted) setState(() => _isPublishing = false);
+      if (mounted) {
+        setState(() => _isPublishing = false);
+      }
     }
   }
 
   Map<String, dynamic> _buildCriteriaPayload() {
-    return {
+    final payload = <String, dynamic>{
       'ageMin': widget.surveyData['ageMin'] ?? 18,
       'ageMax': widget.surveyData['ageMax'] ?? 65,
-      'profession': widget.surveyData['profession'],
-      'educationLevel': widget.surveyData['education'],
+      'gender': widget.surveyData['gender'],
       'country': widget.surveyData['country'],
-      'interests': widget.surveyData['interests'] ?? [],
+      'educationLevel': _mapEducationToBackend(widget.surveyData['education']),
+      'interestIds': widget.surveyData['interestIds'] ?? [],
     };
+
+    payload.removeWhere((key, value) {
+      if (value == null) return true;
+      if (value is String && value.trim().isEmpty) return true;
+      if (value is List && value.isEmpty) return true;
+      return false;
+    });
+
+    return payload;
+  }
+
+  String? _mapEducationToBackend(dynamic education) {
+    if (education == null) return null;
+
+    final e = education.toString().toLowerCase();
+
+    if (e.contains('high')) return 'HIGH_SCHOOL';
+    if (e.contains('bachelor')) return 'BACHELOR';
+    if (e.contains('master')) return 'MASTER';
+    if (e.contains('phd') || e.contains('doctor')) return 'PHD';
+
+    return 'OTHER';
   }
 
   @override
