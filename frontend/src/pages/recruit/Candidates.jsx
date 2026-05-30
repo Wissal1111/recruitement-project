@@ -1,7 +1,9 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import SideBar from "../../components/SideBar";
 import TopNavBar from "../../components/TopNavBar";
 import { getApplicationsByStudy } from "../../api/RecruitmentApi";
+import axiosInstance from "../../api/axiosInstance";
 import { MoreVertical, UserPlus, Filter, Flag } from "lucide-react";
 
 const STATUS_STYLES = {
@@ -17,10 +19,23 @@ const TABS = ["All", "Pending", "Approved", "Rejected"];
 export default function Candidates() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("All");
-    const [inputId, setInputId] = useState("");
+    const [studies, setStudies] = useState([]);
     const [studyId, setStudyId] = useState("");
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        axiosInstance.get("/studies/my-studies")
+            .then(res => {
+                const list = res.data?.studies || res.data || [];
+                setStudies(list);
+                if (list.length > 0) {
+                    setStudyId(list[0].studyId);
+                    fetchApplications(list[0].studyId);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     const fetchApplications = async (id) => {
         if (!id) return;
@@ -29,15 +44,16 @@ export default function Candidates() {
             const res = await getApplicationsByStudy(id);
             setApplications(res.data);
         } catch (e) {
-            console.error(e);
+            setApplications([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleLoad = () => {
-        setStudyId(inputId);
-        fetchApplications(inputId);
+    const handleStudyChange = (id) => {
+        setStudyId(id);
+        setActiveTab("All");
+        fetchApplications(id);
     };
 
     const filtered = applications.filter(p => {
@@ -53,20 +69,24 @@ export default function Candidates() {
         total: applications.length,
     };
 
+    const inputStyle = {
+        flex: 1, border: "1.5px solid #E2E8F0", borderRadius: 8,
+        padding: "10px 14px", fontSize: 14, outline: "none",
+        color: "var(--title)", background: "#F8FAFC"
+    };
+
     return (
         <div className="dashboard">
             <TopNavBar page="recruit" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <SideBar page="allcandidates" part="recruit" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">
-                {/* Breadcrumb */}
                 <div style={{ fontSize: 13, color: "var(--content)", marginBottom: 6 }}>
                     <span style={{ color: "var(--blue-text)", cursor: "pointer" }}>Recruitment</span>
                     <span style={{ margin: "0 6px" }}>›</span>
                     <span style={{ fontWeight: 600, color: "var(--title)" }}>Candidates</span>
                 </div>
 
-                {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                     <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--title)" }}>Participant Pulse</h2>
                     <button style={{
@@ -79,30 +99,39 @@ export default function Candidates() {
                     </button>
                 </div>
 
-                {/* Study ID input */}
+                {/* Study Selector */}
                 <div style={{
                     background: "#fff", borderRadius: "var(--medium-radius)",
                     padding: "16px 20px", border: "1px solid #E8ECF4",
                     boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 24,
-                    display: "flex", gap: 12
+                    display: "flex", alignItems: "center", gap: 12
                 }}>
-                    <input
-                        value={inputId}
-                        onChange={e => setInputId(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleLoad()}
-                        placeholder="Enter Study ID to load candidates..."
-                        style={{
-                            flex: 1, border: "1.5px solid #E2E8F0", borderRadius: 8,
-                            padding: "10px 14px", fontSize: 14, outline: "none",
-                            color: "var(--title)", background: "#F8FAFC"
-                        }}
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "var(--title)", whiteSpace: "nowrap" }}>
+                        Study :
+                    </label>
+                    <select
+                        value={studyId}
+                        onChange={e => handleStudyChange(e.target.value)}
+                        style={{ ...inputStyle, cursor: "pointer" }}
                         onFocus={e => e.target.style.borderColor = "#7073FF"}
                         onBlur={e => e.target.style.borderColor = "#E2E8F0"}
-                    />
-                    <button onClick={handleLoad} style={{
-                        background: "var(--linear-blue)", color: "#fff", border: "none",
-                        borderRadius: 8, padding: "10px 24px", fontWeight: 600, fontSize: 14, cursor: "pointer"
-                    }}>Load</button>
+                    >
+                        {studies.length === 0 && <option value="">No studies found</option>}
+                        {studies.map(s => (
+                            <option key={s.studyId} value={s.studyId}>
+                                {s.title} — {s.studyStatus}
+                            </option>
+                        ))}
+                    </select>
+                    {studyId && (
+                        <span style={{
+                            background: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#F0FDF4" : "#F1F5F9",
+                            color: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#15803D" : "#64748B",
+                            borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap"
+                        }}>
+                            {studies.find(s => s.studyId === studyId)?.studyStatus || ""}
+                        </span>
+                    )}
                 </div>
 
                 {/* Stats */}
@@ -160,10 +189,6 @@ export default function Candidates() {
 
                     {loading ? (
                         <div style={{ padding: "40px", textAlign: "center", color: "var(--content)" }}>Loading...</div>
-                    ) : !studyId ? (
-                        <div style={{ padding: "40px", textAlign: "center", color: "var(--content)", fontSize: 14 }}>
-                            Enter a Study ID to view candidates.
-                        </div>
                     ) : filtered.length === 0 ? (
                         <div style={{ padding: "40px", textAlign: "center", color: "var(--content)", fontSize: 14 }}>
                             No candidates found.
@@ -187,15 +212,8 @@ export default function Candidates() {
 
 function StatBox({ icon, label, value, sub, subColor }) {
     return (
-        <div style={{
-            background: "#fff", borderRadius: 14, padding: "20px 24px",
-            border: "1px solid #E8ECF4", display: "flex", alignItems: "center", gap: 20
-        }}>
-            <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: "var(--background-blue)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22
-            }}>{icon}</div>
+        <div style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1px solid #E8ECF4", display: "flex", alignItems: "center", gap: 20 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: "var(--background-blue)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{icon}</div>
             <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--content)", letterSpacing: "0.05em", marginBottom: 4 }}>{label}</div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: "var(--title)", marginBottom: 2 }}>{value}</div>
@@ -208,54 +226,24 @@ function StatBox({ icon, label, value, sub, subColor }) {
 function ParticipantRow({ p, last }) {
     const s = STATUS_STYLES[p.status] || STATUS_STYLES.PENDING;
     const initials = p.participantId?.slice(0, 2).toUpperCase() || "??";
-
     return (
-        <div style={{
-            display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 1.5fr 80px",
-            padding: "16px 20px",
-            borderBottom: last ? "none" : "1px solid #F5F6FA",
-            alignItems: "center"
-        }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 1.5fr 80px", padding: "16px 20px", borderBottom: last ? "none" : "1px solid #F5F6FA", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                    width: 36, height: 36, borderRadius: "50%",
-                    background: "var(--linear-blue)", color: "#fff",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 12, fontWeight: 700
-                }}>{initials}</div>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--linear-blue)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>{initials}</div>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--title)" }}>
-                        {p.participantId?.slice(0, 8)}...
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--content)" }}>
-                        App: {p.applicationId?.slice(0, 8)}...
-                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--title)" }}>{p.participantId?.slice(0, 8)}...</div>
+                    <div style={{ fontSize: 11, color: "var(--content)" }}>App: {p.applicationId?.slice(0, 8)}...</div>
                 </div>
             </div>
-
-            <div style={{ fontSize: 13, color: "var(--content)" }}>
-                {p.phaseId?.slice(0, 8)}...
-            </div>
-
+            <div style={{ fontSize: 13, color: "var(--content)" }}>{p.phaseId?.slice(0, 8)}...</div>
             <div>
-                <span style={{
-                    background: s.bg, color: s.color,
-                    borderRadius: 6, padding: "3px 10px",
-                    fontSize: 11, fontWeight: 700
-                }}>{s.label}</span>
+                <span style={{ background: s.bg, color: s.color, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.label}</span>
             </div>
-
             <div style={{ fontSize: 12, color: "var(--content)" }}>
-                {new Date(p.appliedAt).toLocaleDateString("en-GB", {
-                    day: "2-digit", month: "short", year: "numeric"
-                })}
+                {new Date(p.appliedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
             </div>
-
             <div style={{ textAlign: "right" }}>
-                <button style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: "var(--content)", padding: 4, borderRadius: 6
-                }}>
+                <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--content)", padding: 4, borderRadius: 6 }}>
                     <MoreVertical size={16} />
                 </button>
             </div>

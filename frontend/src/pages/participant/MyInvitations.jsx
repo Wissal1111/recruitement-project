@@ -58,7 +58,7 @@ export default function MyInvitations() {
                         </h2>
                         <p style={{ fontSize: 14, color: "var(--content)" }}>
                             You have <span style={{ color: "var(--blue-text)", fontWeight: 700 }}>
-                {pending.length || 3} new invitations
+                {pending.length} new invitations
               </span> waiting for your response. These opportunities match your editorial profile.
                         </p>
                     </div>
