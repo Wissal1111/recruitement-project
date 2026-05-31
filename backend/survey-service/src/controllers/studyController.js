@@ -1,4 +1,13 @@
 const { Study } = require('../models');
+const paymentGateway = require('../services/paymentGateway');
+function calculateStudyTotalPoints(phases) {
+  return phases.reduce((sum, phase) => {
+    // Decimal128 needs .toString() first before parseFloat
+    const reward = parseFloat(phase.rewardAmount?.toString() || '0');
+    const participants = parseInt(phase.maxParticipants) || 0;
+    return sum + reward * participants;
+  }, 0);
+}
 
 //linked
 exports.createStudy = async (req, res) => {
@@ -64,7 +73,7 @@ exports.createStudy = async (req, res) => {
     // 3. Budget calculation logic
     let calculatedTotal = 0;
     preparedPhases.forEach((phase, index) => {
-      const phaseCost = (parseFloat(phase.rewardAmount) || 0) * (parseInt(phase.maxParticipants) || 0);
+      const phaseCost = (parseFloat(phase.rewardAmount?.toString() || '0') || 0) * (parseInt(phase.maxParticipants) || 0);
       calculatedTotal += phaseCost;
 
       // Automatically add phase order if not provided by front-end
@@ -79,11 +88,13 @@ exports.createStudy = async (req, res) => {
       });
     }
 
-    // 4. Create document and save to MongoDB
+   
+    // 5. Create document and save to MongoDB
     const newStudy = new Study({
       title,
       description,
       totalBudget,
+      paymentSurveyId: null, // Will be set when we create the payment survey
       studyCategory, // Mapping category to studyCategory from schema
       creatorId,
       phases: preparedPhases,
@@ -228,6 +239,19 @@ exports.updateStudy = async (req, res) => {
       });
     }
 
+    const paymentTitle = updateData.title !== undefined ? updateData.title : study.title;
+    const paymentDescription = updateData.description !== undefined ? updateData.description : study.description;
+
+  const previousTotal = calculateStudyTotalPoints(study.phases);
+const delta = calculatedTotal - previousTotal;
+if (study.studyStatus === 'PUBLISHED') {
+  if (delta > 0) {
+    await paymentGateway.allocatePoints(creatorId, delta, study.studyId);
+  } else if (delta < 0) {
+    await paymentGateway.releasePoints(creatorId, Math.abs(delta), study.studyId);
+  }
+}
+
     const allowedFields = ['title', 'description', 'totalBudget', 'studyCategory', 'startDate', 'endDate', 'studyStatus'];
     allowedFields.forEach((field) => {
       if (updateData[field] !== undefined) {
@@ -289,24 +313,7 @@ exports.deleteStudy = async (req, res) => {
 };
 
 // Update Study Status (e.g., DRAFT -> PUBLISHED)
-exports.updateStudyStatus = async (req, res) => {
-  try {
-    const { studyId } = req.params;
-    const  status  = 'PUBLISHED';
-    const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
 
-    const study = await Study.findOne({ studyId });
-    if (!study) return res.status(404).json({ message: "Study not found" });
-    if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
-
-    study.studyStatus = status;
-    await study.save();
-
-    res.status(200).json({ message: "Study status updated", study });
-  } catch (error) {
-    res.status(500).json({ message: "Error updating status", error: error.message });
-  }
-};
 
 //linked
 // Update a specific phase within a study
@@ -373,6 +380,14 @@ exports.addPhase = async (req, res) => {
       phase.phaseOrder = index + 1;
     });
 
+    const currentTotalPoints = calculateStudyTotalPoints(study.phases);
+
+   if (study.studyStatus === 'PUBLISHED' && currentTotalPoints > 0) {
+  const previousPoints = calculateStudyTotalPoints(study.phases.slice(0, -1));
+  const delta = currentTotalPoints - previousPoints;
+  if (delta > 0) await paymentGateway.allocatePoints(creatorId, delta, study.studyId);
+}
+
     await study.save();
 
     res.status(201).json({ message: "Phase added", study });
@@ -392,15 +407,22 @@ exports.deletePhase = async (req, res) => {
     if (!study) return res.status(404).json({ message: "Study not found" });
     if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
 
-    const initialCount = study.phases.length;
-    study.phases = study.phases.filter((phase) => phase.phaseId !== phaseId);
-    if (study.phases.length === initialCount) {
-      return res.status(404).json({ message: "Phase not found" });
-    }
+  const previousTotal = calculateStudyTotalPoints(study.phases);
+const initialCount = study.phases.length;
+study.phases = study.phases.filter((phase) => phase.phaseId !== phaseId);
+if (study.phases.length === initialCount) {
+  return res.status(404).json({ message: "Phase not found" });
+}
 
-    study.phases.forEach((phase, index) => {
-      phase.phaseOrder = index + 1;
-    });
+study.phases.forEach((phase, index) => {
+  phase.phaseOrder = index + 1;
+});
+
+const currentTotalPoints = calculateStudyTotalPoints(study.phases);
+if (study.studyStatus === 'PUBLISHED') {
+  const delta = previousTotal - currentTotalPoints;
+  if (delta > 0) await paymentGateway.releasePoints(creatorId, delta, study.studyId);
+}
 
     await study.save();
 
@@ -524,5 +546,48 @@ exports.getActiveStudies = async (req, res) => {
     res.status(200).json(studies);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+exports.updateStudyStatus = async (req, res) => {
+  try {
+    const { studyId } = req.params;
+    const status = 'PUBLISHED';
+    const creatorId = req.user.userId || req.user.id || req.user.sub || req.user._id;
+
+    const study = await Study.findOne({ studyId });
+    if (!study) return res.status(404).json({ message: "Study not found" });
+    if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
+
+    if (study.studyStatus === 'PUBLISHED') {
+      return res.status(400).json({ message: "Study is already published" });
+    }
+    if (study.studyStatus === 'COMPLETED') {
+      return res.status(400).json({ message: "Cannot publish a completed study" });
+    }
+    if (study.studyStatus !== 'DRAFT') {
+      return res.status(400).json({ message: `Cannot publish a study with status: ${study.studyStatus}` });
+    }
+    const calculatedTotal = calculateStudyTotalPoints(study.phases);
+
+if (calculatedTotal <= 0) {
+  return res.status(400).json({ message: 'Cannot publish a study with no reward points' });
+}
+
+try {
+  await paymentGateway.allocatePoints(creatorId, calculatedTotal, study.studyId);
+} catch (paymentError) {
+  return res.status(400).json({
+    message: 'Cannot publish: point allocation failed',
+    error: paymentError.message
+  });
+}
+
+study.studyStatus = 'PUBLISHED';
+await study.save();
+
+res.status(200).json({ message: "Study published and points allocated successfully", study });}
+
+ catch (error) {
+    res.status(500).json({ message: "Error updating status", error: error.message });
   }
 };

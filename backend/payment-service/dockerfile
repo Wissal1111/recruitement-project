@@ -1,0 +1,19 @@
+FROM node:20-slim
+
+# Install OpenSSL — use -o Acquire::Check-Valid-Until=false to bypass clock skew
+RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update -y \
+    && apt-get install -y openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY . .
+
+EXPOSE 3050
+CMD ["npm", "start"]

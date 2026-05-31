@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  creator
+  participant
+}
+
+enum CardType {
+  paypal
+  payoneer
+  stripe
+  custom
+}
+
+enum TransactionType {
+  card_purchase
+  reward
+  commission
+  allocation
+  release
+  refund
+}
+
+enum TransactionStatus {
+  pending
+  processing
+  completed
+  failed
+  refunded
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  externalId   String        @unique
+  email        String        @unique
+  userType     UserType
+  wallet       Wallet?
+  paymentCards PaymentCard[]
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Wallet {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalPoints     Decimal  @db.Decimal(15, 2) @default("0")
+  availablePoints Decimal  @db.Decimal(15, 2) @default("0")
+  lockedPoints    Decimal  @db.Decimal(15, 2) @default("0")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentCard {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardName        String
+  cardType        CardType
+  lastFourDigits  String
+  isActive        Boolean       @default(true)
+  automaticBudget Decimal       @db.Decimal(15, 2) @default("1000")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  transactions    Transaction[]
+}
+
+model Transaction {
+  id            Int               @id @default(autoincrement())
+  userId        Int
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          TransactionType
+  amount        Decimal           @db.Decimal(15, 2)
+  pointsValue   Decimal?          @db.Decimal(15, 2)
+  paymentCardId Int?
+  paymentCard   PaymentCard?      @relation(fields: [paymentCardId], references: [id], onDelete: SetNull)
+  externalRef   String?
+  description   String?
+  status        TransactionStatus @default(completed)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}

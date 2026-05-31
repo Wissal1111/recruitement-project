@@ -59,6 +59,6 @@ router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
 
 router.get('/active', authMiddleware, studyController.getActiveStudies);
 
-
+router.patch('/:studyId/status', authMiddleware, studyController.updateStudyStatus);
 
 module.exports = router;

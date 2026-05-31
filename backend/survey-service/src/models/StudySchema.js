@@ -63,6 +63,7 @@ const StudySchema = new mongoose.Schema({
     required: true
   },
   totalBudget: { type: mongoose.Schema.Types.Decimal128, required: true },
+  paymentSurveyId: { type: String, required: false },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   isMultiPhase:{

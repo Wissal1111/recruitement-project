@@ -1,0 +1,37 @@
+Creator can add multiple fake cards with names like paypal, payoneer, etc.
+Each card has automatic budget default 1000
+Creator can buy points with a card
+Wallet is updated for creator and participant
+Creator allocates survey points from wallet
+Participant completes phase → reward points added
+Platform takes 15% commission on survey rewards
+Wallet history and transaction history endpoints are included## Scénario : comment fonctionne le `payment-service`
+
+1. **Création d’un study / sondage**
+   - Le créateur appelle `survey-service` pour créer un study.
+   - `survey-service/src/controllers/studyController.js` calcule le total des points à allouer.
+   - Si le total est > 0, il appelle `survey-service/src/services/paymentGateway.js`.
+   - Ce service fait une requête vers le gateway : `POST /api/surveys/creator/:creatorId`.
+   - Le `payment-service` crée la survey dans PostgreSQL et débite le wallet du créateur.
+
+2. **Allocation de points sur la survey**
+   - Toujours depuis `survey-service`, lors d’un ajout ou d’une modification de phases, il met à jour le total.
+   - Il appelle ensuite `POST /api/surveys/:surveyId/allocate-points/creator/:creatorId` via le gateway.
+   - Le `payment-service` ajuste le total de points et bloque / libère les points dans le wallet créateur.
+
+3. **Soumission d’une réponse**
+   - Un participant soumet une réponse dans `response-service`.
+   - `response-service/src/controllers/response.submit.controller.js` appelle le gateway :
+     - `POST /api/rewards/complete-phase`
+   - Le `payment-service` vérifie la phase, crée une récompense et ajoute les points au wallet du participant.
+   - Il enregistre aussi la commission de la plateforme.
+
+4. **Suivi et transactions**
+   - Les routes `payment-service/src/routes/wallets.js`, `transactions.js`, `paymentCards.js`, surveys.js, rewards.js exposent l’état des wallets, transactions, surveys et récompenses.
+   - Le `payment-service` utilise Prisma pour stocker les utilisateurs, wallets, surveys, phases, rewards et transactions.
+
+### Résumé
+- Le `survey-service` coordonne la création et l’allocation de points.
+- Le `response-service` déclenche la récompense quand un participant termine une phase.
+- Le `payment-service` exécute la logique financière réelle via PostgreSQL et Prisma.
+- Tout passe par le gateway `nginx` pour que les services se parlent en interne.

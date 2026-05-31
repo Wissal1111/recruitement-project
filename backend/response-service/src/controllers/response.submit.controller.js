@@ -1,5 +1,8 @@
 const Response = require("../models/ResponseSchema");
 const { fetchStudy, buildSnapshot } = require("../services/surveyService");
+const axios = require('axios');
+
+const PAYMENT_GATEWAY_URL = process.env.PAYMENT_GATEWAY_URL || 'http://gateway';
 
 /**
  * POST /api/responses/draft
@@ -149,10 +152,39 @@ exports.submitResponse = async (req, res) => {
       });
     }
 
-    return res.status(201).json({
-      message: "Response submitted successfully",
-      data: response
-    });
+const currentPhase = study.phases.find(p => p.phaseId === phaseId);
+const rewardAmount = parseFloat(currentPhase.rewardAmount?.toString() || '0');
+
+let rewardResponse;
+try {
+  rewardResponse = await axios.post(
+    `${process.env.PAYMENT_SERVICE_URL}/api/points/reward`,
+    {
+      participantId: String(participantId),
+      rewardAmount,
+      studyId,
+      phaseId
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.SERVICE_SECRET}`
+      }
+    }
+  );
+} catch (rewardErr) {
+  console.error('REWARD ERROR:', rewardErr.response?.data || rewardErr.message);
+  return res.status(500).json({
+    message: "Response saved but reward failed",
+    error: rewardErr.response?.data || rewardErr.message,
+    data: response
+  });
+}
+
+return res.status(201).json({
+  message: "Response submitted successfully",
+  data: response,
+  reward: rewardResponse.data
+});
 
   } catch (err) {
     return res.status(500).json({ message: "Error submitting response", error: err.message });

@@ -81,6 +81,19 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+
+
+  payment-service:
+    build: ./backend/payment-service
+    container_name: payment_service
+    restart: always
+    ports:
+      - "3050:3050"
+    env_file:
+      - ./backend/payment-service/.env
+    networks:
+      - app-network
+
   gateway:
     image: nginx:alpine
     container_name: api_gateway
@@ -93,6 +106,7 @@ services:
       - user-service
       - survey-service
       - recruitment-service
+      - payment-service
     networks:
       - app-network
 
@@ -103,3 +117,4 @@ networks:
 volumes:
   mongo_data:
   recruitment_pgdata:
+  payment_pgdata:
