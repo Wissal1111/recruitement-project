@@ -37,7 +37,6 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
 
       ref.invalidate(myInvitationsProvider);
 
-      // Go directly to phase 0
       if (study != null) {
         context.push('/surveys/answer', extra: {
           'survey': study,
@@ -46,12 +45,19 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+
+      final msg = e.toString().contains('409')
+          ? 'This invitation was already handled.'
+          : 'Failed to accept invitation.';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to accept: $e'),
+          content: Text(msg),
           backgroundColor: AppTheme.errorColor,
         ),
       );
+
+      ref.invalidate(myInvitationsProvider);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -78,12 +84,19 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
       ref.invalidate(myInvitationsProvider);
     } catch (e) {
       if (!mounted) return;
+
+      final msg = e.toString().contains('409')
+          ? 'This invitation was already handled.'
+          : 'Failed to decline invitation.';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to decline: $e'),
+          content: Text(msg),
           backgroundColor: AppTheme.errorColor,
         ),
       );
+
+      ref.invalidate(myInvitationsProvider);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -112,7 +125,13 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
         error: (err, _) =>
             const Center(child: Text('Failed to load invitations')),
         data: (invites) {
-          if (invites.isEmpty) {
+          // Only show invitations that still need a response
+          final pending = invites.where((inv) {
+            final status = (inv['status'] ?? '').toString().toUpperCase();
+            return status == 'PENDING';
+          }).toList();
+
+          if (pending.isEmpty) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(40),
@@ -123,7 +142,7 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
                         size: 64, color: AppTheme.textTertiary),
                     SizedBox(height: 16),
                     Text(
-                      'No invitations yet.',
+                      'No pending invitations.',
                       style: TextStyle(
                         fontSize: 16,
                         color: AppTheme.textSecondary,
@@ -138,9 +157,9 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(20),
-            itemCount: invites.length,
+            itemCount: pending.length,
             itemBuilder: (context, index) {
-              final invite = invites[index];
+              final invite = pending[index];
 
               final invitationId =
                   (invite['id'] ?? invite['invitationId'] ?? '').toString();

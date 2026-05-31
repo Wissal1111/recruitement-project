@@ -21,13 +21,23 @@ class RecruitmentRepository {
       return [];
     }
   }
-  
+
   Future<void> acceptInvitation(String invitationId) async {
-    await _dio.put('/api/recruitment/invitations/$invitationId/accept');
+    try {
+      await _dio.put('/api/recruitment/invitations/$invitationId/accept');
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      throw Exception('$status');
+    }
   }
 
   Future<void> declineInvitation(String invitationId) async {
-    await _dio.put('/api/recruitment/invitations/$invitationId/decline');
+    try {
+      await _dio.put('/api/recruitment/invitations/$invitationId/decline');
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      throw Exception('$status');
+    }
   }
 
   Future<void> applyToStudy(String studyId, String phaseId) async {
@@ -64,26 +74,27 @@ class RecruitmentRepository {
   }
 
   Future<List<dynamic>> getEligibleUsers(String studyId) async {
-  try {
-    final res = await _dio.get(
-      '/api/recruitment/studies/$studyId/criteria/eligible-users',
-      options: Options(receiveTimeout: const Duration(seconds: 10)),
-    );
+    try {
+      final res = await _dio.get(
+        '/api/recruitment/studies/$studyId/criteria/eligible-users',
+        options: Options(receiveTimeout: const Duration(seconds: 10)),
+      );
 
-    if (res.data is List) {
-      return res.data as List;
+      if (res.data is List) {
+        return res.data as List;
+      }
+
+      return [];
+    } on DioException catch (e) {
+      debugPrint('getEligibleUsers status: ${e.response?.statusCode}');
+      debugPrint('getEligibleUsers data: ${e.response?.data}');
+      throw Exception(e.response?.data?.toString() ?? 'Failed to load users');
+    } catch (e) {
+      debugPrint('getEligibleUsers error: $e');
+      throw Exception(e.toString());
     }
-
-    return [];
-  } on DioException catch (e) {
-    debugPrint('getEligibleUsers status: ${e.response?.statusCode}');
-    debugPrint('getEligibleUsers data: ${e.response?.data}');
-    throw Exception(e.response?.data?.toString() ?? 'Failed to load users');
-  } catch (e) {
-    debugPrint('getEligibleUsers error: $e');
-    throw Exception(e.toString());
   }
-}
+
   Future<void> setCriteria(
       String studyId, Map<String, dynamic> criteria) async {
     try {
@@ -138,9 +149,27 @@ class RecruitmentRepository {
       return [];
     }
   }
-  
-}
 
+  Future<Map<String, dynamic>?> getStudyCriteria(String studyId) async {
+    try {
+      final res = await _dio.get(
+        '/api/recruitment/studies/$studyId/criteria',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      );
+
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('getStudyCriteria error: $e');
+      return null;
+    }
+  }
+}
 
 final myInvitationsProvider = FutureProvider<List<dynamic>>((ref) async {
   return ref.watch(recruitmentRepositoryProvider).getMyInvitations();

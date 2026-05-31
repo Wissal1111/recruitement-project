@@ -242,15 +242,7 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
         // Step 3: Publish survey
         await dio.patch('/api/studies/$newStudyId/status');
 
-        // Step 4: Force ACTIVE so /api/studies/active returns it
-        await dio.put(
-          '/api/studies/$newStudyId',
-          data: {
-            'studyStatus': 'ACTIVE',
-          },
-        );
-
-        debugPrint('Survey status set to ACTIVE');
+        debugPrint('Survey published');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

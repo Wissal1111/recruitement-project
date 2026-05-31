@@ -1,7 +1,7 @@
 package com.projet.recruitment_service.service;
-import java.util.*;
-import java.util.Base64;
+
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,9 +15,11 @@ import com.projet.recruitment_service.client.UserServiceClient;
 import com.projet.recruitment_service.dto.request.CriteriaRequest;
 import com.projet.recruitment_service.dto.response.UserProfileDto;
 import com.projet.recruitment_service.entity.EligibilityCriteria;
+import com.projet.recruitment_service.entity.SurveyInvitation;
 import com.projet.recruitment_service.enums.EducationLevel;
 import com.projet.recruitment_service.exception.BusinessException;
 import com.projet.recruitment_service.repository.EligibilityCriteriaRepository;
+import com.projet.recruitment_service.repository.SurveyInvitationRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +29,7 @@ public class EligibilityService {
 
     private final EligibilityCriteriaRepository criteriaRepository;
     private final UserServiceClient userServiceClient;
+    private final SurveyInvitationRepository invitationRepository;
 
     // RC-01
     public EligibilityCriteria createCriteria(UUID studyId, CriteriaRequest request) {
@@ -115,6 +118,14 @@ public class EligibilityService {
 
             UUID requesterId = extractUserIdFromToken(bearerToken);
 
+            // Users already invited for this study
+            List<SurveyInvitation> existingInvitations = invitationRepository.findByStudyId(criteria.getStudyId());
+
+            java.util.Set<UUID> invitedUserIds = new java.util.HashSet<>();
+            for (SurveyInvitation inv : existingInvitations) {
+                invitedUserIds.add(inv.getUserId());
+            }
+
             List<UserProfileDto> users = userServiceClient.searchProfiles(
                     bearerToken,
                     new HashMap<>());
@@ -126,16 +137,21 @@ public class EligibilityService {
             List<UserProfileDto> matchedUsers = new ArrayList<>();
 
             for (UserProfileDto user : users) {
-                // Do not show creator themself as eligible participant
-                if (requesterId != null && user.getUserId() != null && user.getUserId().equals(requesterId)) {
+                if (user.getUserId() == null)
+                    continue;
+
+                // Skip creator
+                if (requesterId != null && user.getUserId().equals(requesterId)) {
+                    continue;
+                }
+
+                // Skip already invited users
+                if (invitedUserIds.contains(user.getUserId())) {
                     continue;
                 }
 
                 MatchResult result = calculateMatch(user, criteria);
 
-                // Show users with good match.
-                // 60 because 2/3 criteria = 67%.
-                // Also show if at least 2 criteria matched.
                 if (result.matchScore >= 60 || result.matchedCount >= 2) {
                     user.setMatchScore(result.matchScore);
                     user.setMatchedCriteria(result.matchedCriteria);
@@ -252,37 +268,37 @@ public class EligibilityService {
     }
 
     private UUID extractUserIdFromToken(String bearerToken) {
-    try {
-        String token = bearerToken.replace("Bearer ", "");
-        String[] parts = token.split("\\.");
+        try {
+            String token = bearerToken.replace("Bearer ", "");
+            String[] parts = token.split("\\.");
 
-        if (parts.length != 3) {
+            if (parts.length != 3) {
+                return null;
+            }
+
+            String payload = parts[1];
+
+            int padding = (4 - payload.length() % 4) % 4;
+            payload = payload + "=".repeat(padding);
+
+            byte[] decoded = Base64.getUrlDecoder().decode(payload);
+            String json = new String(decoded);
+
+            int index = json.indexOf("\"userId\"");
+            if (index == -1)
+                return null;
+
+            int colon = json.indexOf(":", index);
+            int firstQuote = json.indexOf("\"", colon);
+            int secondQuote = json.indexOf("\"", firstQuote + 1);
+
+            String userId = json.substring(firstQuote + 1, secondQuote);
+
+            return UUID.fromString(userId);
+        } catch (Exception e) {
             return null;
         }
-
-        String payload = parts[1];
-
-        int padding = (4 - payload.length() % 4) % 4;
-        payload = payload + "=".repeat(padding);
-
-        byte[] decoded = Base64.getUrlDecoder().decode(payload);
-        String json = new String(decoded);
-
-        int index = json.indexOf("\"userId\"");
-        if (index == -1) return null;
-
-        int colon = json.indexOf(":", index);
-        int firstQuote = json.indexOf("\"", colon);
-        int secondQuote = json.indexOf("\"", firstQuote + 1);
-
-        String userId = json.substring(firstQuote + 1, secondQuote);
-
-        return UUID.fromString(userId);
-    } catch (Exception e) {
-        return null;
     }
-}
-
 
     private boolean educationMatches(EducationLevel criteriaEducation, String userEducationRaw) {
         if (criteriaEducation == null || userEducationRaw == null) {
