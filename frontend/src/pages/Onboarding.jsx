@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import SideBar from "../components/onboarding/sidebar/SideBar";
 import TopBar from "../components/onboarding/topbar/TopBar";
 import Basics from "../components/onboarding/basics/Basics";
@@ -7,7 +7,7 @@ import Profile from "../components/onboarding/profile/Profile";
 import Preference from "../components/onboarding/preferences/Preference";
 import Birthday from "../components/onboarding/birthday/Birthday";
 import { updateProfile } from "../api/ProfileApi";
-import { addUserInterests } from "../api/Intrests";
+import { addUserInterests, getAllInterests } from "../api/Intrests";
 import { useNavigate } from "react-router-dom";
 
 export default function Onboarding() {
@@ -23,18 +23,34 @@ export default function Onboarding() {
     const [profession, setProfession] = useState("");
     const [selectedInterests, setSelectedInterests] = useState([]);
 
+    const allInterestsRef = useRef([]);
+
     const percentage = Math.round((step - 1) / 4 * 100) + "%";
+
+    useEffect(() => {
+        getAllInterests()
+            .then(data => {
+                const list = Array.isArray(data) ? data : data.interests ?? [];
+                allInterestsRef.current = list;
+            })
+            .catch(console.error);
+    }, []);
 
     const handleSubmitProfile = async () => {
         try {
             await updateProfile({ gender, age, dateOfBirth, education, city, country, profession });
 
-             {/*Soumettre les interests si sélectionnés*/}
             if (selectedInterests.length > 0) {
-                await addUserInterests(selectedInterests);
+                const interestIds = selectedInterests
+                    .map(key => allInterestsRef.current.find(i => i.name === key))
+                    .filter(Boolean)
+                    .map(i => i.interestId);
+
+                if (interestIds.length > 0) {
+                    await addUserInterests(interestIds);
+                }
             }
 
-            console.log("Profile updated");
             navigate("/home");
         } catch (err) {
             console.error("Profile update failed", err);

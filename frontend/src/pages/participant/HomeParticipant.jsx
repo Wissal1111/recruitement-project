@@ -3,6 +3,7 @@ import SideBarParticipant from "../../components/recruitment/SideBarParticipant"
 import TopNavBar from "../../components/TopNavBar";
 import { getMyInvitations, getMyParticipations, getEligibleStudies } from "../../api/RecruitmentApi";
 import { useNavigate } from "react-router-dom";
+import SideBar from "../../components/SideBar";
 import { Rocket, Mail, Trophy, ArrowRight } from "lucide-react";
 
 const STUDY_CATEGORIES = ["All Studies", "UX Research", "Technology", "Healthcare"];
@@ -59,7 +60,12 @@ export default function HomeParticipant() {
     return (
         <div className="dashboard">
             <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <SideBarParticipant page="home" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+           <SideBar
+                           page="dashboard"
+                           part="home"
+                           isOpen={sidebarOpen}
+                           onClose={() => setSidebarOpen(false)}
+                       />
 
             <div className="wrapper">
                 {/* Hero Banner */}
