@@ -1,7 +1,7 @@
-import SideBar from "../components/SideBar";
-import TopNavBar from "../components/TopNavBar";
+import SideBar from "../../components/SideBar";
+import TopNavBar from "../../components/TopNavBar";
 import { useState } from "react";
-import { clearSession } from "../utils/AuthSession";
+import { clearSession } from "../../utils/AuthSession";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {

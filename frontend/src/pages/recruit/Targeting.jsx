@@ -2,14 +2,15 @@ import { useState, useEffect } from "react";
 import SideBar from "../../components/SideBar";
 import TopNavBar from "../../components/TopNavBar";
 import { getCriteria, createCriteria, updateCriteria, previewEligiblePool } from "../../api/RecruitmentApi";
+import axiosInstance from "../../api/axiosInstance";
 import { Target, Users, Save, Eye } from "lucide-react";
 
 const EDUCATION_LEVELS = ["HIGH_SCHOOL", "BACHELOR", "MASTER", "PHD", "OTHER"];
 
 export default function Targeting() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [studies, setStudies] = useState([]);
     const [studyId, setStudyId] = useState("");
-    const [inputId, setInputId] = useState("");
     const [criteria, setCriteria] = useState(null);
     const [form, setForm] = useState({
         ageMin: "", ageMax: "", gender: "", country: "",
@@ -21,8 +22,25 @@ export default function Targeting() {
     const [previewing, setPreviewing] = useState(false);
     const [saved, setSaved] = useState(false);
 
+    // Charger les studies du créateur au démarrage
+    useEffect(() => {
+        axiosInstance.get("/studies/my-studies")
+            .then(res => {
+                const list = res.data?.studies || res.data || [];
+                setStudies(list);
+                if (list.length > 0) {
+                    setStudyId(list[0].studyId);
+                    loadCriteria(list[0].studyId);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const loadCriteria = async (id) => {
+        if (!id) return;
         setLoading(true);
+        setCriteria(null);
+        setPreview(null);
         try {
             const res = await getCriteria(id);
             setCriteria(res.data);
@@ -36,9 +54,15 @@ export default function Targeting() {
             });
         } catch (e) {
             setCriteria(null);
+            setForm({ ageMin: "", ageMax: "", gender: "", country: "", educationLevel: "", interestIds: [] });
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleStudyChange = (id) => {
+        setStudyId(id);
+        loadCriteria(id);
     };
 
     const handleSave = async () => {
@@ -109,35 +133,42 @@ export default function Targeting() {
                     <p style={{ color: "var(--content)", fontSize: 14 }}>Define who can participate in your study</p>
                 </div>
 
-                {/* Study ID input */}
+                {/* Study Selector */}
                 <div style={{
                     background: "#fff", borderRadius: "var(--medium-radius)",
-                    padding: "20px", border: "1px solid #E8ECF4",
-                    boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 24
+                    padding: "16px 20px", border: "1px solid #E8ECF4",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 24,
+                    display: "flex", alignItems: "center", gap: 12
                 }}>
-                    <div style={{ display: "flex", gap: 12 }}>
-                        <input
-                            value={inputId}
-                            onChange={e => setInputId(e.target.value)}
-                            placeholder="Enter Study ID..."
-                            style={inputStyle}
-                            onKeyDown={e => { if (e.key === "Enter") { setStudyId(inputId); loadCriteria(inputId); } }}
-                            onFocus={e => e.target.style.borderColor = "#7073FF"}
-                            onBlur={e => e.target.style.borderColor = "#E2E8F0"}
-                        />
-                        <button
-                            onClick={() => { setStudyId(inputId); loadCriteria(inputId); }}
-                            style={{
-                                background: "var(--linear-blue)", color: "#fff",
-                                border: "none", borderRadius: 8, padding: "10px 20px",
-                                fontWeight: 600, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap"
-                            }}>
-                            Load
-                        </button>
-                    </div>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "var(--title)", whiteSpace: "nowrap" }}>
+                        Study :
+                    </label>
+                    <select
+                        value={studyId}
+                        onChange={e => handleStudyChange(e.target.value)}
+                        style={{ ...inputStyle, cursor: "pointer" }}
+                    >
+                        {studies.length === 0 && <option value="">No studies found</option>}
+                        {studies.map(s => (
+                            <option key={s.studyId} value={s.studyId}>
+                                {s.title} — {s.studyStatus}
+                            </option>
+                        ))}
+                    </select>
+                    {studyId && (
+                        <span style={{
+                            background: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#F0FDF4" : "#F1F5F9",
+                            color: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#15803D" : "#64748B",
+                            borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap"
+                        }}>
+                            {studies.find(s => s.studyId === studyId)?.studyStatus || ""}
+                        </span>
+                    )}
                 </div>
 
-                {studyId && (
+                {loading ? (
+                    <div style={{ textAlign: "center", padding: "40px", color: "var(--content)" }}>Loading...</div>
+                ) : studyId && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20, alignItems: "start" }}>
                         {/* Form */}
                         <div style={{
@@ -151,13 +182,15 @@ export default function Targeting() {
 
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                                 {field("Min Age",
-                                    <input type="number" value={form.ageMin} onChange={e => setForm(f => ({ ...f, ageMin: e.target.value }))}
+                                    <input type="number" value={form.ageMin}
+                                           onChange={e => setForm(f => ({ ...f, ageMin: e.target.value }))}
                                            placeholder="e.g. 18" style={inputStyle}
                                            onFocus={e => e.target.style.borderColor = "#7073FF"}
                                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
                                 )}
                                 {field("Max Age",
-                                    <input type="number" value={form.ageMax} onChange={e => setForm(f => ({ ...f, ageMax: e.target.value }))}
+                                    <input type="number" value={form.ageMax}
+                                           onChange={e => setForm(f => ({ ...f, ageMax: e.target.value }))}
                                            placeholder="e.g. 60" style={inputStyle}
                                            onFocus={e => e.target.style.borderColor = "#7073FF"}
                                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
@@ -166,7 +199,8 @@ export default function Targeting() {
 
                             <div style={{ marginTop: 16 }}>
                                 {field("Gender",
-                                    <select value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
+                                    <select value={form.gender}
+                                            onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
                                             style={{ ...inputStyle, cursor: "pointer" }}>
                                         <option value="">Any gender</option>
                                         <option value="MALE">Male</option>
@@ -178,7 +212,8 @@ export default function Targeting() {
 
                             <div style={{ marginTop: 16 }}>
                                 {field("Country",
-                                    <input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
+                                    <input value={form.country}
+                                           onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
                                            placeholder="e.g. DZ, FR, US..." style={inputStyle}
                                            onFocus={e => e.target.style.borderColor = "#7073FF"}
                                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
@@ -187,7 +222,8 @@ export default function Targeting() {
 
                             <div style={{ marginTop: 16 }}>
                                 {field("Education Level",
-                                    <select value={form.educationLevel} onChange={e => setForm(f => ({ ...f, educationLevel: e.target.value }))}
+                                    <select value={form.educationLevel}
+                                            onChange={e => setForm(f => ({ ...f, educationLevel: e.target.value }))}
                                             style={{ ...inputStyle, cursor: "pointer" }}>
                                         <option value="">Any level</option>
                                         {EDUCATION_LEVELS.map(l => (

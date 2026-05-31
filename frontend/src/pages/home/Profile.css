@@ -1,0 +1,190 @@
+/* ── Skeleton shimmer ── */
+@keyframes shimmer {
+    0%   { background-position: -600px 0; }
+    100% { background-position:  600px 0; }
+}
+
+.skeleton-card,
+.skeleton-line,
+.skeleton-avatar,
+.skeleton-badge,
+.skeleton-tag,
+.skeleton-divider {
+    background: linear-gradient(
+        90deg,
+        #f0f0f5 25%,
+        #e8e8f0 50%,
+        #f0f0f5 75%
+    );
+    background-size: 600px 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 12px;
+}
+
+/* ── Skeleton layout ── */
+.profile-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+/* Info card */
+.skeleton-info {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 28px 40px;
+    border-radius: 48px;
+    background: white;
+    box-shadow: 0 20px 40px rgba(74, 75, 215, 0.03);
+    /* override the shimmer on the card itself — children shimmer instead */
+    background: white;
+    animation: none;
+}
+
+.skeleton-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skeleton-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+
+.skeleton-badges {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.skeleton-badge {
+    width: 72px;
+    height: 24px;
+    border-radius: 20px;
+}
+
+/* Bio row */
+.skeleton-bio-row {
+    display: flex;
+    gap: 40px;
+    width: 100%;
+}
+
+.skeleton-bio {
+    flex: 0 0 700px;
+    padding: 28px 40px;
+    border-radius: 48px;
+    background: white;
+    animation: none;
+    box-shadow: 0 20px 40px rgba(74, 75, 215, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.skeleton-bio-fields {
+    display: flex;
+    gap: 40px;
+}
+
+.skeleton-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.skeleton-divider {
+    height: 1px;
+    border-radius: 1px;
+    margin: 2px 0;
+}
+
+.skeleton-interests {
+    flex: 1;
+    padding: 28px 40px;
+    border-radius: 48px;
+    background: white;
+    animation: none;
+    box-shadow: 0 20px 40px rgba(74, 75, 215, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.skeleton-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.skeleton-tag {
+    height: 38px;
+    border-radius: 20px;
+}
+.skeleton-tag--sm  { width: 72px; }
+.skeleton-tag--md  { width: 96px; }
+.skeleton-tag--lg  { width: 120px; }
+
+/* Bottom row */
+.skeleton-bottom-row {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+}
+
+.skeleton-bottom-card {
+    flex: 1;
+    padding: 28px 32px;
+    border-radius: 32px;
+    background: white;
+    animation: none;
+    box-shadow: 0 20px 40px rgba(74, 75, 215, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Skeleton line sizes */
+.skeleton-line {
+    height: 14px;
+    border-radius: 8px;
+}
+.skeleton-line--xs   { width: 60px;  height: 11px; }
+.skeleton-line--sm   { width: 30%; }
+.skeleton-line--md   { width: 55%; }
+.skeleton-line--lg   { width: 75%; }
+.skeleton-line--full { width: 100%; }
+.skeleton-line--name { width: 200px; height: 20px; }
+.skeleton-line--sub  { width: 130px; height: 13px; }
+.skeleton-line--label{ width: 140px; height: 16px; }
+
+/* Responsive — mirrors Biography.css breakpoints */
+@media (max-width: 1430px) {
+    .skeleton-bio-row {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .skeleton-bio {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .skeleton-bottom-row {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 660px) {
+    .skeleton-bio-fields {
+        flex-direction: column;
+        gap: 14px;
+    }
+}

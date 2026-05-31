@@ -20,3 +20,23 @@ export const loginUser = async (data) => {
     throw error.response?.data || error;
   }
 };
+// logout
+export const logoutUser = async (refreshToken) => {
+    try {
+        const response = await api.post("/auth/logout", { refreshToken });
+        return response.data;
+    } catch (error) {
+        console.warn("Logout API call failed, clearing session anyway:", error);
+        return null;
+    }
+};
+
+// change password
+export const changePassword = async ({ oldPassword, newPassword }) => {
+    try {
+        const response = await api.put("/auth/change-password", { oldPassword, newPassword });
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};

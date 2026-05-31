@@ -3,40 +3,34 @@ const router = express.Router();
 const studyController = require('../controllers/studyController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-
-// All study routes are protected with authMiddleware
-//router.use(authMiddleware);
-
 // POST: /api/studies - Create a new study
 router.post('/', authMiddleware, studyController.createStudy);
 
 // GET: /api/studies/my-studies - Get all studies for the logged-in creator
 router.get('/my-studies', authMiddleware, studyController.getStudiesByCreator);
 
+// GET: /api/studies/active - Get all active/published studies (no auth needed)
 router.get('/active', studyController.getActiveStudies);
 
-// GET: /api/studies/extern/:studyId - Get a single study by ID
+// GET: /api/studies/extern/:studyId - Get a single study by ID (no auth)
 router.get('/extern/:studyId', studyController.getStudyById);
 
+// GET: /api/studies/phase/:phaseId - Get a phase by phaseId
+router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
 
-
-
-// GET: /api/studies/:studyId - Get a single study by ID auth
+// GET: /api/studies/:studyId - Get a single study by ID (auth)
 router.get('/:studyId', authMiddleware, studyController.getStudyById);
-
-
-
 
 // PUT: /api/studies/:studyId - Update a study
 router.put('/:studyId', authMiddleware, studyController.updateStudy);
 
-// DELETE: /api/studies/:studyId - Delete a study by ID (Owner only)
+// DELETE: /api/studies/:studyId - Delete a study
 router.delete('/:studyId', authMiddleware, studyController.deleteStudy);
 
 // PATCH: /api/studies/:studyId/status - Update study status
 router.patch('/:studyId/status', authMiddleware, studyController.updateStudyStatus);
 
-// PUT: /api/studies/:studyId/phases/:phaseId - Update a specific phase
+// PUT: /api/studies/:studyId/phases/:phaseId - Update a phase
 router.put('/:studyId/phases/:phaseId', authMiddleware, studyController.updatePhase);
 
 // POST: /api/studies/:studyId/phases - Add a new phase
@@ -45,13 +39,13 @@ router.post('/:studyId/phases', authMiddleware, studyController.addPhase);
 // DELETE: /api/studies/:studyId/phases/:phaseId - Delete a phase
 router.delete('/:studyId/phases/:phaseId', authMiddleware, studyController.deletePhase);
 
-// POST: /api/studies/:studyId/phases/:phaseId/questions - Add a question to a phase
+// POST: /api/studies/:studyId/phases/:phaseId/questions - Add a question
 router.post('/:studyId/phases/:phaseId/questions', authMiddleware, studyController.addQuestionToPhase);
 
 // DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - Remove a question
 router.delete('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.removeQuestion);
 
-// DELETE: /api/studies/:studyId/phases/:phaseId/questions/:questionId - update a question
+// PUT: /api/studies/:studyId/phases/:phaseId/questions/:questionId - Update a question
 router.put('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, studyController.updateQuestion);
 
 ///récupérer une phase par son phaseId seul
@@ -59,6 +53,6 @@ router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
 
 router.get('/active', authMiddleware, studyController.getActiveStudies);
 
-router.patch('/:studyId/status', authMiddleware, studyController.updateStudyStatus);
+
 
 module.exports = router;

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Monitor, TrendingUp, DollarSign, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Monitor, TrendingUp, Coins, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import StudyCard from "./StudyCard";
 import "./Surveys.css";
 
 const STATUS_TABS = ["All", "DRAFT", "PUBLISHED", "COMPLETED"];
 const PAGE_SIZE = 8;
 
-export default function Surveys({ studies = [], onStatusChange, onDelete }) {
+export default function Surveys({ studies = [], onDelete }) {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("All");
     const [page,      setPage]      = useState(1);
@@ -47,11 +47,11 @@ export default function Surveys({ studies = [], onStatusChange, onDelete }) {
                     </div>
                     <div className="ms__stat-pill">
                         <div className="ms__stat-icon" style={{ background: "rgba(245,158,11,0.1)" }}>
-                            <DollarSign size={16} strokeWidth={2} color="#F59E0B" />
+                            <Coins size={18} strokeWidth={2} color="#F59E0B" />
                         </div>
                         <div>
-                            <p className="ms__stat-label">Total Budget</p>
-                            <p className="ms__stat-value">${totalBudget.toLocaleString()}</p>
+                            <p className="ms__stat-label">Total Points</p>
+                            <p className="ms__stat-value">{totalBudget.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -82,7 +82,7 @@ export default function Surveys({ studies = [], onStatusChange, onDelete }) {
                     <div className="ms__th">Survey Title</div>
                     <div className="ms__th">Status</div>
                     <div className="ms__th">Phases</div>
-                    <div className="ms__th">Budget</div>
+                    <div className="ms__th">Points</div>
                     <div className="ms__th ms__th--right">Actions</div>
                 </div>
 
@@ -92,7 +92,6 @@ export default function Surveys({ studies = [], onStatusChange, onDelete }) {
                         study={study}
                         onEdit={() => navigate(`/recruit/study/${study.studyId}/phases`)}
                         onDelete={() => onDelete(study.studyId)}
-                        onStatusChange={onStatusChange}
                     />
                 )) : (
                     <div className="ms__empty">

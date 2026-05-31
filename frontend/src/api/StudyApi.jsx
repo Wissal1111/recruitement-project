@@ -78,3 +78,19 @@ export const deleteStudy = async (studyId) => {
     throw error;
   }
 };
+
+/**
+ * Publish Study
+ */
+export const publishStudy = async (studyId) => {
+    try {
+        const response = await api.patch(`/studies/${studyId}/status`, {
+            status: "PUBLISHED"
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("publishStudy error:", error.response?.data || error.message);
+        throw error;
+    }
+};

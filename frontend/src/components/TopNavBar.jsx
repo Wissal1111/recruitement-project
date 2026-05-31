@@ -17,8 +17,8 @@ export default function TopNavBar({ page, sidebarOpen, setSidebarOpen }) {
 
                 <ul className="main-elements">
                     <li className={page === "home" ? "selected-menu" : ""} onClick={() => navigate("/home")}>Home</li>
-                    <li className={page === "recruit" ? "selected-menu" : ""} onClick={() => navigate("/recruit")}>Recruit</li>
-                    <li className={page === "participate" ? "selected-menu" : ""} onClick={() => navigate("/participate")}>Participate</li>
+                    <li className={page === "recruit" ? "selected-menu" : ""} onClick={() => navigate("/recruit/surveys")}>Recruit</li>
+                    <li className={page === "participate" ? "selected-menu" : ""} onClick={() => navigate("/participate/browse")}>Participate</li>
                 </ul>
 
                 <div className="right-top">

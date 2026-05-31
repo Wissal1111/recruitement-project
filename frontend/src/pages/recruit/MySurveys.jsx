@@ -1,17 +1,17 @@
-import SideBar from "../components/SideBar";
-import TopNavBar from "../components/TopNavBar";
+import SideBar from "../../components/SideBar";
+import TopNavBar from "../../components/TopNavBar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import BecomecreatorIl from "../components/mysurveys/BecomeCreatorIl";
-import { getMyRoles } from "../api/Role";
-import { getMyStudies,deleteStudy } from "../api/StudyApi";
-import Surveys from "../components/mysurveys/Surveys";
-import SurveysSkeleton from "../components/mysurveys/SurveysSkeleton";
+import BecomecreatorIl from "../../components/mysurveys/BecomeCreatorIl";
+import { getMyRoles } from "../../api/Role";
+import { getMyStudies, deleteStudy } from "../../api/StudyApi";
+import Surveys from "../../components/mysurveys/Surveys";
+import SurveysSkeleton from "../../components/mysurveys/SurveysSkeleton";
 
 const normalizeStudy = (s) => ({
     ...s,
     totalBudget: parseFloat(s.totalBudget?.$numberDecimal ?? s.totalBudget ?? 0),
-    spent: parseFloat(s.spent?.$numberDecimal ?? s.spent ?? 0),
+    spent:       parseFloat(s.spent?.$numberDecimal       ?? s.spent       ?? 0),
 });
 
 export default function MySurveys() {
@@ -44,36 +44,24 @@ export default function MySurveys() {
             .finally(() => setLoading(false));
     }, []);
 
-    const handleStatusChange = (studyId, newStatus) =>
-        setStudies((prev) => prev.map((s) => s.studyId === studyId ? { ...s, studyStatus: newStatus } : s));
-
     const handleDelete = async (studyId) => {
-    try {
-        await deleteStudy(studyId);
-        setStudies((prev) => prev.filter((s) => s.studyId !== studyId));
-        setStudiesCount((prev) => {
-            const next = prev - 1;
-            localStorage.setItem("studiesCount", next);
-            return next;
-        });
-    } catch (err) {
-        console.error("Failed to delete study:", err);
-    }
-};
+        try {
+            await deleteStudy(studyId);
+            setStudies((prev) => prev.filter((s) => s.studyId !== studyId));
+            setStudiesCount((prev) => {
+                const next = prev - 1;
+                localStorage.setItem("studiesCount", next);
+                return next;
+            });
+        } catch (err) {
+            console.error("Failed to delete study:", err);
+        }
+    };
 
     if (loading) return (
         <div className="dashboard">
-            <TopNavBar
-                page="recruit"
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-            />
-            <SideBar
-                page="mysurveys"
-                part="recruit"
-                isOpen={sidebarOpen}
-                onClose={() => setSidebarOpen(false)}
-            />
+            <TopNavBar page="recruit" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <SideBar page="mysurveys" part="recruit" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
             <div className="wrapper">
                 <SurveysSkeleton count={studiesCount} />
             </div>
@@ -82,23 +70,13 @@ export default function MySurveys() {
 
     return (
         <div className="dashboard">
-            <TopNavBar
-                page="recruit"
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-            />
+            <TopNavBar page="recruit" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             {isCreator ? (
                 <>
-                    <SideBar
-                        page="mysurveys"
-                        part="recruit"
-                        isOpen={sidebarOpen}
-                        onClose={() => setSidebarOpen(false)}
-                    />
+                    <SideBar page="mysurveys" part="recruit" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
                     <div className="wrapper">
                         <Surveys
                             studies={studies}
-                            onStatusChange={handleStatusChange}
                             onDelete={handleDelete}
                         />
                     </div>

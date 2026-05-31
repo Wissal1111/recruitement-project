@@ -295,3 +295,180 @@
         justify-content: center;
     }
 }
+/* ── Append these to your existing Phases.css ── */
+
+/* Header row — flex so title+subtitle sit left, button sits right */
+.phases__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.phases__publish-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #4A4BD7, #7073FF);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+    font-family: inherit;
+}
+.phases__publish-btn:hover { opacity: 0.88; }
+
+.phases__published-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 14px;
+    background: #E8F5E9;
+    color: #22C55E;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+/* ── Append these to your existing Phases.css ─────────────────────
+   Confirm publish dialog + publish button spinner               */
+
+@keyframes phases-spin { to { transform: rotate(360deg); } }
+
+.phases__publish-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: phases-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+.phases__publish-spinner--sm {
+    width: 13px;
+    height: 13px;
+}
+
+.phases__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(4px);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.phases__confirm {
+    background: white;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 400px;
+    padding: 32px;
+    box-shadow: 0 32px 80px rgba(74, 75, 215, 0.14);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+    position: relative;
+}
+
+.phases__confirm-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+    color: #4F46E5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.phases__confirm h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+}
+
+.phases__confirm p {
+    font-size: 13px;
+    color: #64748B;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.phases__confirm strong { color: #0F172A; }
+
+.phases__confirm-error {
+    background: #FEF2F2;
+    color: #DC2626;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.phases__confirm-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.phases__confirm-btn {
+    flex: 1;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.phases__confirm-btn--secondary {
+    background: #F1F5F9;
+    color: #64748B;
+}
+.phases__confirm-btn--secondary:hover { background: #E2E8F0; color: #0F172A; }
+.phases__confirm-btn--secondary:disabled { opacity: 0.6; cursor: default; }
+
+.phases__confirm-btn--cancel {
+    background: #FEF2F2;
+    color: #EF4444;
+}
+.phases__confirm-btn--cancel:hover { background: #FEE2E2; }
+.phases__confirm-btn--cancel:disabled { opacity: 0.6; cursor: default; }
+
+.phases__confirm-btn--publish {
+    background: linear-gradient(135deg, #4A4BD7, #7073FF);
+    color: white;
+}
+.phases__confirm-btn--publish:hover    { opacity: 0.9; }
+.phases__confirm-btn--publish:disabled { opacity: 0.6; cursor: default; }
+
+@media (max-width: 500px) {
+    .phases__confirm-actions { flex-direction: column; }
+    .phases__confirm-btn     { flex: none; width: 100%; }
+}

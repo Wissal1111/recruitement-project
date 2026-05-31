@@ -160,7 +160,6 @@ export default function Phase({ phase, index, onDelete, onUpdate }) {
                         <div className="phase__field">
                             <label className="phase__label">Reward Amount</label>
                             <div className="phase__input-prefix-wrap">
-                                <span className="phase__input-prefix">$</span>
                                 <input
                                     className="phase__input phase__input--prefixed"
                                     name="rewardAmount"

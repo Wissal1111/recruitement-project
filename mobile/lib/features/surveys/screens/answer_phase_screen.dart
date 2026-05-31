@@ -20,46 +20,126 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
   final Map<String, dynamic> _answers = {};
   bool _isSubmitting = false;
 
+  bool get _isMultiPhase => widget.survey.phases.length > 1;
+  bool get _isLastPhase => widget.phaseIndex == widget.survey.phases.length - 1;
+  // Only phase 1 (index 0) requires creator approval in multi-phase surveys
+  bool get _requiresApproval => _isMultiPhase && widget.phaseIndex == 0;
+
   Future<void> _submit() async {
     setState(() => _isSubmitting = true);
     try {
       final dio = ref.read(dioProvider);
       final phase = widget.survey.phases[widget.phaseIndex];
+      final phaseId = phase['phaseId']?.toString() ?? '';
       final questions = phase['questions'] as List? ?? [];
 
-      // Build the response payload
-      final responses = questions.map((q) {
+      final answers = questions.map((q) {
         final qId = q['questionId'] ?? '';
+        final answer = _answers[qId];
         return {
           'questionId': qId,
-          'answer': _answers[qId] ?? '',
+          'value': answer is List ? answer : (answer?.toString() ?? ''),
         };
       }).toList();
 
-      // Submit to the response service
       await dio.post('/api/responses', data: {
         'studyId': widget.survey.studyId,
-        'phaseId': phase['phaseId'],
-        'responses': responses,
+        'phaseId': phaseId,
+        'answers': answers,
       });
 
-      if (mounted) {
+      // Notify creator
+      try {
+        await dio.post('/api/notifications', data: {
+          'userId': widget.survey.creatorId,
+          'title': _isMultiPhase
+              ? 'Phase ${widget.phaseIndex + 1} Answered'
+              : 'Survey Answered',
+          'message': _isMultiPhase
+              ? 'A participant answered Phase ${widget.phaseIndex + 1} of "${widget.survey.title}". Review their response.'
+              : 'A participant submitted answers for "${widget.survey.title}".',
+        });
+      } catch (e) {
+        debugPrint('Notification failed (non-fatal): $e');
+      }
+
+      if (!mounted) return;
+
+      if (_requiresApproval) {
+        // Phase 1 of multi-phase: wait for creator approval
+        _showWaitingDialog();
+      } else if (!_isLastPhase) {
+        // Phases 2, 3, 4... go directly to next phase
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                'Phase ${widget.phaseIndex + 1} submitted! Moving to Phase ${widget.phaseIndex + 2}...'),
+            backgroundColor: AppTheme.successColor));
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) {
+          context.pushReplacement('/surveys/answer', extra: {
+            'survey': widget.survey,
+            'phaseIndex': widget.phaseIndex + 1,
+          });
+        }
+      } else {
+        // Last phase done
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Response submitted successfully!'),
+            content: Text('All phases completed! Great job!'),
             backgroundColor: AppTheme.successColor));
         context.go('/home');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                'Submitted! ${e.toString().replaceAll("Exception: ", "")}'),
-            backgroundColor: AppTheme.successColor));
-        context.go('/home');
+            content:
+                Text('Failed: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppTheme.errorColor));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _showWaitingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.hourglass_top, size: 56, color: AppTheme.primary),
+          const SizedBox(height: 16),
+          const Text('Phase 1 Submitted!',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary)),
+          const SizedBox(height: 8),
+          Text(
+              'The creator will review your answers. '
+              'You will receive a notification when Phase 2 is approved.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 14, color: AppTheme.textSecondary, height: 1.5)),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.go('/home');
+              },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
+              child: const Text('Back to Home',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ),
+        ]),
+      ),
+    );
   }
 
   @override
@@ -87,7 +167,6 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
       ),
       body: Column(
         children: [
-          // Progress Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -115,10 +194,34 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                       const AlwaysStoppedAnimation<Color>(AppTheme.primary),
                 ),
               ),
+              if (_isMultiPhase) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                      color: AppTheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Row(children: [
+                    const Icon(Icons.info_outline,
+                        size: 14, color: AppTheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _requiresApproval
+                            ? 'After submitting, the creator will review and unlock the next phase.'
+                            : _isLastPhase
+                                ? 'This is the final phase!'
+                                : 'Your answer will unlock the next phase automatically.',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppTheme.primary),
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
             ]),
           ),
-
-          // Questions
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(20),
@@ -168,8 +271,6 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                                 color: AppTheme.textPrimary,
                                 height: 1.4)),
                         const SizedBox(height: 16),
-
-                        // TEXT input
                         if (qType == 'TEXT')
                           TextField(
                             onChanged: (v) => _answers[qId] = v,
@@ -177,8 +278,6 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                             decoration: const InputDecoration(
                                 hintText: 'Type your answer...'),
                           ),
-
-                        // SINGLE_CHOICE
                         if (qType == 'SINGLE_CHOICE')
                           ...options.map((opt) {
                             final label = opt['label'] ?? opt.toString();
@@ -221,8 +320,6 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                               ),
                             );
                           }),
-
-                        // MULTIPLE_CHOICE (Checkbox)
                         if (qType == 'MULTIPLE_CHOICE')
                           ...options.map((opt) {
                             final label = opt['label'] ?? opt.toString();
@@ -267,8 +364,6 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                               ),
                             );
                           }),
-
-                        // RATING_SCALE
                         if (qType == 'RATING_SCALE')
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -298,8 +393,6 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                               );
                             }),
                           ),
-
-                        // YES_NO
                         if (qType == 'YES_NO')
                           Row(children: [
                             Expanded(
@@ -369,8 +462,11 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                   width: 20,
                   child: CircularProgressIndicator(
                       color: Colors.white, strokeWidth: 2))
-              : const Text('Submit Answers',
-                  style: TextStyle(
+              : Text(
+                  _isLastPhase
+                      ? 'Submit & Complete'
+                      : 'Submit Phase ${widget.phaseIndex + 1}',
+                  style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white,
                       fontWeight: FontWeight.bold)),

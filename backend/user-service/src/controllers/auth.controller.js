@@ -10,6 +10,7 @@ const generateTokens = (userId) => {
   return { access, refresh };
 };
 
+//linked
 exports.register = async (req, res) => {
   try {
     const { firstname, lastname, email, password } = req.body;
@@ -84,6 +85,7 @@ exports.register = async (req, res) => {
   }
 };
 
+//linked
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -128,6 +130,7 @@ exports.login = async (req, res) => {
   }
 };
 
+//linked
 exports.logout = async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -137,6 +140,7 @@ exports.logout = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 exports.refreshToken = async (req, res) => {
   try {

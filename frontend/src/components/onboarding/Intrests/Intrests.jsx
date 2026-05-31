@@ -1,25 +1,39 @@
 import './Intrests.css';
+import { useState } from 'react';
 import { 
     FaMicrochip, FaHeartbeat, FaGraduationCap, FaBriefcase,
-    FaGamepad, FaMusic, FaDumbbell, FaUtensils
+    FaGamepad, FaMusic, FaDumbbell, FaUtensils,
+    FaFlask, FaPaintBrush, FaChartLine, FaLeaf,
+    FaPlane, FaFilm, FaTshirt, FaBook
 } from "react-icons/fa";
 import Error from '../../../assets/icons/Error';
 
-const interestsList = [
-    { name: "Technology", desc: "AI, SaaS, infrastructure", icon: <FaMicrochip />, color: "#4A4BD7", key: "tech" },
-    { name: "Health", desc: "Wellness and biotech", icon: <FaHeartbeat />, color: "#EC4899", key: "health" },
-    { name: "Education", desc: "Learning & research", icon: <FaGraduationCap />, color: "#F59E0B", key: "edu" },
-    { name: "Business", desc: "Markets & strategy", icon: <FaBriefcase />, color: "#caec36", key: "biz" },
-    { name: "Gaming", desc: "Entertainment & esports", icon: <FaGamepad />, color: "#8B5CF6", key: "game" },
-    { name: "Music", desc: "Audio & culture", icon: <FaMusic />, color: "#F43F5E", key: "music" },
-    { name: "Fitness", desc: "Sport & wellness", icon: <FaDumbbell />, color: "#22C55E", key: "fit" },
-    { name: "Food", desc: "Cooking & cuisine", icon: <FaUtensils />, color: "#F97316", key: "food" },
+const PAGE_1 = [
+    { name: "Technology", desc: "AI, SaaS, infrastructure", icon: <FaMicrochip />,     color: "#4A4BD7", key: "Technology" },
+    { name: "Health",     desc: "Wellness and biotech",     icon: <FaHeartbeat />,     color: "#EC4899", key: "Health" },
+    { name: "Education",  desc: "Learning & research",      icon: <FaGraduationCap />, color: "#F59E0B", key: "Education" },
+    { name: "Business",   desc: "Markets & strategy",       icon: <FaBriefcase />,     color: "#caec36", key: "Business" },
+    { name: "Gaming",     desc: "Entertainment & esports",  icon: <FaGamepad />,       color: "#8B5CF6", key: "Gaming" },
+    { name: "Music",      desc: "Audio & culture",          icon: <FaMusic />,         color: "#F43F5E", key: "Music" },
+    { name: "Fitness",    desc: "Sport & wellness",         icon: <FaDumbbell />,      color: "#22C55E", key: "Fitness" },
+    { name: "Food",       desc: "Cooking & cuisine",        icon: <FaUtensils />,      color: "#F97316", key: "Food" },
+];
+
+const PAGE_2 = [
+    { name: "Science",   desc: "Physics, bio & space",   icon: <FaFlask />,      color: "#06B6D4", key: "Science" },
+    { name: "Design",    desc: "UI/UX & visual arts",    icon: <FaPaintBrush />, color: "#A855F7", key: "Design" },
+    { name: "Finance",   desc: "Investing & crypto",     icon: <FaChartLine />,  color: "#EAB308", key: "Finance" },
+    { name: "Nature",    desc: "Ecology & outdoors",     icon: <FaLeaf />,       color: "#10B981", key: "Nature" },
+    { name: "Travel",    desc: "Destinations & culture", icon: <FaPlane />,      color: "#F87171", key: "Travel" },
+    { name: "Film & TV", desc: "Cinema & streaming",     icon: <FaFilm />,       color: "#60A5FA", key: "Film & TV" },
+    { name: "Fashion",   desc: "Style & trends",         icon: <FaTshirt />,     color: "#FB7185", key: "Fashion" },
+    { name: "Books",     desc: "Literature & writing",   icon: <FaBook />,       color: "#34D399", key: "Books" },
 ];
 
 const groupRows = (list) => {
     const rows = [];
     let i = 0;
-    const pattern = [3, 2, 3, 2];
+    const pattern = [3, 2, 3];
     let p = 0;
     while (i < list.length) {
         const size = pattern[p % pattern.length];
@@ -31,12 +45,14 @@ const groupRows = (list) => {
 };
 
 export default function Intrests({ setStep, selectedInterests, setSelectedInterests }) {
+    const [page, setPage] = useState(0);
+
+    const currentList = page === 0 ? PAGE_1 : PAGE_2;
+    const rows = groupRows(currentList);
 
     const toggle = (key) => {
         setSelectedInterests((prev) =>
-            prev.includes(key)
-                ? prev.filter(i => i !== key)
-                : [...prev, key]
+            prev.includes(key) ? prev.filter(i => i !== key) : [...prev, key]
         );
     };
 
@@ -46,8 +62,6 @@ export default function Intrests({ setStep, selectedInterests, setSelectedIntere
         card.style.setProperty("--x", `${e.clientX - rect.left}px`);
         card.style.setProperty("--y", `${e.clientY - rect.top}px`);
     };
-
-    const rows = groupRows(interestsList);
 
     return (
         <div className="interets">
@@ -59,7 +73,6 @@ export default function Intrests({ setStep, selectedInterests, setSelectedIntere
             </span>
 
             <h1 className="onboarding-title">Select your interests</h1>
-
             <p className="onboarding-content">Choose topics you care about.</p>
 
             <div className="intrests-cards">
@@ -84,6 +97,15 @@ export default function Intrests({ setStep, selectedInterests, setSelectedIntere
                 ))}
             </div>
 
+            <div className="slider-nav">
+                <button className="nav-arrow" onClick={() => setPage(0)} disabled={page === 0}>‹</button>
+                <div className="page-dots">
+                    <div className={`dot ${page === 0 ? "active" : ""}`} onClick={() => setPage(0)} />
+                    <div className={`dot ${page === 1 ? "active" : ""}`} onClick={() => setPage(1)} />
+                </div>
+                <button className="nav-arrow" onClick={() => setPage(1)} disabled={page === 1}>›</button>
+            </div>
+
             {selectedInterests.length === 0 && (
                 <span className="interests-warning">
                     <Error /> Please select at least one interest
@@ -91,9 +113,7 @@ export default function Intrests({ setStep, selectedInterests, setSelectedIntere
             )}
 
             <div className="intrests-btn">
-                <button className="btn goback" onClick={() => setStep(2)}>
-                    Back
-                </button>
+                <button className="btn goback" onClick={() => setStep(2)}>Back</button>
                 <button
                     className="btn linear"
                     onClick={() => setStep(4)}

@@ -32,7 +32,7 @@ export default function BrowseStudies() {
 
     return (
         <div className="dashboard">
-            <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <TopNavBar page="participate" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <SideBarParticipant page="browse" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">

@@ -121,8 +121,7 @@ exports.submitResponse = async (req, res) => {
     const phase = study?.phases?.find(p => p.phaseId === phaseId);
 
     if (!phase) return res.status(404).json({ message: "Phase not found" });
-    if (phase.status !== "ACTIVE") return res.status(400).json({ message: "Phase is not active" });
-
+    if (!["ACTIVE", "PENDING"].includes(phase.status)) return res.status(400).json({ message: "Phase is not active" });
     const snapshot = buildSnapshot(phase);
 
     // ✅ Find existing draft and upgrade it, or create fresh submission

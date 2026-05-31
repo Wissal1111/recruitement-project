@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import SideBar from "../../components/SideBar";
 import TopNavBar from "../../components/TopNavBar";
 import { getCampaigns, launchCampaign, cancelCampaign, getCampaignStats, resendInvitations } from "../../api/RecruitmentApi";
+import axiosInstance from "../../api/axiosInstance";
 import { MailPlus, Send, XCircle, BarChart2, RefreshCw, Zap } from "lucide-react";
 
 const CAMPAIGN_STATUS = {
@@ -14,14 +15,27 @@ const CAMPAIGN_STATUS = {
 
 export default function Invitations() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [studies, setStudies] = useState([]);
     const [studyId, setStudyId] = useState("");
-    const [inputId, setInputId] = useState("");
     const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(false);
     const [launching, setLaunching] = useState(false);
     const [form, setForm] = useState({ targetCount: 10, expirationDays: 7 });
     const [stats, setStats] = useState({});
     const [actionLoading, setActionLoading] = useState({});
+
+    useEffect(() => {
+        axiosInstance.get("/studies/my-studies")
+            .then(res => {
+                const list = res.data?.studies || res.data || [];
+                setStudies(list);
+                if (list.length > 0) {
+                    setStudyId(list[0].studyId);
+                    load(list[0].studyId);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     const load = async (id) => {
         if (!id) return;
@@ -30,10 +44,16 @@ export default function Invitations() {
             const res = await getCampaigns(id);
             setCampaigns(res.data);
         } catch (e) {
-            console.error(e);
+            setCampaigns([]);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleStudyChange = (id) => {
+        setStudyId(id);
+        setStats({});
+        load(id);
     };
 
     const handleLaunch = async () => {
@@ -103,25 +123,37 @@ export default function Invitations() {
                     <p style={{ color: "var(--content)", fontSize: 14 }}>Launch campaigns to invite eligible participants</p>
                 </div>
 
-                {/* Study ID */}
+                {/* Study Selector */}
                 <div style={{
                     background: "#fff", borderRadius: "var(--medium-radius)",
-                    padding: "20px", border: "1px solid #E8ECF4",
-                    boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 24
+                    padding: "16px 20px", border: "1px solid #E8ECF4",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 24,
+                    display: "flex", alignItems: "center", gap: 12
                 }}>
-                    <div style={{ display: "flex", gap: 12 }}>
-                        <input value={inputId} onChange={e => setInputId(e.target.value)}
-                               placeholder="Enter Study ID..."
-                               style={inputStyle}
-                               onKeyDown={e => { if (e.key === "Enter") { setStudyId(inputId); load(inputId); } }}
-                               onFocus={e => e.target.style.borderColor = "#7073FF"}
-                               onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
-                        <button onClick={() => { setStudyId(inputId); load(inputId); }} style={{
-                            background: "var(--linear-blue)", color: "#fff", border: "none",
-                            borderRadius: 8, padding: "10px 20px", fontWeight: 600, fontSize: 14,
-                            cursor: "pointer", whiteSpace: "nowrap"
-                        }}>Load</button>
-                    </div>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "var(--title)", whiteSpace: "nowrap" }}>
+                        Study :
+                    </label>
+                    <select
+                        value={studyId}
+                        onChange={e => handleStudyChange(e.target.value)}
+                        style={{ ...inputStyle, cursor: "pointer" }}
+                    >
+                        {studies.length === 0 && <option value="">No studies found</option>}
+                        {studies.map(s => (
+                            <option key={s.studyId} value={s.studyId}>
+                                {s.title} — {s.studyStatus}
+                            </option>
+                        ))}
+                    </select>
+                    {studyId && (
+                        <span style={{
+                            background: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#F0FDF4" : "#F1F5F9",
+                            color: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#15803D" : "#64748B",
+                            borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap"
+                        }}>
+                            {studies.find(s => s.studyId === studyId)?.studyStatus || ""}
+                        </span>
+                    )}
                 </div>
 
                 {studyId && (
@@ -145,9 +177,7 @@ export default function Invitations() {
                                            style={inputStyle}
                                            onFocus={e => e.target.style.borderColor = "#7073FF"}
                                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
-                                    <p style={{ fontSize: 11, color: "var(--content)", marginTop: 4 }}>
-                                        Number of participants to invite
-                                    </p>
+                                    <p style={{ fontSize: 11, color: "var(--content)", marginTop: 4 }}>Number of participants to invite</p>
                                 </div>
                                 <div>
                                     <label style={{ fontSize: 13, fontWeight: 600, color: "var(--title)", display: "block", marginBottom: 6 }}>
@@ -158,9 +188,7 @@ export default function Invitations() {
                                            style={inputStyle}
                                            onFocus={e => e.target.style.borderColor = "#7073FF"}
                                            onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
-                                    <p style={{ fontSize: 11, color: "var(--content)", marginTop: 4 }}>
-                                        Invitations expire after this many days
-                                    </p>
+                                    <p style={{ fontSize: 11, color: "var(--content)", marginTop: 4 }}>Invitations expire after this many days</p>
                                 </div>
                                 <button onClick={handleLaunch} disabled={launching} style={{
                                     background: "var(--linear-blue)", color: "#fff",
@@ -211,7 +239,6 @@ export default function Invitations() {
                                                 }}>{c.status}</span>
                                             </div>
 
-                                            {/* Stats */}
                                             {campaignStats && (
                                                 <div style={{
                                                     display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
@@ -231,7 +258,6 @@ export default function Invitations() {
                                                 </div>
                                             )}
 
-                                            {/* Actions */}
                                             <div style={{ display: "flex", gap: 8 }}>
                                                 <button onClick={() => handleStats(c.campaignId)} style={{
                                                     flex: 1, background: "var(--background-blue)", color: "var(--blue-text)",
@@ -248,16 +274,14 @@ export default function Invitations() {
                                                             border: "none", borderRadius: 6, padding: "7px 10px", cursor: "pointer",
                                                             fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 4
                                                         }}>
-                                                            <RefreshCw size={12} />
-                                                            Resend
+                                                            <RefreshCw size={12} /> Resend
                                                         </button>
                                                         <button onClick={() => handleCancel(c.campaignId)} style={{
                                                             flex: 1, background: "#FEF2F2", color: "#B91C1C",
                                                             border: "none", borderRadius: 6, padding: "7px 10px", cursor: "pointer",
                                                             fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 4
                                                         }}>
-                                                            <XCircle size={12} />
-                                                            Cancel
+                                                            <XCircle size={12} /> Cancel
                                                         </button>
                                                     </>
                                                 )}

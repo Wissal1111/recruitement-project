@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import SideBarParticipant from "../../components/recruitment/SideBarParticipant";
 import TopNavBar from "../../components/TopNavBar";
-import { getMyInvitations, getMyParticipations } from "../../api/RecruitmentApi";
+import { getMyInvitations, getMyParticipations, getEligibleStudies } from "../../api/RecruitmentApi";
 import { useNavigate } from "react-router-dom";
+import SideBar from "../../components/SideBar";
 import { Rocket, Mail, Trophy, ArrowRight } from "lucide-react";
 
 const STUDY_CATEGORIES = ["All Studies", "UX Research", "Technology", "Healthcare"];
@@ -26,10 +27,11 @@ export default function HomeParticipant() {
     const [pendingInv, setPendingInv] = useState(0);
     const [activePartic, setActivePartic] = useState(0);
     const [totalRewards] = useState(1240.50);
+    const [eligibleStudies, setEligibleStudies] = useState([]);
     const navigate = useNavigate();
 
-    const session = JSON.parse(localStorage.getItem("session") || "{}");
-    const firstName = session?.user?.firstName || session?.user?.name || "Alex";
+    const session = JSON.parse(localStorage.getItem("user") || "{}");
+    const firstName = localStorage.getItem("firstname") || session?.firstname || "there";
 
     useEffect(() => {
         getMyInvitations()
@@ -38,18 +40,38 @@ export default function HomeParticipant() {
         getMyParticipations()
             .then(r => setActivePartic(r.data.filter(p => p.status === "ACTIVE").length))
             .catch(() => {});
+        getEligibleStudies()
+            .then(r => setEligibleStudies(r.data))
+            .catch(() => {});
     }, []);
+
+    const studiesToShow = eligibleStudies.length > 0
+        ? eligibleStudies.map(s => ({
+            id: s.studyId || s._id,
+            title: s.title,
+            tags: [s.studyCategory || "Research"],
+            reward: s.totalBudget || 0,
+            duration: 30,
+            match: 95,
+            icon: "🔬"
+        }))
+        : MOCK_STUDIES;
 
     return (
         <div className="dashboard">
             <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <SideBarParticipant page="home" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+           <SideBar
+                           page="dashboard"
+                           part="home"
+                           isOpen={sidebarOpen}
+                           onClose={() => setSidebarOpen(false)}
+                       />
 
             <div className="wrapper">
                 {/* Hero Banner */}
                 <div style={{
                     background: "linear-gradient(135deg, #fff 60%, #EEF0FF 100%)",
-                    borderRadius: 16, padding: "40px 40px 40px 40px",
+                    borderRadius: 16, padding: "40px",
                     marginBottom: 32, position: "relative", overflow: "hidden",
                     border: "1px solid #E8ECF4",
                     boxShadow: "0 2px 12px rgba(112,115,255,0.06)"
@@ -60,7 +82,7 @@ export default function HomeParticipant() {
                             Welcome back, <span style={{ color: "var(--blue-text)" }}>{firstName}!</span>
                         </h1>
                         <p style={{ color: "var(--content)", fontSize: 15, maxWidth: 500 }}>
-                            Find studies matching your interests and earn rewards. Your expertise helps shape the future of editorial intelligence.
+                            Find studies matching your interests and earn rewards.
                         </p>
                     </div>
                 </div>
@@ -72,7 +94,6 @@ export default function HomeParticipant() {
                         value={activePartic}
                         tag="LIVE NOW"
                         icon={<Rocket size={20} color="var(--blue-text)" />}
-                        tagColor="#7073FF"
                         onClick={() => navigate("/home/activity")}
                     />
                     <StatCard
@@ -80,7 +101,6 @@ export default function HomeParticipant() {
                         value={pendingInv}
                         tag="NEW FOR YOU"
                         icon={<Mail size={20} color="var(--blue-text)" />}
-                        tagColor="#7073FF"
                         highlight
                         onClick={() => navigate("/home/invitations")}
                     />
@@ -89,7 +109,6 @@ export default function HomeParticipant() {
                         value={`$${totalRewards.toFixed(2)}`}
                         tag="AVAILABLE"
                         icon={<Trophy size={20} color="var(--blue-text)" />}
-                        tagColor="#15803D"
                     />
                 </div>
 
@@ -108,14 +127,12 @@ export default function HomeParticipant() {
                         marginLeft: "auto", background: "transparent", border: "none",
                         color: "var(--content)", fontSize: 13, cursor: "pointer", fontWeight: 600,
                         display: "flex", alignItems: "center", gap: 4
-                    }}>
-                        ≡ More Filters
-                    </button>
+                    }}>≡ More Filters</button>
                 </div>
 
-                {/* Studies Grid */}
+                {/* Studies Grid — vraies données ou mock fallback */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
-                    {MOCK_STUDIES.map(study => (
+                    {studiesToShow.map(study => (
                         <StudyCard key={study.id} study={study} />
                     ))}
                 </div>
@@ -148,8 +165,8 @@ function StatCard({ label, value, tag, icon, highlight, onClick }) {
             cursor: onClick ? "pointer" : "default",
             transition: "box-shadow 0.15s"
         }}
-             onMouseEnter={e => onClick && (e.currentTarget.style.boxShadow = "0 4px 16px rgba(112,115,255,0.12)")}
-             onMouseLeave={e => onClick && (e.currentTarget.style.boxShadow = "0 1px 6px rgba(0,0,0,0.04)")}
+            onMouseEnter={e => onClick && (e.currentTarget.style.boxShadow = "0 4px 16px rgba(112,115,255,0.12)")}
+            onMouseLeave={e => onClick && (e.currentTarget.style.boxShadow = "0 1px 6px rgba(0,0,0,0.04)")}
         >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--background-blue)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -170,8 +187,8 @@ function StudyCard({ study }) {
             border: "1px solid #E8ECF4", boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
             cursor: "pointer", transition: "all 0.15s", position: "relative"
         }}
-             onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
-             onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
         >
             <div style={{ position: "absolute", top: 14, right: 14, background: "#F0FDF4", color: "#15803D", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
                 {study.match}% MATCH
@@ -203,8 +220,8 @@ function RecommendedCard({ study }) {
             border: "1px solid #E8ECF4", boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
             cursor: "pointer", transition: "all 0.15s"
         }}
-             onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
-             onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
         >
             <img src={study.img} alt={study.title} style={{ width: "100%", height: 140, objectFit: "cover" }} />
             <div style={{ padding: "14px 16px" }}>
