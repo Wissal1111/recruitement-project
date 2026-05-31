@@ -54,32 +54,21 @@ class _InviteParticipantsScreenState
     try {
       await ref
           .read(recruitmentRepositoryProvider)
-          .launchCampaign(widget.survey.studyId, 'Recruitment');
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invitations sent to matching participants.'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
-
-      // Reload eligible users so invited ones disappear
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      await _loadEligibleParticipants();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to send invitation.'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+          .inviteUser(widget.survey.studyId, participantId);
+      setState(() => _invitedUsers.add(participantId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Invitation sent!'),
+            backgroundColor: AppTheme.successColor));
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        final msg = e.toString().contains('already invited')
+            ? 'Already invited this participant.'
+            : 'Failed to send invitation.';
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: AppTheme.errorColor));
+      }
     }
   }
 

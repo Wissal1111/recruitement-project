@@ -11,10 +11,14 @@ final notificationsProvider = FutureProvider.autoDispose((ref) async {
   try {
     final dio = ref.read(dioProvider);
     final res = await dio.get('/api/notifications');
-    if (res.data is List) return res.data as List;
-    if (res.data is Map && res.data['notifications'] != null)
-      return res.data['notifications'] as List;
-    return [];
+    List all = [];
+    if (res.data is List) {
+      all = res.data as List;
+    } else if (res.data is Map && res.data['notifications'] != null) {
+      all = res.data['notifications'] as List;
+    }
+    // Filter out already-read notifications Flutter-side
+    return all.where((n) => n['isRead'] != true).toList();
   } catch (e) {
     return [];
   }

@@ -169,6 +169,17 @@ class RecruitmentRepository {
       return null;
     }
   }
+
+  Future<void> inviteUser(String studyId, String userId) async {
+    try {
+      await _dio.post('/api/recruitment/studies/$studyId/invite/$userId');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        throw Exception('User already invited');
+      }
+      throw Exception('Failed to send invitation: ${e.response?.data}');
+    }
+  }
 }
 
 final myInvitationsProvider = FutureProvider<List<dynamic>>((ref) async {
