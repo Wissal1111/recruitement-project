@@ -1,18 +1,27 @@
 // controller/CampaignController.java
 package com.projet.recruitment_service.controller;
 
-import com.projet.recruitment_service.dto.request.CampaignRequest;
-import com.projet.recruitment_service.dto.response.CampaignStatsResponse;
-import com.projet.recruitment_service.entity.InvitationCampaign;
-import com.projet.recruitment_service.service.CampaignService;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.projet.recruitment_service.dto.request.CampaignRequest;
+import com.projet.recruitment_service.dto.response.CampaignStatsResponse;
+import com.projet.recruitment_service.entity.InvitationCampaign;
+import com.projet.recruitment_service.entity.SurveyInvitation;
+import com.projet.recruitment_service.service.CampaignService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -66,5 +75,19 @@ public class CampaignController {
     @GetMapping("/api/recruitment/campaigns/{campaignId}/stats")
     public ResponseEntity<CampaignStatsResponse> stats(@PathVariable UUID campaignId) {
         return ResponseEntity.ok(campaignService.getCampaignStats(campaignId));
+    }
+
+    // RC-DIRECT: Send invitation to a specific user
+    @PostMapping("/api/recruitment/studies/{studyId}/invite/{userId}")
+    public ResponseEntity<SurveyInvitation> inviteUser(
+            @PathVariable UUID studyId,
+            @PathVariable UUID userId,
+            @RequestHeader("Authorization") String authHeader,
+            HttpServletRequest httpRequest) {
+
+        UUID creatorId = (UUID) httpRequest.getAttribute("userId");
+        String token = authHeader.replace("Bearer ", "");
+        return ResponseEntity.status(201)
+                .body(campaignService.inviteSpecificUser(studyId, creatorId, userId, token));
     }
 }

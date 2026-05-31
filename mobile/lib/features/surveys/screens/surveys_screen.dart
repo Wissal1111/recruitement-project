@@ -136,41 +136,50 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
     // TAB 0: BROWSE — filters out surveys Sarah already participated in
     if (_filterIndex == 0) {
       final participatedAsync = ref.watch(myParticipatedStudyIdsProvider);
+
+      // Wait for BOTH to load before showing anything
       return browsable.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => const Center(child: Text('Failed to load surveys')),
         data: (surveys) {
-          final participatedIds = participatedAsync.valueOrNull ?? <String>{};
-          // Filter out surveys already participated in
-          final available = surveys
-              .where((s) => !participatedIds.contains(s.studyId))
-              .toList();
+          // Also wait for participated IDs — show loading until ready
+          return participatedAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) =>
+                _BrowseList(surveys: surveys, participatedIds: {}),
+            data: (participatedIds) {
+              final available = surveys
+                  .where((s) => !participatedIds.contains(s.studyId))
+                  .toList();
 
-          if (available.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(40),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.explore_outlined,
-                          size: 64, color: AppTheme.textTertiary),
-                      SizedBox(height: 16),
-                      Text('No surveys available.',
-                          style: TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.textSecondary,
-                              fontWeight: FontWeight.w600)),
-                      SizedBox(height: 8),
-                      Text('Published surveys will appear here.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 13, color: AppTheme.textTertiary)),
-                    ]),
-              ),
-            );
-          }
-          return _BrowseList(surveys: available);
+              if (available.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.explore_outlined,
+                              size: 64, color: AppTheme.textTertiary),
+                          SizedBox(height: 16),
+                          Text('No surveys available.',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w600)),
+                          SizedBox(height: 8),
+                          Text('Published surveys will appear here.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 13, color: AppTheme.textTertiary)),
+                        ]),
+                  ),
+                );
+              }
+              return _BrowseList(
+                  surveys: available, participatedIds: participatedIds);
+            },
+          );
         },
       );
     }
@@ -449,7 +458,8 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
 // ─────────────────────────────────────────────────────────
 class _BrowseList extends ConsumerStatefulWidget {
   final List<Study> surveys;
-  const _BrowseList({required this.surveys});
+  final Set<String> participatedIds;
+  const _BrowseList({required this.surveys, required this.participatedIds});
 
   @override
   ConsumerState<_BrowseList> createState() => _BrowseListState();
@@ -457,7 +467,9 @@ class _BrowseList extends ConsumerStatefulWidget {
 
 class _BrowseListState extends ConsumerState<_BrowseList> {
   final Map<String, int?> _scores = {};
+
   Map<String, dynamic>? _userProfile;
+
   bool _profileLoaded = false;
 
   @override
