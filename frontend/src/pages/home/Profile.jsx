@@ -7,12 +7,14 @@ import Info from "../../components/profile/info/Info";
 import Biography from "../../components/profile/biography/Biography";
 import BottomCards from "../../components/profile/bottomcards/BottomCards";
 import { getProfile } from "../../api/ProfileApi";
+import { logoutUser } from "../../api/Auth";
+import EditProfileModal from "../../components/profile/modals/EditProfileModal";
+import ChangePasswordModal from "../../components/profile/modals/ChangePasswordModal";
 import "./Profile.css";
 
 function ProfileSkeleton() {
     return (
         <div className="profile-skeleton">
-            {/* Info card skeleton */}
             <div className="skeleton-card skeleton-info">
                 <div className="skeleton-avatar" />
                 <div className="skeleton-info-text">
@@ -24,8 +26,6 @@ function ProfileSkeleton() {
                     </div>
                 </div>
             </div>
-
-            {/* Bio + interests row skeleton */}
             <div className="skeleton-bio-row">
                 <div className="skeleton-card skeleton-bio">
                     <div className="skeleton-line skeleton-line--label" />
@@ -44,7 +44,6 @@ function ProfileSkeleton() {
                     <div className="skeleton-line skeleton-line--full" />
                     <div className="skeleton-line skeleton-line--lg" />
                 </div>
-
                 <div className="skeleton-card skeleton-interests">
                     <div className="skeleton-line skeleton-line--label" />
                     <div className="skeleton-tags">
@@ -56,8 +55,6 @@ function ProfileSkeleton() {
                     </div>
                 </div>
             </div>
-
-            {/* Bottom cards skeleton */}
             <div className="skeleton-bottom-row">
                 <div className="skeleton-card skeleton-bottom-card">
                     <div className="skeleton-line skeleton-line--xs" />
@@ -81,26 +78,39 @@ export default function Profile() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    const logout = () => {
-        clearSession();
-        navigate("/login");
-    };
-
-    function SaveData(data) {
-        setProfile(data);
-    }
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
 
     useEffect(() => {
         console.log("📦 Session on mount:", getSession());
         getProfile()
             .then(data => {
                 console.log("interests shape:", data?.profile?.interests);
-                SaveData(data);
+                setProfile(data);
             })
             .catch(err => console.log("getProfile error:", err))
             .finally(() => setLoading(false));
     }, []);
+
+    const logout = async () => {
+        const { refreshToken } = getSession();
+        await logoutUser(refreshToken); // revoke on server
+        clearSession();
+        navigate("/login");
+    };
+
+    // Merge saved data back into profile state without a full refetch
+    const handleProfileSaved = (savedData) => {
+        setProfile(prev => ({
+            ...prev,
+            firstname: savedData.firstname ?? prev.firstname,
+            lastname:  savedData.lastname  ?? prev.lastname,
+            profile: {
+                ...prev.profile,
+                ...(savedData.profile ?? savedData),
+            }
+        }));
+    };
 
     return (
         <>
@@ -127,6 +137,7 @@ export default function Profile() {
                             LastName={profile?.lastname}
                             Profession={profile?.profile?.profession}
                             roles={profile?.roles?.map(r => r.role?.name) || []}
+                            onEditProfile={() => setShowEditModal(true)}
                         />
 
                         <Biography
@@ -138,12 +149,27 @@ export default function Profile() {
 
                         <BottomCards
                             onLogout={logout}
+                            onChangePassword={() => setShowPasswordModal(true)}
                             education={profile?.profile?.education}
                             dateOfBirth={profile?.profile?.dateOfBirth}
                         />
                     </>
                 )}
             </div>
+
+            {showEditModal && (
+                <EditProfileModal
+                    profile={profile}
+                    onClose={() => setShowEditModal(false)}
+                    onSaved={handleProfileSaved}
+                />
+            )}
+
+            {showPasswordModal && (
+                <ChangePasswordModal
+                    onClose={() => setShowPasswordModal(false)}
+                />
+            )}
         </>
     );
 }

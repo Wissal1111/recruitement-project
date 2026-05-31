@@ -1,0 +1,186 @@
+.epm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.epm-modal {
+    background: white;
+    border-radius: 28px;
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 32px 80px rgba(74, 75, 215, 0.14);
+    overflow: hidden;
+}
+
+/* Header */
+.epm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 28px 0;
+    flex-shrink: 0;
+}
+
+.epm-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+}
+
+.epm-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+.epm-close:hover { color: #0F172A; }
+
+/* Body */
+.epm-body {
+    padding: 20px 28px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.epm-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 6px;
+}
+
+.epm-row {
+    display: flex;
+    gap: 14px;
+}
+
+.epm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.epm-field--full {
+    width: 100%;
+}
+
+.epm-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+}
+
+.epm-field input,
+.epm-field select,
+.epm-field textarea {
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #0F172A;
+    background: #F8FAFC;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: inherit;
+    resize: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.epm-field input:focus,
+.epm-field select:focus,
+.epm-field textarea:focus {
+    border-color: #6366F1;
+    background: white;
+}
+
+.epm-field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+}
+
+.epm-error {
+    background: #FEF2F2;
+    color: #DC2626;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Footer */
+.epm-footer {
+    display: flex;
+    gap: 10px;
+    padding: 16px 28px 24px;
+    flex-shrink: 0;
+    border-top: 1px solid #F1F5F9;
+}
+
+.epm-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 14px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.epm-btn--cancel {
+    background: #F1F5F9;
+    color: #64748B;
+}
+.epm-btn--cancel:hover { background: #E2E8F0; }
+
+.epm-btn--save {
+    background: linear-gradient(135deg, #4A4BD7, #7073FF);
+    color: white;
+}
+.epm-btn--save:hover { opacity: 0.9; }
+.epm-btn--save:disabled { opacity: 0.6; cursor: default; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.epm-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@media (max-width: 500px) {
+    .epm-row { flex-direction: column; }
+    .epm-modal { border-radius: 20px; }
+}
