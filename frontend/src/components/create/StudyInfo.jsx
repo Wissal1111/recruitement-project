@@ -156,10 +156,9 @@ export default function StudyInfo({ onDiscard }) {
                 {/* Budget */}
                 <div>
                     <label className="si__label">
-                        Total Budget <span style={{ color: "var(--red)" }}>*</span>
+                        Total Points <span style={{ color: "var(--red)" }}>*</span>
                     </label>
                     <div className="si__budget-wrap">
-                        <span className="si__budget-sym">$</span>
                         <input
                             className={`si__input ${errors.budget ? "si__input--error" : ""}`}
                             name="budget"

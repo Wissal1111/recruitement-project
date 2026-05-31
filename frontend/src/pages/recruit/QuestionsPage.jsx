@@ -1,11 +1,11 @@
-import SideBar from "../components/SideBar";
-import TopNavBar from "../components/TopNavBar";
+import SideBar from "../../components/SideBar";
+import TopNavBar from "../../components/TopNavBar";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getMyRoles } from "../api/Role";
-import { getStudyById } from "../api/StudyApi";
-import { addQuestion as apiAddQuestion, removeQuestion as apiRemoveQuestion, updateQuestion as apiUpdateQuestion } from "../api/QuestionsApi";
-import Questions from "../components/create/Questions";
+import { getMyRoles } from "../../api/Role";
+import { getStudyById } from "../../api/StudyApi";
+import { addQuestion as apiAddQuestion, removeQuestion as apiRemoveQuestion, updateQuestion as apiUpdateQuestion } from "../../api/QuestionsApi";
+import Questions from "../../components/create/Questions";
 
 export default function QuestionsPage() {
     const navigate          = useNavigate();

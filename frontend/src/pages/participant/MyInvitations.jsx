@@ -46,7 +46,7 @@ export default function MyInvitations() {
 
     return (
         <div className="dashboard">
-            <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <TopNavBar page="participate" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <SideBarParticipant page="invitations" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">

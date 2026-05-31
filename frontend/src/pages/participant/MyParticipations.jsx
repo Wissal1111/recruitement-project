@@ -45,7 +45,7 @@ export default function MyParticipations() {
 
     return (
         <div className="dashboard">
-            <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <TopNavBar page="participate" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <SideBarParticipant page="activity" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">

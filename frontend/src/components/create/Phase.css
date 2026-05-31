@@ -227,9 +227,7 @@
     pointer-events: none;
 }
 
-.phase__input--prefixed {
-    padding-left: 28px;
-}
+
 
 /* Go to questions CTA */
 .phase__goto-questions {

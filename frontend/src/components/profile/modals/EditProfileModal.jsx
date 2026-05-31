@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { updateProfile } from '../../../api/ProfileApi';
 import './EditProfileModal.css';
 
-const GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER'];
+const GENDER_OPTIONS = ['MALE', 'FEMALE'];
 const EDUCATION_OPTIONS = ['High School', 'Associate Degree', "Bachelor's Degree", "Master's Degree", 'PhD', 'Other'];
 
 export default function EditProfileModal({ profile, onClose, onSaved }) {

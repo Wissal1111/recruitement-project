@@ -8,7 +8,7 @@ export default function Rewards() {
 
     return (
         <div className="dashboard">
-            <TopNavBar page="home" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <TopNavBar page="participate" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <SideBarParticipant page="rewards" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
             <div className="wrapper">
                 {/* Header */}

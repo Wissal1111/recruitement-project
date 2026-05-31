@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
-import { Monitor, Users, FlaskConical, MessageSquare, HelpCircle, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { Monitor, Users, FlaskConical, MessageSquare, HelpCircle, Pencil, Trash2 } from "lucide-react";
 import "./StudyCard.css";
 
 const STATUS_COLORS = {
@@ -19,12 +18,32 @@ const CATEGORY_ICONS = {
     OTHER:      { icon: Users,         bg: "rgba(245,158,11,0.1)", color: "#F59E0B" },
 };
 
-const STATUSES = ["DRAFT", "PUBLISHED", "ACTIVE", "COMPLETED", "ARCHIVED"];
+function DeleteConfirmModal({ title, onConfirm, onCancel }) {
+    return (
+        <div className="sc__confirm-overlay" onClick={onCancel}>
+            <div className="sc__confirm-modal" onClick={e => e.stopPropagation()}>
+                <div className="sc__confirm-icon">
+                    <Trash2 size={22} strokeWidth={1.8} color="#DC2626" />
+                </div>
+                <h3 className="sc__confirm-title">Delete Study</h3>
+                <p className="sc__confirm-msg">
+                    Are you sure you want to delete <strong>"{title}"</strong>? This action cannot be undone.
+                </p>
+                <div className="sc__confirm-actions">
+                    <button className="sc__confirm-btn sc__confirm-btn--cancel" onClick={onCancel}>
+                        Cancel
+                    </button>
+                    <button className="sc__confirm-btn sc__confirm-btn--delete" onClick={onConfirm}>
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
-export default function StudyCard({ study, onEdit, onDelete, onStatusChange }) {
-    const [statusOpen, setStatusOpen] = useState(false);
-    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
-    const btnRef = useRef(null);
+export default function StudyCard({ study, onEdit, onDelete }) {
+    const [confirmOpen, setConfirmOpen] = useState(false);
 
     const statusStyle  = STATUS_COLORS[study.studyStatus]    || STATUS_COLORS.DRAFT;
     const categoryConf = CATEGORY_ICONS[study.studyCategory] || CATEGORY_ICONS.OTHER;
@@ -37,125 +56,70 @@ export default function StudyCard({ study, onEdit, onDelete, onStatusChange }) {
     const formatDate  = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "--";
     const formatMoney = (n) => `$${parseFloat(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 
-    const nextStatuses = STATUSES.filter((s) => s !== study.studyStatus);
-
-    const handleStatusBtnClick = (e) => {
-        e.stopPropagation();
-        if (!statusOpen && btnRef.current) {
-            const rect = btnRef.current.getBoundingClientRect();
-            setDropdownPos({
-                top:  rect.bottom + window.scrollY + 6,
-                left: rect.right  + window.scrollX,   // right-align: subtract dropdown width in CSS via transform
-            });
-        }
-        setStatusOpen((v) => !v);
-    };
-
-    // Close on outside click
-    useEffect(() => {
-        if (!statusOpen) return;
-        const handler = (e) => {
-            if (btnRef.current && !btnRef.current.contains(e.target)) {
-                setStatusOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, [statusOpen]);
-
     return (
-        <div className="sc" onClick={onEdit}>
+        <>
+            <div className="sc" onClick={onEdit}>
 
-            {/* Title cell */}
-            <div className="sc__title-cell">
-                <div className="sc__icon" style={{ background: categoryConf.bg }}>
-                    <CategoryIcon size={16} strokeWidth={2} color={categoryConf.color} />
+                {/* Title cell */}
+                <div className="sc__title-cell">
+                    <div className="sc__icon" style={{ background: categoryConf.bg }}>
+                        <CategoryIcon size={16} strokeWidth={2} color={categoryConf.color} />
+                    </div>
+                    <div>
+                        <p className="sc__title">{study.title}</p>
+                        <p className="sc__sub">{study.studyCategory}&nbsp;·&nbsp;Ends {formatDate(study.endDate)}</p>
+                    </div>
                 </div>
-                <div>
-                    <p className="sc__title">{study.title}</p>
-                    <p className="sc__sub">{study.studyCategory}&nbsp;·&nbsp;Ends {formatDate(study.endDate)}</p>
+
+                {/* Status cell */}
+                <div className="sc__status-cell">
+                    <span className="sc__status-chip" style={{ background: statusStyle.bg, color: statusStyle.color }}>
+                        <span className="sc__status-dot" style={{ background: statusStyle.color }} />
+                        {study.studyStatus}
+                    </span>
                 </div>
-            </div>
 
-            {/* Status cell */}
-            <div className="sc__status-cell">
-                <span className="sc__status-chip" style={{ background: statusStyle.bg, color: statusStyle.color }}>
-                    <span className="sc__status-dot" style={{ background: statusStyle.color }} />
-                    {study.studyStatus}
-                </span>
-            </div>
-
-            {/* Phases cell */}
-            <div className="sc__phases-cell">
-                {study.phases?.length ?? 0} phase{study.phases?.length !== 1 ? "s" : ""}
-            </div>
-
-            {/* Budget cell */}
-            <div className="sc__budget-cell">
-                <p className="sc__budget-amount">{formatMoney(study.totalBudget)}</p>
-                <div className="sc__bar-bg">
-                    <div className="sc__bar-fill" style={{ width: `${spentPct}%` }} />
+                {/* Phases cell */}
+                <div className="sc__phases-cell">
+                    {study.phases?.length ?? 0} phase{study.phases?.length !== 1 ? "s" : ""}
                 </div>
-                <p className="sc__budget-spent">{Math.round(spentPct)}% SPENT</p>
-            </div>
 
-            {/* Actions cell */}
-            <div className="sc__actions" onClick={(e) => e.stopPropagation()}>
-                <div className="sc__action-wrap">
+                {/* Budget cell */}
+                <div className="sc__budget-cell">
+                    <p className="sc__budget-amount">{study.totalBudget}</p>
+                    <div className="sc__bar-bg">
+                        <div className="sc__bar-fill" style={{ width: `${spentPct}%` }} />
+                    </div>
+                    <p className="sc__budget-spent">{Math.round(spentPct)}% SPENT</p>
+                </div>
+
+                {/* Actions cell */}
+                <div className="sc__actions" onClick={e => e.stopPropagation()}>
                     <button
-                        ref={btnRef}
-                        className={`sc__action-btn ${statusOpen ? "sc__action-btn--active" : ""}`}
-                        title="Change Status"
-                        onClick={handleStatusBtnClick}
+                        className="sc__action-btn"
+                        title="Edit"
+                        onClick={(e) => { e.stopPropagation(); onEdit(); }}
                     >
-                        <RefreshCw size={13} strokeWidth={2} />
+                        <Pencil size={13} strokeWidth={2} />
                     </button>
 
-                    {statusOpen && createPortal(
-                        <div
-                            className="sc__status-dropdown"
-                            style={{
-                                position: "absolute",
-                                top:      dropdownPos.top,
-                                left:     dropdownPos.left,
-                                transform: "translateX(-100%)",
-                            }}
-                        >
-                            {nextStatuses.map((s) => (
-                                <div
-                                    key={s}
-                                    className="sc__status-option"
-                                    onMouseDown={(e) => {   // onMouseDown fires before the outside-click handler
-                                        e.stopPropagation();
-                                        onStatusChange(study.studyId, s);
-                                        setStatusOpen(false);
-                                    }}
-                                >
-                                    <span className="sc__status-dot" style={{ background: STATUS_COLORS[s]?.color }} />
-                                    <span style={{ color: STATUS_COLORS[s]?.color, fontWeight: 700 }}>{s}</span>
-                                </div>
-                            ))}
-                        </div>,
-                        document.body
-                    )}
+                    <button
+                        className="sc__action-btn sc__action-btn--danger"
+                        title="Delete"
+                        onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
+                    >
+                        <Trash2 size={13} strokeWidth={2} />
+                    </button>
                 </div>
-
-                <button
-                    className="sc__action-btn"
-                    title="Edit"
-                    onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                >
-                    <Pencil size={13} strokeWidth={2} />
-                </button>
-
-                <button
-                    className="sc__action-btn sc__action-btn--danger"
-                    title="Delete"
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                >
-                    <Trash2 size={13} strokeWidth={2} />
-                </button>
             </div>
-        </div>
+
+            {confirmOpen && (
+                <DeleteConfirmModal
+                    title={study.title}
+                    onConfirm={() => { setConfirmOpen(false); onDelete(); }}
+                    onCancel={() => setConfirmOpen(false)}
+                />
+            )}
+        </>
     );
 }
