@@ -9,6 +9,7 @@ class Study {
   final DateTime updatedAt;
   final double totalBudget;
   final List<dynamic> phases;
+  final DateTime? endDate; // ← NEW
 
   Study({
     required this.studyId,
@@ -21,10 +22,15 @@ class Study {
     required this.updatedAt,
     required this.totalBudget,
     required this.phases,
+    this.endDate, // ← NEW
   });
 
+  bool get isExpired {
+    if (endDate == null) return false;
+    return DateTime.now().isAfter(endDate!);
+  }
+
   factory Study.fromJson(Map<String, dynamic> json) {
-    // MongoDB Decimal128 comes as either a number, a string, or { "$numberDecimal": "1200" }
     double parseBudget(dynamic raw) {
       if (raw == null) return 0.0;
       if (raw is num) return raw.toDouble();
@@ -46,6 +52,9 @@ class Study {
       updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
       totalBudget: parseBudget(json['totalBudget']),
       phases: json['phases'] as List<dynamic>? ?? [],
+      endDate: json['endDate'] != null // ← NEW
+          ? DateTime.tryParse(json['endDate'])
+          : null,
     );
   }
 }

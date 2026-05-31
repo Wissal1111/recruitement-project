@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/api_client.dart';
 import '../../../shared/theme.dart';
 import '../models/survey_model.dart';
 import '../providers/recruitment_provider.dart';
@@ -17,25 +18,6 @@ class SurveysScreen extends ConsumerStatefulWidget {
 class _SurveysScreenState extends ConsumerState<SurveysScreen> {
   int _filterIndex = 0;
   final _filters = ['Browse', 'My Surveys', 'Completed'];
-
-  // Static Data for "Completed" (Showing phase point breakdown)
-  final List<Map<String, dynamic>> _completedSurveys = [
-    {
-      'title': 'Consumer Spending Habits 2024',
-      'totalEarned': '\$15',
-      'phases': [
-        {'name': 'Phase 0: Screening', 'amount': '\$5', 'status': 'Paid'},
-        {'name': 'Phase 1: Deep Dive', 'amount': '\$10', 'status': 'Paid'},
-      ]
-    },
-    {
-      'title': 'Smart Home Devices Feedback',
-      'totalEarned': '\$5',
-      'phases': [
-        {'name': 'Phase 0: Initial Survey', 'amount': '\$5', 'status': 'Paid'},
-      ]
-    },
-  ];
 
   String _formatDate(DateTime date) {
     final diff = DateTime.now().difference(date);
@@ -68,7 +50,6 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header & Search
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(children: [
@@ -143,11 +124,7 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
               ]),
             ),
             const SizedBox(height: 16),
-
-            // Dynamic Body
-            Expanded(
-              child: _buildBodyContent(mySurveys, browsable),
-            ),
+            Expanded(child: _buildBodyContent(mySurveys, browsable)),
           ],
         ),
       ),
@@ -156,13 +133,20 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
 
   Widget _buildBodyContent(
       AsyncValue<List<Study>> mySurveys, AsyncValue<List<Study>> browsable) {
-    // TAB 0: BROWSE
+    // TAB 0: BROWSE — filters out surveys Sarah already participated in
     if (_filterIndex == 0) {
+      final participatedAsync = ref.watch(myParticipatedStudyIdsProvider);
       return browsable.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => const Center(child: Text('Failed to load surveys')),
         data: (surveys) {
-          if (surveys.isEmpty) {
+          final participatedIds = participatedAsync.valueOrNull ?? <String>{};
+          // Filter out surveys already participated in
+          final available = surveys
+              .where((s) => !participatedIds.contains(s.studyId))
+              .toList();
+
+          if (available.isEmpty) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(40),
@@ -172,14 +156,13 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
                       Icon(Icons.explore_outlined,
                           size: 64, color: AppTheme.textTertiary),
                       SizedBox(height: 16),
-                      Text('No surveys to browse yet.',
+                      Text('No surveys available.',
                           style: TextStyle(
                               fontSize: 16,
                               color: AppTheme.textSecondary,
                               fontWeight: FontWeight.w600)),
                       SizedBox(height: 8),
-                      Text(
-                          'When other creators publish surveys, they will appear here.',
+                      Text('Published surveys will appear here.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 13, color: AppTheme.textTertiary)),
@@ -187,95 +170,38 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
               ),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: surveys.length,
-            itemBuilder: (context, index) =>
-                _BrowseCard(survey: surveys[index]),
-          );
+          return _BrowseList(surveys: available);
         },
       );
     }
 
-    // TAB 2: COMPLETED (Real participations from recruitment service)
+    // TAB 2: COMPLETED
     if (_filterIndex == 2) {
-      final participationsAsync = ref.watch(myParticipationsProvider);
-      return participationsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) =>
-            const Center(child: Text('Failed to load completed surveys')),
-        data: (participations) {
-          final completed =
-              participations.where((p) => p['status'] == 'COMPLETED').toList();
-          if (completed.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(40),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle_outline,
-                          size: 64, color: AppTheme.textTertiary),
-                      SizedBox(height: 16),
-                      Text('No completed surveys yet.',
-                          style: TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.textSecondary,
-                              fontWeight: FontWeight.w600)),
-                      SizedBox(height: 8),
-                      Text(
-                          'Surveys you finish will appear here with your earned rewards.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 13, color: AppTheme.textTertiary)),
-                    ]),
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: completed.length,
-            itemBuilder: (context, index) {
-              final p = completed[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.surfaceHigh)),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        const Icon(Icons.check_circle,
-                            color: AppTheme.successColor, size: 20),
-                        const SizedBox(width: 8),
-                        const Text('COMPLETED',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.successColor,
-                                letterSpacing: 1)),
-                      ]),
-                      const SizedBox(height: 12),
-                      Text('Study: ${p['studyId'] ?? 'Unknown'}',
-                          style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary)),
-                    ]),
-              );
-            },
-          );
-        },
-      );
+      return const _CompletedTab();
     }
 
     // TAB 1: MY SURVEYS
     return mySurveys.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+      error: (err, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.warning_amber_rounded,
+                size: 48, color: AppTheme.textTertiary),
+            const SizedBox(height: 16),
+            const Text('Session expired.',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary)),
+            const SizedBox(height: 8),
+            const Text('Please log out and log back in.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.textSecondary)),
+          ]),
+        ),
+      ),
       data: (allSurveys) {
         if (allSurveys.isEmpty) {
           return const Center(
@@ -301,14 +227,385 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
   }
 }
 
-// ---------------------------------------------------------
-// WIDGETS
-// ---------------------------------------------------------
+// ─────────────────────────────────────────────────────────
+// Completed Tab — shows Sarah's finished surveys with points
+// ─────────────────────────────────────────────────────────
+class _CompletedTab extends ConsumerStatefulWidget {
+  const _CompletedTab();
 
-// 1. Browse Card (Real data from other creators)
+  @override
+  ConsumerState<_CompletedTab> createState() => _CompletedTabState();
+}
+
+class _CompletedTabState extends ConsumerState<_CompletedTab> {
+  List<Map<String, dynamic>> _completedStudies = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final dio = ref.read(dioProvider);
+      // Get all submitted responses grouped by study
+      final res = await dio.get('/api/responses/me/by-study');
+      final raw = res.data;
+      List grouped = [];
+      if (raw is Map && raw['data'] is List) {
+        grouped = raw['data'];
+      } else if (raw is List) {
+        grouped = raw;
+      }
+
+      final List<Map<String, dynamic>> result = [];
+
+      for (final group in grouped) {
+        final studyId = group['studyId']?.toString() ?? '';
+        final responses = group['responses'] as List? ?? [];
+        final submitted =
+            responses.where((r) => r['status'] == 'SUBMITTED').toList();
+        if (submitted.isEmpty) continue;
+
+        // Load study details
+        final studyData =
+            await ref.read(surveyRepositoryProvider).getStudyById(studyId);
+        if (studyData == null) continue;
+
+        final study = Study.fromJson(studyData);
+        final totalPhases = study.phases.length;
+        final completedPhases = submitted.length;
+        final isFullyComplete = completedPhases >= totalPhases;
+
+        // Calculate total earned
+        double totalEarned = 0;
+        final phaseBreakdown = <Map<String, dynamic>>[];
+
+        for (final response in submitted) {
+          final phaseId = response['phaseId']?.toString() ?? '';
+          final phase = study.phases.firstWhere((p) => p['phaseId'] == phaseId,
+              orElse: () => <String, dynamic>{});
+          final rawReward = phase['rewardAmount'];
+          double reward = 0;
+          if (rawReward is num) {
+            reward = rawReward.toDouble();
+          } else if (rawReward is Map && rawReward['\$numberDecimal'] != null) {
+            reward =
+                double.tryParse(rawReward['\$numberDecimal'].toString()) ?? 0;
+          }
+          totalEarned += reward;
+          final phaseIndex =
+              study.phases.indexWhere((p) => p['phaseId'] == phaseId);
+          phaseBreakdown.add({
+            'phaseName': 'Phase ${phaseIndex + 1}',
+            'reward': reward,
+            'submittedAt': response['submittedAt'],
+          });
+        }
+
+        result.add({
+          'study': study,
+          'totalEarned': totalEarned,
+          'completedPhases': completedPhases,
+          'totalPhases': totalPhases,
+          'isFullyComplete': isFullyComplete,
+          'phaseBreakdown': phaseBreakdown,
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _completedStudies = result;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
+    if (_completedStudies.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.check_circle_outline,
+                size: 64, color: AppTheme.textTertiary),
+            SizedBox(height: 16),
+            Text('No completed surveys yet.',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600)),
+            SizedBox(height: 8),
+            Text('Surveys you answer will appear here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: AppTheme.textTertiary)),
+          ]),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _completedStudies.length,
+      itemBuilder: (context, index) {
+        final item = _completedStudies[index];
+        final study = item['study'] as Study;
+        final totalEarned = item['totalEarned'] as double;
+        final completedPhases = item['completedPhases'] as int;
+        final totalPhases = item['totalPhases'] as int;
+        final isFullyComplete = item['isFullyComplete'] as bool;
+        final phaseBreakdown =
+            item['phaseBreakdown'] as List<Map<String, dynamic>>;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.surfaceHigh)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(
+                  isFullyComplete ? Icons.check_circle : Icons.pending_outlined,
+                  color: isFullyComplete
+                      ? AppTheme.successColor
+                      : AppTheme.primary,
+                  size: 20),
+              const SizedBox(width: 8),
+              Text(
+                  isFullyComplete
+                      ? 'COMPLETED'
+                      : 'IN PROGRESS ($completedPhases/$totalPhases)',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: isFullyComplete
+                          ? AppTheme.successColor
+                          : AppTheme.primary,
+                      letterSpacing: 1)),
+              const Spacer(),
+              Text('\$${totalEarned.toStringAsFixed(0)} earned',
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primary)),
+            ]),
+            const SizedBox(height: 12),
+            Text(study.title,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary)),
+            if (study.description != null) ...[
+              const SizedBox(height: 4),
+              Text(study.description!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 13, color: AppTheme.textSecondary)),
+            ],
+            const SizedBox(height: 16),
+            const Divider(color: AppTheme.surfaceHigh),
+            const SizedBox(height: 8),
+            ...phaseBreakdown.map((phase) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(children: [
+                    Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                            color: AppTheme.primary, shape: BoxShape.circle)),
+                    const SizedBox(width: 10),
+                    Text(phase['phaseName'],
+                        style: const TextStyle(
+                            fontSize: 13, color: AppTheme.textSecondary)),
+                    const Spacer(),
+                    Text('\$${(phase['reward'] as double).toStringAsFixed(0)}',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primary)),
+                  ]),
+                )),
+          ]),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Browse List
+// ─────────────────────────────────────────────────────────
+class _BrowseList extends ConsumerStatefulWidget {
+  final List<Study> surveys;
+  const _BrowseList({required this.surveys});
+
+  @override
+  ConsumerState<_BrowseList> createState() => _BrowseListState();
+}
+
+class _BrowseListState extends ConsumerState<_BrowseList> {
+  final Map<String, int?> _scores = {};
+  Map<String, dynamic>? _userProfile;
+  bool _profileLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileThenScores();
+  }
+
+  Future<void> _loadProfileThenScores() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get('/api/profile');
+      _userProfile = res.data as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Profile load failed: $e');
+    }
+    _profileLoaded = true;
+    for (final survey in widget.surveys) {
+      _computeScore(survey);
+    }
+  }
+
+  Future<void> _computeScore(Study survey) async {
+    try {
+      final criteria = await ref
+          .read(recruitmentRepositoryProvider)
+          .getStudyCriteria(survey.studyId);
+      final score = _calculateMatchScore(criteria);
+      if (mounted) setState(() => _scores[survey.studyId] = score);
+    } catch (e) {
+      if (mounted) setState(() => _scores[survey.studyId] = -1);
+    }
+  }
+
+  int _calculateMatchScore(Map<String, dynamic>? criteria) {
+    if (criteria == null || _userProfile == null) return -1;
+    final profile = _userProfile!['profile'] as Map<String, dynamic>?;
+    if (profile == null) return -1;
+
+    int total = 0;
+    int matched = 0;
+
+    final ageMin = criteria['ageMin'] as int?;
+    final ageMax = criteria['ageMax'] as int?;
+    if (ageMin != null || ageMax != null) {
+      total++;
+      final dob = profile['dateOfBirth'] as String?;
+      if (dob != null) {
+        final birthDate = DateTime.tryParse(dob);
+        if (birthDate != null) {
+          final age = DateTime.now().difference(birthDate).inDays ~/ 365;
+          if ((ageMin == null || age >= ageMin) &&
+              (ageMax == null || age <= ageMax)) matched++;
+        }
+      }
+    }
+
+    final country = criteria['country'] as String?;
+    if (country != null && country.isNotEmpty) {
+      total++;
+      final userCountry = (profile['country'] as String? ?? '').toLowerCase();
+      if (userCountry == country.toLowerCase()) matched++;
+    }
+
+    final edu = criteria['educationLevel'] as String?;
+    if (edu != null && edu.isNotEmpty) {
+      total++;
+      final userEdu = (profile['education'] as String? ?? '').toLowerCase();
+      const eduMap = {
+        'HIGH_SCHOOL': 'high school',
+        'BACHELORS_DEGREE': "bachelor's degree",
+        'MASTERS_DEGREE': "master's degree",
+        'PHD': 'phd',
+      };
+      final mapped = (eduMap[edu] ?? edu.replaceAll('_', ' ')).toLowerCase();
+      if (userEdu == mapped) matched++;
+    }
+
+    final gender = criteria['gender'] as String?;
+    if (gender != null && gender.isNotEmpty) {
+      total++;
+      final userGender = (profile['gender'] as String? ?? '').toLowerCase();
+      if (userGender == gender.toLowerCase()) matched++;
+    }
+
+    if (total == 0) return -1;
+    return ((matched / total) * 100).round();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_profileLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final visible = widget.surveys.where((s) {
+      final score = _scores[s.studyId];
+      if (score == null) return true;
+      if (score == -1) return true;
+      return score >= 70;
+    }).toList();
+
+    if (visible.isEmpty && _scores.length == widget.surveys.length) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.search_off, size: 64, color: AppTheme.textTertiary),
+            SizedBox(height: 16),
+            Text('No surveys match your profile.',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600)),
+            SizedBox(height: 8),
+            Text('Surveys require at least 70% profile match.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: AppTheme.textTertiary)),
+          ]),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: visible.length,
+      itemBuilder: (context, index) {
+        final survey = visible[index];
+        final score = _scores[survey.studyId];
+        return _BrowseCard(survey: survey, matchScore: score);
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Browse Card
+// ─────────────────────────────────────────────────────────
 class _BrowseCard extends StatelessWidget {
   final Study survey;
-  const _BrowseCard({required this.survey});
+  final int? matchScore;
+  const _BrowseCard({required this.survey, this.matchScore});
+
+  Color _scoreColor(int score) {
+    if (score >= 90) return const Color(0xFF059669);
+    if (score >= 70) return AppTheme.primary;
+    return AppTheme.textSecondary;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -334,11 +631,44 @@ class _BrowseCard extends StatelessWidget {
                     letterSpacing: 1)),
           ),
           const Spacer(),
-          Text('\$${survey.totalBudget.toStringAsFixed(0)}',
-              style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.primary)),
+          if (matchScore == null)
+            const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2))
+          else if (matchScore == -1)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                  color: AppTheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(9999)),
+              child: const Row(children: [
+                Icon(Icons.public, size: 12, color: AppTheme.primary),
+                SizedBox(width: 4),
+                Text('Open to all',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primary)),
+              ]),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                  color: _scoreColor(matchScore!).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(9999)),
+              child: Row(children: [
+                Icon(Icons.person_pin,
+                    size: 12, color: _scoreColor(matchScore!)),
+                const SizedBox(width: 4),
+                Text('$matchScore% match',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _scoreColor(matchScore!))),
+              ]),
+            ),
         ]),
         const SizedBox(height: 12),
         Text(survey.title,
@@ -360,6 +690,14 @@ class _BrowseCard extends StatelessWidget {
           Text('${survey.phaseCount} PHASES',
               style:
                   const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+          const SizedBox(width: 16),
+          const Icon(Icons.attach_money, size: 14, color: AppTheme.primary),
+          const SizedBox(width: 2),
+          Text('\$${survey.totalBudget.toStringAsFixed(0)}',
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w700)),
         ]),
         const SizedBox(height: 16),
         Row(children: [
@@ -378,10 +716,8 @@ class _BrowseCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: () => context.push('/surveys/answer', extra: {
-                'survey': survey,
-                'phaseIndex': 0,
-              }),
+              onPressed: () =>
+                  context.push('/surveys/participant-detail', extra: survey),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
@@ -396,7 +732,9 @@ class _BrowseCard extends StatelessWidget {
   }
 }
 
-// 2. My Surveys Card (Real Data - Shows ALL statuses with budget)
+// ─────────────────────────────────────────────────────────
+// My Survey Card
+// ─────────────────────────────────────────────────────────
 class _MySurveyCard extends StatelessWidget {
   final Study survey;
   final String dateString;
@@ -421,7 +759,7 @@ class _MySurveyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDraft = survey.studyStatus == 'DRAFT';
+    final expired = survey.isExpired;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -444,6 +782,25 @@ class _MySurveyCard extends StatelessWidget {
                       color: _statusColor(),
                       letterSpacing: 1)),
             ),
+            const SizedBox(width: 8),
+            if (expired)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                    color: AppTheme.errorColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6)),
+                child: const Row(children: [
+                  Icon(Icons.timer_off_outlined,
+                      size: 11, color: AppTheme.errorColor),
+                  SizedBox(width: 3),
+                  Text('EXPIRED',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.errorColor,
+                          letterSpacing: 1)),
+                ]),
+              ),
             const Spacer(),
             Text(dateString,
                 style: const TextStyle(
@@ -455,7 +812,25 @@ class _MySurveyCard extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary)),
-          const SizedBox(height: 12),
+          if (survey.endDate != null) ...[
+            const SizedBox(height: 6),
+            Row(children: [
+              Icon(expired ? Icons.timer_off_outlined : Icons.timer_outlined,
+                  size: 13,
+                  color: expired ? AppTheme.errorColor : AppTheme.textTertiary),
+              const SizedBox(width: 4),
+              Text(
+                  expired
+                      ? 'Expired ${survey.endDate!.day}/${survey.endDate!.month}/${survey.endDate!.year}'
+                      : 'Expires ${survey.endDate!.day}/${survey.endDate!.month}/${survey.endDate!.year}',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: expired
+                          ? AppTheme.errorColor
+                          : AppTheme.textTertiary)),
+            ]),
+          ],
+          const SizedBox(height: 8),
           Row(children: [
             const Icon(Icons.layers_outlined,
                 size: 14, color: AppTheme.textTertiary),
@@ -475,73 +850,6 @@ class _MySurveyCard extends StatelessWidget {
           ]),
         ]),
       ),
-    );
-  }
-}
-
-// 3. Completed Surveys Card (Phase Breakdown)
-class _CompletedCard extends StatelessWidget {
-  final Map<String, dynamic> survey;
-  const _CompletedCard({required this.survey});
-
-  @override
-  Widget build(BuildContext context) {
-    final phases = survey['phases'] as List;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.surfaceHigh, width: 1.5)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Icon(Icons.check_circle,
-              color: AppTheme.successColor, size: 20),
-          const SizedBox(width: 8),
-          const Text('COMPLETED',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.successColor,
-                  letterSpacing: 1)),
-          const Spacer(),
-          Text('Total: ${survey['totalEarned']}',
-              style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary)),
-        ]),
-        const SizedBox(height: 12),
-        Text(survey['title'],
-            style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary)),
-        const SizedBox(height: 16),
-        const Divider(color: AppTheme.surfaceHigh),
-        const SizedBox(height: 8),
-        ...phases.map((p) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(children: [
-                Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                        color: AppTheme.primary, shape: BoxShape.circle)),
-                const SizedBox(width: 10),
-                Text(p['name'],
-                    style: const TextStyle(
-                        fontSize: 13, color: AppTheme.textSecondary)),
-                const Spacer(),
-                Text(p['amount'],
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primary)),
-              ]),
-            )),
-      ]),
     );
   }
 }

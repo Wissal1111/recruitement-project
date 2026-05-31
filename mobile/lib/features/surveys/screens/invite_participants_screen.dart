@@ -18,8 +18,9 @@ class InviteParticipantsScreen extends ConsumerStatefulWidget {
 class _InviteParticipantsScreenState
     extends ConsumerState<InviteParticipantsScreen> {
   final Set<String> _invitedUsers = {};
-  Map<String, dynamic>? _previewData;
+  List<dynamic> _participants = [];
   bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -34,41 +35,56 @@ class _InviteParticipantsScreenState
           .getEligibleUsers(widget.survey.studyId);
       if (mounted) {
         setState(() {
-          _previewData = {'eligibleUsers': users};
+          _participants = users;
           _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('Error loading participants: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load participants';
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _sendInvite(String participantId) async {
     try {
-      // Launch a campaign targeting this specific user
       await ref
           .read(recruitmentRepositoryProvider)
-          .launchCampaign(widget.survey.studyId, 'Invite $participantId');
-      setState(() => _invitedUsers.add(participantId));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Invitation sent!'),
-            backgroundColor: AppTheme.successColor));
-      }
+          .launchCampaign(widget.survey.studyId, 'Recruitment');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invitations sent to matching participants.'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+
+      // Reload eligible users so invited ones disappear
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      await _loadEligibleParticipants();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Failed to send invitation.'),
-            backgroundColor: AppTheme.errorColor));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to send invitation.'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final participants = (_previewData?['eligibleUsers'] as List?) ?? [];
-
     return Scaffold(
       backgroundColor: AppTheme.surfaceBase,
       appBar: AppBar(
@@ -86,138 +102,238 @@ class _InviteParticipantsScreenState
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  color: Colors.white,
+          : _error != null
+              ? Center(
                   child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('For: ${widget.survey.title}',
-                            style: const TextStyle(
-                                fontSize: 13, color: AppTheme.textSecondary)),
-                        const SizedBox(height: 8),
-                        Text('${participants.length} Eligible Participants',
-                            style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.textPrimary)),
-                        const SizedBox(height: 4),
-                        const Text(
-                            'Participants that match your survey criteria. Invite them to participate!',
-                            style: TextStyle(
-                                fontSize: 14, color: AppTheme.textSecondary)),
-                      ]),
-                ),
-                Expanded(
-                  child: participants.isEmpty
-                      ? const Center(
-                          child: Padding(
-                              padding: EdgeInsets.all(40),
-                              child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.person_search,
-                                        size: 64, color: AppTheme.textTertiary),
-                                    SizedBox(height: 16),
-                                    Text('No matching participants found.',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            color: AppTheme.textSecondary,
-                                            fontWeight: FontWeight.w600)),
-                                    SizedBox(height: 8),
-                                    Text(
-                                        'Try setting your eligibility criteria first from the Survey Dashboard.',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: AppTheme.textTertiary)),
-                                  ])))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(20),
-                          itemCount: participants.length,
-                          itemBuilder: (context, index) {
-                            final user = participants[index];
-                            final id = user['userId']?.toString() ?? '$index';
-                            final isInvited = _invitedUsers.contains(id);
+                      const Icon(Icons.error_outline,
+                          size: 48, color: AppTheme.errorColor),
+                      const SizedBox(height: 16),
+                      Text(_error!,
+                          style:
+                              const TextStyle(color: AppTheme.textSecondary)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _isLoading = true;
+                            _error = null;
+                          });
+                          _loadEligibleParticipants();
+                        },
+                        child: const Text('Retry'),
+                      )
+                    ]))
+              : Column(
+                  children: [
+                    // Header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      color: Colors.white,
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('For: ${widget.survey.title}',
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary)),
+                            const SizedBox(height: 8),
+                            Text(
+                                '${_participants.length} Eligible Participant${_participants.length == 1 ? '' : 's'}',
+                                style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.textPrimary)),
+                            const SizedBox(height: 4),
+                            const Text(
+                                'These users match your survey criteria.',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppTheme.textSecondary)),
+                          ]),
+                    ),
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 16),
+                    // List
+                    Expanded(
+                      child: _participants.isEmpty
+                          ? const Center(
+                              child: Padding(
+                                  padding: EdgeInsets.all(40),
+                                  child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.person_search,
+                                            size: 64,
+                                            color: AppTheme.textTertiary),
+                                        SizedBox(height: 16),
+                                        Text('No matching participants found.',
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                color: AppTheme.textSecondary,
+                                                fontWeight: FontWeight.w600)),
+                                        SizedBox(height: 8),
+                                        Text(
+                                            'Make sure you set eligibility criteria when creating the survey.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                fontSize: 13,
+                                                color: AppTheme.textTertiary)),
+                                      ])))
+                          : ListView.builder(
                               padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border:
-                                      Border.all(color: AppTheme.surfaceHigh)),
-                              child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(children: [
-                                      CircleAvatar(
-                                        backgroundColor:
-                                            AppTheme.primaryContainer,
-                                        child: Text(
-                                            (user['firstname'] ??
-                                                    user['email'] ??
-                                                    'U')
-                                                .toString()[0]
-                                                .toUpperCase(),
-                                            style: const TextStyle(
-                                                color: AppTheme.primary,
-                                                fontWeight: FontWeight.bold)),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                          child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                            Text(
-                                                '${user['firstname'] ?? ''} ${user['lastname'] ?? ''}'
-                                                    .trim(),
+                              itemCount: _participants.length,
+                              itemBuilder: (context, index) {
+                                final user = _participants[index];
+                                final id =
+                                    user['userId']?.toString() ?? '$index';
+                                final isInvited = _invitedUsers.contains(id);
+                                final firstName = user['firstname'] ??
+                                    user['firstName'] ??
+                                    '';
+                                final lastName =
+                                    user['lastname'] ?? user['lastName'] ?? '';
+                                final fullName = '$firstName $lastName'.trim();
+                                final email = user['email'] ?? '';
+                                final country = user['country'] ?? '';
+                                final education = user['education'] ?? '';
+                                final age = user['age'];
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: AppTheme.surfaceHigh)),
+                                  child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(children: [
+                                          CircleAvatar(
+                                            radius: 24,
+                                            backgroundColor:
+                                                AppTheme.primaryContainer,
+                                            child: Text(
+                                                (fullName.isNotEmpty
+                                                        ? fullName
+                                                        : email)
+                                                    .substring(0, 1)
+                                                    .toUpperCase(),
                                                 style: const TextStyle(
-                                                    fontWeight: FontWeight.w700,
-                                                    fontSize: 16)),
-                                            Text(user['email'] ?? '',
-                                                style: const TextStyle(
-                                                    color:
-                                                        AppTheme.textSecondary,
-                                                    fontSize: 13)),
-                                          ])),
-                                    ]),
-                                    const SizedBox(height: 16),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        onPressed: isInvited
-                                            ? null
-                                            : () => _sendInvite(id),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: isInvited
-                                              ? AppTheme.surfaceHigh
-                                              : AppTheme.primary,
-                                          foregroundColor: isInvited
-                                              ? AppTheme.textSecondary
-                                              : Colors.white,
-                                          elevation: 0,
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12)),
+                                                    color: AppTheme.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18)),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                              child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                Text(
+                                                    fullName.isNotEmpty
+                                                        ? fullName
+                                                        : 'Anonymous',
+                                                    style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 16,
+                                                        color: AppTheme
+                                                            .textPrimary)),
+                                                Text(email,
+                                                    style: const TextStyle(
+                                                        color: AppTheme
+                                                            .textSecondary,
+                                                        fontSize: 13)),
+                                              ])),
+                                        ]),
+                                        if (country.isNotEmpty ||
+                                            education.isNotEmpty ||
+                                            age != null) ...[
+                                          const SizedBox(height: 12),
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 6,
+                                            children: [
+                                              if (age != null)
+                                                _Tag(
+                                                    icon: Icons.cake_outlined,
+                                                    label: '$age yrs'),
+                                              if (country.isNotEmpty)
+                                                _Tag(
+                                                    icon: Icons.public,
+                                                    label: country),
+                                              if (education.isNotEmpty)
+                                                _Tag(
+                                                    icon: Icons.school_outlined,
+                                                    label: education
+                                                        .toString()
+                                                        .replaceAll('_', ' ')),
+                                            ],
+                                          ),
+                                        ],
+                                        const SizedBox(height: 16),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton(
+                                            onPressed: isInvited
+                                                ? null
+                                                : () => _sendInvite(id),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: isInvited
+                                                  ? AppTheme.surfaceHigh
+                                                  : AppTheme.primary,
+                                              foregroundColor: isInvited
+                                                  ? AppTheme.textSecondary
+                                                  : Colors.white,
+                                              elevation: 0,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12)),
+                                            ),
+                                            child: Text(isInvited
+                                                ? '✓ Invitation Sent'
+                                                : 'Send Invitation'),
+                                          ),
                                         ),
-                                        child: Text(isInvited
-                                            ? '✓ Invitation Sent'
-                                            : 'Send Invitation'),
-                                      ),
-                                    ),
-                                  ]),
-                            );
-                          },
-                        ),
+                                      ]),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+    );
+  }
+}
+
+class _Tag extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _Tag({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+          color: AppTheme.surfaceLow,
+          borderRadius: BorderRadius.circular(9999)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: AppTheme.textSecondary),
+        const SizedBox(width: 4),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500)),
+      ]),
     );
   }
 }

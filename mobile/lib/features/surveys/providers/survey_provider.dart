@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_client.dart';
 import '../../../core/secure_storage.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/survey_model.dart';
 
 final surveyRepositoryProvider = Provider((ref) => SurveyRepository(
@@ -17,90 +18,112 @@ class SurveyRepository {
 
   Future<List<Study>> getMyStudies() async {
     try {
-      final res = await _dio.get('/api/studies/my-studies');
-      final List data = res.data['studies'] ?? [];
-      return data.map((e) => Study.fromJson(e)).toList();
-    } catch (e) {
-      throw Exception('Failed to load my surveys');
-    }
-  }
-
-  // Browse: fetch my-studies too and merge, filtering out own surveys
-  // because /active only returns ACTIVE status, not PUBLISHED
-  Future<List<Study>> getActiveStudies() async {
-    try {
+      final res = await _dio.get('/api/studies/my-studies',
+          options: Options(receiveTimeout: const Duration(seconds: 8)));
+      final raw = res.data;
+      List data;
+      if (raw is Map && raw['studies'] != null) {
+        data = raw['studies'];
+      } else if (raw is List) {
+        data = raw;
+      } else {
+        data = [];
+      }
       final userId = await _storage.getUserId();
-
-      // Call both endpoints and merge
-      final results = await Future.wait([
-        _dio.get('/api/studies/active').catchError((_) => null),
-      ]);
-
-      final List<dynamic> rawActive = () {
-        final res = results[0];
-        if (res == null) return [];
-        final raw = res.data;
-        if (raw is List) return raw;
-        if (raw is Map && raw['studies'] != null) return raw['studies'] as List;
-        return [];
-      }();
-
-      // We also need PUBLISHED studies — since backend /active only returns ACTIVE,
-      // we fetch all studies and filter manually
-      List<dynamic> allRaw = [...rawActive];
-
-      // Try fetching published studies via my-studies won't work for other users,
-      // so we rely on backend returning both ACTIVE and PUBLISHED from /active.
-      // If your friend updates the backend great, if not we show what we get.
-
-      final studies = allRaw
-          .map((e) => Study.fromJson(e))
-          .where((s) => s.creatorId != userId)
-          .toList();
-
+      final studies = data.map((e) => Study.fromJson(e)).toList();
+      final hasCreatorId = studies.any((s) => s.creatorId.isNotEmpty);
+      if (hasCreatorId && userId != null) {
+        return studies.where((s) => s.creatorId == userId).toList();
+      }
       return studies;
     } catch (e) {
       return [];
     }
   }
 
-  // Publish = set to ACTIVE (the only status that shows on /active endpoint)
-  Future<void> publishStudy(String studyId) async {
+  Future<Map<String, dynamic>?> getStudyById(String studyId) async {
     try {
-      // This PATCH sets status to PUBLISHED on backend
-      // But we need ACTIVE for browse to work
-      // So we do two calls: patch to PUBLISHED, then put to ACTIVE
-      await _dio.patch('/api/studies/$studyId/status');
+      final res = await _dio.get('/api/studies/$studyId',
+          options: Options(receiveTimeout: const Duration(seconds: 8)));
+      if (res.data is Map<String, dynamic>) return res.data;
+      return null;
     } catch (e) {
-      throw Exception('Failed to publish survey');
+      return null;
     }
+  }
+
+  Future<List<Study>> getActiveStudies() async {
+    try {
+      final res = await _dio.get('/api/studies/active',
+          options: Options(receiveTimeout: const Duration(seconds: 8)));
+      final raw = res.data;
+      List data;
+      if (raw is List) {
+        data = raw;
+      } else if (raw is Map && raw['studies'] != null) {
+        data = raw['studies'];
+      } else {
+        data = [];
+      }
+      final userId = await _storage.getUserId();
+      final studies = data.map((e) => Study.fromJson(e)).toList();
+      if (userId != null) {
+        final hasCreatorId = studies.any((s) => s.creatorId.isNotEmpty);
+        if (hasCreatorId) {
+          return studies.where((s) => s.creatorId != userId).toList();
+        }
+      }
+      return studies;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Get study IDs that the current user has already applied to or completed
+  Future<Set<String>> getMyParticipatedStudyIds() async {
+    try {
+      final dio = _dio;
+      // Get my responses (submitted phases)
+      final res = await dio.get('/api/responses/me/by-study',
+          options: Options(receiveTimeout: const Duration(seconds: 8)));
+      final raw = res.data;
+      List data = [];
+      if (raw is Map && raw['data'] is List) {
+        data = raw['data'];
+      } else if (raw is List) {
+        data = raw;
+      }
+      return data.map((e) => e['studyId']?.toString() ?? '').toSet();
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Future<void> publishStudy(String studyId) async {
+    await _dio.patch('/api/studies/$studyId/status');
   }
 
   Future<void> updateStudy(String studyId, Map<String, dynamic> data) async {
-    try {
-      await _dio.put('/api/studies/$studyId', data: data);
-    } on DioException catch (e) {
-      final msg = (e.response?.data is Map)
-          ? e.response?.data['message'] ?? 'Failed to update survey'
-          : 'Failed to update survey';
-      throw Exception(msg);
-    }
+    await _dio.put('/api/studies/$studyId', data: data);
   }
 
   Future<void> deleteStudy(String studyId) async {
-    try {
-      await _dio.delete('/api/studies/$studyId');
-    } catch (e) {
-      throw Exception('Failed to delete survey');
-    }
+    await _dio.delete('/api/studies/$studyId');
   }
 }
 
-final mySurveysProvider = FutureProvider.autoDispose<List<Study>>((ref) async {
+final mySurveysProvider = FutureProvider<List<Study>>((ref) async {
+  ref.watch(authProvider);
   return ref.watch(surveyRepositoryProvider).getMyStudies();
 });
 
-final browseSurveysProvider =
-    FutureProvider.autoDispose<List<Study>>((ref) async {
+final browseSurveysProvider = FutureProvider<List<Study>>((ref) async {
+  ref.watch(authProvider);
   return ref.watch(surveyRepositoryProvider).getActiveStudies();
+});
+
+// Tracks which studyIds the current user has participated in
+final myParticipatedStudyIdsProvider = FutureProvider<Set<String>>((ref) async {
+  ref.watch(authProvider);
+  return ref.watch(surveyRepositoryProvider).getMyParticipatedStudyIds();
 });

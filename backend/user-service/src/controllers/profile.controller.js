@@ -129,34 +129,89 @@ exports.updateEarnings = async (req, res) => {
 };
 exports.searchProfiles = async (req, res) => {
   try {
-    const { ageMin, ageMax, gender, country, education } = req.body;
-    const where = {};
-    if (ageMin !== undefined || ageMax !== undefined) {
-      where.age = {};
-      if (ageMin !== undefined) where.age.gte = ageMin;
-      if (ageMax !== undefined) where.age.lte = ageMax;
-    }
-    if (gender) where.gender = gender;
-    if (country) where.country = country;
-    if (education) where.education = education;
+    const prisma = require('../config/prisma');
 
-    const profiles = await prisma.userProfile.findMany({
-      where,
-      include: { user: { select: { userId: true, firstname: true, lastname: true, email: true } } }
+    const users = await prisma.user.findMany({
+      where: {
+        isActive: true
+      },
+      include: {
+        profile: true
+      }
     });
 
-    return res.json(profiles.map(p => ({
-      userId: p.userId,
-      age: p.age,
-      gender: p.gender,
-      country: p.country,
-      education: p.education,
-      firstname: p.user?.firstname,
-      lastname: p.user?.lastname,
-      email: p.user?.email
-    })));
+    const userIds = users.map(u => u.userId);
+
+    let userInterests = [];
+
+    try {
+      userInterests = await prisma.userInterest.findMany({
+        where: {
+          userId: {
+            in: userIds
+          }
+        },
+        select: {
+          userId: true,
+          interestId: true
+        }
+      });
+    } catch (e) {
+      console.log('Could not load user interests:', e.message);
+    }
+
+    const interestsByUser = {};
+
+    for (const ui of userInterests) {
+      if (!interestsByUser[ui.userId]) {
+        interestsByUser[ui.userId] = [];
+      }
+      interestsByUser[ui.userId].push(ui.interestId);
+    }
+
+    const calculateAge = (dateOfBirth) => {
+      if (!dateOfBirth) return null;
+
+      const dob = new Date(dateOfBirth);
+      const today = new Date();
+
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < dob.getDate())
+      ) {
+        age--;
+      }
+
+      return age;
+    };
+
+    const result = users.map((user) => {
+      const profile = user.profile || {};
+
+      return {
+        userId: user.userId,
+        email: user.email,
+        firstname: user.firstname,
+        lastname: user.lastname,
+
+        age: profile.age ?? calculateAge(profile.dateOfBirth),
+        gender: profile.gender,
+        country: profile.country,
+        education: profile.education,
+
+        interestIds: interestsByUser[user.userId] || []
+      };
+    });
+
+    return res.json(result);
   } catch (err) {
-    console.error('searchProfiles error:', err);
-    return res.status(500).json({ message: 'Server error', detail: err.message });
+    console.error('Search profiles error:', err);
+    return res.status(500).json({
+      message: 'Failed to search profiles',
+      error: err.message
+    });
   }
 };

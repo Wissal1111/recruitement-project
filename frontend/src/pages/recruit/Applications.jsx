@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SideBar from "../../components/SideBar";
 import TopNavBar from "../../components/TopNavBar";
 import { getApplicationsByStudy, reviewApplication, startParticipation } from "../../api/RecruitmentApi";
+import axiosInstance from "../../api/axiosInstance";
 import { CheckCircle, XCircle, Play, Clock } from "lucide-react";
 
 const STATUS_COLORS = {
@@ -14,8 +15,8 @@ const STATUS_COLORS = {
 
 export default function Applications() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [studies, setStudies] = useState([]);
     const [studyId, setStudyId] = useState("");
-    const [inputId, setInputId] = useState("");
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState("ALL");
@@ -23,17 +24,37 @@ export default function Applications() {
     const [rejectModal, setRejectModal] = useState(null);
     const [rejectReason, setRejectReason] = useState("");
 
+    useEffect(() => {
+        axiosInstance.get("/studies/my-studies")
+            .then(res => {
+                const list = res.data?.studies || res.data || [];
+                setStudies(list);
+                if (list.length > 0) {
+                    setStudyId(list[0].studyId);
+                    fetchApplications(list[0].studyId);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const fetchApplications = async (id) => {
         if (!id) return;
         setLoading(true);
         try {
             const res = await getApplicationsByStudy(id);
             setApplications(res.data);
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
+        } catch (e) {
+            setApplications([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSearch = () => { setStudyId(inputId); fetchApplications(inputId); };
+    const handleStudyChange = (id) => {
+        setStudyId(id);
+        setFilter("ALL");
+        fetchApplications(id);
+    };
 
     const handleApprove = async (appId) => {
         setActionLoading(p => ({ ...p, [appId]: "approve" }));
@@ -59,6 +80,12 @@ export default function Applications() {
     const filtered = filter === "ALL" ? applications : applications.filter(a => a.status === filter);
     const counts = applications.reduce((acc, a) => { acc[a.status] = (acc[a.status] || 0) + 1; return acc; }, {});
 
+    const inputStyle = {
+        flex: 1, border: "1.5px solid #E2E8F0", borderRadius: 8,
+        padding: "10px 14px", fontSize: 14, outline: "none",
+        color: "var(--title)", background: "#F8FAFC"
+    };
+
     return (
         <div className="dashboard">
             <TopNavBar page="recruit" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
@@ -69,13 +96,39 @@ export default function Applications() {
                     <p style={{ color: "var(--content)", fontSize: 14 }}>Review and manage candidate applications for your studies</p>
                 </div>
 
-                <div style={{ display: "flex", gap: 12, marginBottom: 28, background: "#fff", borderRadius: "var(--medium-radius)", padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #E8ECF4" }}>
-                    <input value={inputId} onChange={e => setInputId(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} placeholder="Enter Study ID..."
-                           style={{ flex: 1, border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 14, outline: "none", color: "var(--title)", background: "#F8FAFC" }}
-                           onFocus={e => e.target.style.borderColor = "#7073FF"} onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
-                    <button onClick={handleSearch} style={{ background: "var(--linear-blue)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
-                        Load Applications
-                    </button>
+                {/* Study Selector */}
+                <div style={{
+                    background: "#fff", borderRadius: "var(--medium-radius)",
+                    padding: "16px 20px", border: "1px solid #E8ECF4",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 24,
+                    display: "flex", alignItems: "center", gap: 12
+                }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "var(--title)", whiteSpace: "nowrap" }}>
+                        Study :
+                    </label>
+                    <select
+                        value={studyId}
+                        onChange={e => handleStudyChange(e.target.value)}
+                        style={{ ...inputStyle, cursor: "pointer" }}
+                        onFocus={e => e.target.style.borderColor = "#7073FF"}
+                        onBlur={e => e.target.style.borderColor = "#E2E8F0"}
+                    >
+                        {studies.length === 0 && <option value="">No studies found</option>}
+                        {studies.map(s => (
+                            <option key={s.studyId} value={s.studyId}>
+                                {s.title} — {s.studyStatus}
+                            </option>
+                        ))}
+                    </select>
+                    {studyId && (
+                        <span style={{
+                            background: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#F0FDF4" : "#F1F5F9",
+                            color: studies.find(s => s.studyId === studyId)?.studyStatus === "ACTIVE" ? "#15803D" : "#64748B",
+                            borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap"
+                        }}>
+                            {studies.find(s => s.studyId === studyId)?.studyStatus || ""}
+                        </span>
+                    )}
                 </div>
 
                 {applications.length > 0 && (
@@ -94,7 +147,7 @@ export default function Applications() {
                 {loading ? <LoadingSkeleton /> : filtered.length === 0 && studyId ? (
                     <EmptyState message="No applications found for this study." />
                 ) : !studyId ? (
-                    <EmptyState message="Enter a Study ID to view applications." />
+                    <EmptyState message="Select a study to view applications." />
                 ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         {filtered.map(app => (
