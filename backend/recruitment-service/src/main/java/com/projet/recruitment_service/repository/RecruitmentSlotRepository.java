@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface RecruitmentSlotRepository extends JpaRepository<RecruitmentSlot, UUID> {
     Optional<RecruitmentSlot> findByPhaseId(UUID phaseId);
     Optional<RecruitmentSlot> findByPhaseIdAndStudyId(UUID phaseId, UUID studyId);
+    //utilisée par CampaignService.calculateTotalPoints
+    List<RecruitmentSlot> findByStudyId(UUID studyId);
 }

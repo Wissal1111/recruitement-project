@@ -1,26 +1,31 @@
-// service/ParticipationService.java
 package com.projet.recruitment_service.service;
 
+import com.projet.recruitment_service.client.PaymentServiceClient;
 import com.projet.recruitment_service.entity.*;
 import com.projet.recruitment_service.enums.*;
 import com.projet.recruitment_service.exception.BusinessException;
 import com.projet.recruitment_service.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ParticipationService {
 
     private final ParticipationRepository participationRepository;
     private final StudyApplicationRepository applicationRepository;
     private final RecruitmentSlotRepository slotRepository;
     private final RewardTransactionRepository rewardRepository;
+    private final PaymentServiceClient paymentServiceClient;
 
     // RC-25: Start participation (when application APPROVED)
     @Transactional
@@ -49,7 +54,7 @@ public class ParticipationService {
         return participationRepository.save(participation);
     }
 
-    // RC-26: Complete participation → create reward
+    // RC-26: Complete participation → call payment-service + create reward
     @Transactional
     public Participation completeParticipation(UUID participationId, UUID participantId) {
         Participation participation = getOwnedParticipation(participationId, participantId);
@@ -61,19 +66,46 @@ public class ParticipationService {
         participation.complete();
         participationRepository.save(participation);
 
-        // Create reward transaction
+        // Get reward amount from slot
         RecruitmentSlot slot = slotRepository.findByPhaseId(participation.getPhaseId())
                 .orElseThrow(() -> new BusinessException("Slot not found", HttpStatus.NOT_FOUND));
 
-        RewardTransaction reward = RewardTransaction.builder()
-                .participationId(participationId)
-                .participantId(participantId)
-                .amount(slot.getRewardAmount())
-                .status(RewardStatus.PENDING)
-                .build();
-        rewardRepository.save(reward);
+        // ✅ APPEL AU PAYMENT-SERVICE pour créditer le participant
+        try {
+            String serviceToken = "Bearer " + System.getenv("SERVICE_SECRET");
 
-        // TODO: publish PARTICIPATION_COMPLETED event to Payment Service
+            Map<String, Object> paymentResponse = paymentServiceClient.completePhase(
+                    serviceToken,
+                    Map.of(
+                            "participantUserId", participantId.toString(),
+                            "phaseId", participation.getPhaseId().toString(),
+                            "rewardAmount", slot.getRewardAmount()
+                    )
+            );
+
+            log.info("Payment service response: {}", paymentResponse);
+
+            // Update local reward to PROCESSED
+            RewardTransaction reward = RewardTransaction.builder()
+                    .participationId(participationId)
+                    .participantId(participantId)
+                    .amount(slot.getRewardAmount())
+                    .status(RewardStatus.PROCESSED)
+                    .build();
+            rewardRepository.save(reward);
+
+        } catch (Exception e) {
+            // Si payment-service down → garde PENDING pour retry plus tard
+            log.error("Payment service call failed: {}", e.getMessage());
+
+            RewardTransaction reward = RewardTransaction.builder()
+                    .participationId(participationId)
+                    .participantId(participantId)
+                    .amount(slot.getRewardAmount())
+                    .status(RewardStatus.PENDING)
+                    .build();
+            rewardRepository.save(reward);
+        }
 
         return participation;
     }

@@ -27,11 +27,10 @@ spring:
 jwt:
   secret: ${JWT_SECRET:your_super_secret_key}
 
+# ✅ TOUT passe par le Gateway
 services:
-  user-service:
-    url: ${SERVICES_USER_SERVICE_URL:http://localhost:3001}
-  survey-service:
-    url: ${SERVICES_SURVEY_SERVICE_URL:http://localhost:4000}
+  gateway:
+    url: ${GATEWAY_URL:http://gateway:90}
 
 feign:
   client:

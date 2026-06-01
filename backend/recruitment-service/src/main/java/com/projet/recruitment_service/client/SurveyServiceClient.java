@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import com.projet.recruitment_service.config.FeignConfig;
 import com.projet.recruitment_service.dto.response.PhaseInfoDto;
 
-@FeignClient(name = "survey-service", url = "${services.survey-service.url}", configuration = FeignConfig.class)
+@FeignClient(name = "survey-service", url = "${services.gateway.url}", configuration = FeignConfig.class)
 public interface SurveyServiceClient {
 
         @GetMapping("/api/studies/phase/{phaseId}")
