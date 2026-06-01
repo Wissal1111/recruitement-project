@@ -11,15 +11,23 @@ class RecruitmentRepository {
   final Dio _dio;
   RecruitmentRepository(this._dio);
 
+  /// Fetches all invitations for the currently logged-in user.
+  /// Throws on error so the UI can show a proper error state.
   Future<List<dynamic>> getMyInvitations() async {
-    try {
-      final res = await _dio.get('/api/recruitment/invitations/me',
-          options: Options(receiveTimeout: const Duration(seconds: 5)));
-      if (res.data is List) return res.data;
-      return [];
-    } catch (e) {
-      return [];
+    final res = await _dio.get(
+      '/api/recruitment/invitations/me',
+      options: Options(receiveTimeout: const Duration(seconds: 10)),
+    );
+    debugPrint('getMyInvitations status: ${res.statusCode}');
+    debugPrint('getMyInvitations data: ${res.data}');
+    if (res.data is List) return res.data as List;
+    // Some backends wrap in { "data": [...] } or { "invitations": [...] }
+    if (res.data is Map) {
+      final map = res.data as Map<String, dynamic>;
+      if (map['data'] is List) return map['data'] as List;
+      if (map['invitations'] is List) return map['invitations'] as List;
     }
+    return [];
   }
 
   Future<void> acceptInvitation(String invitationId) async {
@@ -40,11 +48,60 @@ class RecruitmentRepository {
     }
   }
 
-  Future<void> applyToStudy(String studyId, String phaseId) async {
-    await _dio.post('/api/recruitment/apply', data: {
-      'studyId': studyId,
-      'phaseId': phaseId,
-    });
+  /// Apply to a public study. Backend only needs studyId.
+  Future<void> applyToStudy(String studyId) async {
+    try {
+      debugPrint('applyToStudy → studyId=$studyId');
+      final res = await _dio.post('/api/recruitment/apply',
+          data: {'studyId': studyId});
+      debugPrint('applyToStudy response: ${res.statusCode} ${res.data}');
+    } on DioException catch (e) {
+      debugPrint('applyToStudy error: ${e.response?.statusCode} ${e.response?.data}');
+      if (e.response?.statusCode == 409) {
+        throw Exception('already_applied');
+      }
+      throw Exception(e.response?.data?.toString() ?? 'Failed to apply');
+    }
+  }
+
+  /// Fetch all responses submitted for a study (Kim's view).
+  Future<List<dynamic>> getStudyResponses(String studyId) async {
+    try {
+      final res = await _dio.get('/api/responses/study/$studyId',
+          options: Options(receiveTimeout: const Duration(seconds: 10)));
+      debugPrint('getStudyResponses: ${res.statusCode} count=${res.data is List ? (res.data as List).length : '?'}');
+      if (res.data is List) return res.data as List;
+      if (res.data is Map) {
+        final map = res.data as Map<String, dynamic>;
+        if (map['data'] is List) return map['data'] as List;
+        if (map['responses'] is List) return map['responses'] as List;
+      }
+      return [];
+    } on DioException catch (e) {
+      debugPrint('getStudyResponses error: ${e.response?.statusCode} ${e.response?.data}');
+      return [];
+    }
+  }
+
+  /// Fetch responses for one specific participant in a study.
+  Future<List<dynamic>> getParticipantResponses(
+      String studyId, String userId) async {
+    try {
+      final res = await _dio.get(
+        '/api/responses/study/$studyId/user/$userId',
+        options: Options(receiveTimeout: const Duration(seconds: 10)),
+      );
+      if (res.data is List) return res.data as List;
+      if (res.data is Map) {
+        final map = res.data as Map<String, dynamic>;
+        if (map['data'] is List) return map['data'] as List;
+        if (map['responses'] is List) return map['responses'] as List;
+      }
+      return [];
+    } on DioException catch (e) {
+      debugPrint('getParticipantResponses error: ${e.response?.statusCode}');
+      return [];
+    }
   }
 
   Future<List<dynamic>> getStudyApplications(String studyId) async {
@@ -79,11 +136,7 @@ class RecruitmentRepository {
         '/api/recruitment/studies/$studyId/criteria/eligible-users',
         options: Options(receiveTimeout: const Duration(seconds: 10)),
       );
-
-      if (res.data is List) {
-        return res.data as List;
-      }
-
+      if (res.data is List) return res.data as List;
       return [];
     } on DioException catch (e) {
       debugPrint('getEligibleUsers status: ${e.response?.statusCode}');
@@ -99,18 +152,14 @@ class RecruitmentRepository {
       String studyId, Map<String, dynamic> criteria) async {
     try {
       debugPrint('SET CRITERIA PAYLOAD: $criteria');
-
       await _dio.post(
         '/api/recruitment/studies/$studyId/criteria',
         data: criteria,
         options: Options(receiveTimeout: const Duration(seconds: 10)),
       );
-
       debugPrint('Criteria created successfully');
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-
-      // If criteria already exists, update it
       if (status == 409) {
         debugPrint('Criteria exists. Updating...');
         await _dio.put(
@@ -121,7 +170,6 @@ class RecruitmentRepository {
         debugPrint('Criteria updated successfully');
         return;
       }
-
       debugPrint('setCriteria failed status: ${e.response?.statusCode}');
       debugPrint('setCriteria failed data: ${e.response?.data}');
       rethrow;
@@ -150,19 +198,20 @@ class RecruitmentRepository {
     }
   }
 
+  /// Returns null if no criteria exist yet (404 is normal).
   Future<Map<String, dynamic>?> getStudyCriteria(String studyId) async {
     try {
       final res = await _dio.get(
         '/api/recruitment/studies/$studyId/criteria',
         options: Options(
           receiveTimeout: const Duration(seconds: 5),
+          // Don't throw on 404 — criteria simply don't exist yet
+          validateStatus: (status) =>
+              status != null && (status < 300 || status == 404),
         ),
       );
-
-      if (res.data is Map<String, dynamic>) {
-        return res.data as Map<String, dynamic>;
-      }
-
+      if (res.statusCode == 404) return null;
+      if (res.data is Map<String, dynamic>) return res.data;
       return null;
     } catch (e) {
       debugPrint('getStudyCriteria error: $e');
@@ -172,8 +221,12 @@ class RecruitmentRepository {
 
   Future<void> inviteUser(String studyId, String userId) async {
     try {
-      await _dio.post('/api/recruitment/studies/$studyId/invite/$userId');
+      debugPrint('inviteUser → studyId=$studyId  userId=$userId');
+      final res =
+          await _dio.post('/api/recruitment/studies/$studyId/invite/$userId');
+      debugPrint('inviteUser response: ${res.statusCode} ${res.data}');
     } on DioException catch (e) {
+      debugPrint('inviteUser error: ${e.response?.statusCode} ${e.response?.data}');
       if (e.response?.statusCode == 409) {
         throw Exception('User already invited');
       }
@@ -183,9 +236,11 @@ class RecruitmentRepository {
 }
 
 final myInvitationsProvider = FutureProvider<List<dynamic>>((ref) async {
-  return ref.watch(recruitmentRepositoryProvider).getMyInvitations();
+  // Calling read here is intentional: the provider is manually invalidated
+  // after accept/decline so it re-fetches fresh data.
+  return ref.read(recruitmentRepositoryProvider).getMyInvitations();
 });
 
 final myParticipationsProvider = FutureProvider<List<dynamic>>((ref) async {
-  return ref.watch(recruitmentRepositoryProvider).getMyParticipations();
+  return ref.read(recruitmentRepositoryProvider).getMyParticipations();
 });

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_client.dart';
@@ -79,12 +80,12 @@ class SurveyRepository {
     }
   }
 
-  // Get study IDs that the current user has already applied to or completed
+  // Returns studyIds Sarah has already participated in OR accepted invitations for
   Future<Set<String>> getMyParticipatedStudyIds() async {
+    final Set<String> ids = {};
     try {
-      final dio = _dio;
-      // Get my responses (submitted phases)
-      final res = await dio.get('/api/responses/me/by-study',
+      // 1. Submitted responses
+      final res = await _dio.get('/api/responses/me/by-study',
           options: Options(receiveTimeout: const Duration(seconds: 8)));
       final raw = res.data;
       List data = [];
@@ -93,10 +94,31 @@ class SurveyRepository {
       } else if (raw is List) {
         data = raw;
       }
-      return data.map((e) => e['studyId']?.toString() ?? '').toSet();
+      for (final e in data) {
+        final id = e['studyId']?.toString();
+        if (id != null) ids.add(id);
+      }
     } catch (e) {
-      return {};
+      debugPrint('Responses fetch error: $e');
     }
+
+    try {
+      // 2. Accepted/completed invitations
+      final res = await _dio.get('/api/recruitment/invitations/me',
+          options: Options(receiveTimeout: const Duration(seconds: 8)));
+      final List invites = res.data is List ? res.data : [];
+      for (final inv in invites) {
+        final status = (inv['status'] ?? '').toString().toUpperCase();
+        if (status == 'ACCEPTED' || status == 'COMPLETED') {
+          final studyId = inv['studyId']?.toString();
+          if (studyId != null) ids.add(studyId);
+        }
+      }
+    } catch (e) {
+      debugPrint('Invitations fetch error: $e');
+    }
+
+    return ids;
   }
 
   Future<void> publishStudy(String studyId) async {
@@ -122,7 +144,6 @@ final browseSurveysProvider = FutureProvider<List<Study>>((ref) async {
   return ref.watch(surveyRepositoryProvider).getActiveStudies();
 });
 
-// Tracks which studyIds the current user has participated in
 final myParticipatedStudyIdsProvider = FutureProvider<Set<String>>((ref) async {
   ref.watch(authProvider);
   return ref.watch(surveyRepositoryProvider).getMyParticipatedStudyIds();

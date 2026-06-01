@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../shared/theme.dart';
 import '../models/survey_model.dart';
 import '../providers/recruitment_provider.dart';
@@ -21,15 +22,9 @@ class _ParticipantSurveyDetailScreenState
   Future<void> _apply() async {
     setState(() => _isApplying = true);
     try {
-      // Get the first phase ID to apply to
-      String? firstPhaseId;
-      if (widget.survey.phases.isNotEmpty) {
-        firstPhaseId = widget.survey.phases[0]['phaseId'];
-      }
-
+      // ✅ REMOVE firstPhaseId - applyToStudy only needs studyId now
       await ref.read(recruitmentRepositoryProvider).applyToStudy(
             widget.survey.studyId,
-            firstPhaseId ?? '',
           );
 
       if (mounted) {
@@ -90,8 +85,7 @@ class _ParticipantSurveyDetailScreenState
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20)),
+                  color: Colors.white, borderRadius: BorderRadius.circular(20)),
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -148,8 +142,7 @@ class _ParticipantSurveyDetailScreenState
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20)),
+                  color: Colors.white, borderRadius: BorderRadius.circular(20)),
               child: Row(children: [
                 CircleAvatar(
                     backgroundColor: AppTheme.primaryContainer,
@@ -196,8 +189,7 @@ class _ParticipantSurveyDetailScreenState
               final i = entry.key;
               final phase = entry.value;
               final title = phase['title'] ?? 'Phase ${i + 1}';
-              final questionCount =
-                  (phase['questions'] as List?)?.length ?? 0;
+              final questionCount = (phase['questions'] as List?)?.length ?? 0;
               final rawReward = phase['rewardAmount'];
               String reward = '\$0';
               if (rawReward is num) {
@@ -234,17 +226,17 @@ class _ParticipantSurveyDetailScreenState
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                        Text(title.toString().trim().isEmpty
-                            ? 'Phase ${i + 1}'
-                            : title.toString(),
+                        Text(
+                            title.toString().trim().isEmpty
+                                ? 'Phase ${i + 1}'
+                                : title.toString(),
                             style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.textPrimary)),
                         Text('$questionCount questions',
                             style: const TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textSecondary)),
+                                fontSize: 12, color: AppTheme.textSecondary)),
                       ])),
                   Text(reward,
                       style: const TextStyle(
@@ -266,8 +258,8 @@ class _ParticipantSurveyDetailScreenState
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primary,
             minimumSize: const Size(double.infinity, 54),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: _isApplying
               ? const SizedBox(
