@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
     PlusCircle, Monitor, CalendarDays,
-    Coins, HelpCircle, Pencil, Send, Check,X
+    Coins, HelpCircle, Pencil, Send, Check, X, AlertTriangle
 } from "lucide-react";
 import Phase from "./Phase";
 import "./Phases.css";
@@ -9,22 +9,34 @@ import { useNavigate } from "react-router-dom";
 import { getCriteria } from "../../api/RecruitmentApi";
 import { publishStudy } from "../../api/StudyApi";
 
+// Extract the most useful error message from an axios error
+function extractError(err) {
+    // Backend sent a response with a message field
+    const data = err?.response?.data;
+    if (data) {
+        if (typeof data === "string" && data.trim()) return data.trim();
+        if (data.message) return data.message;
+        if (data.error)   return data.error;
+    }
+    // Network / timeout
+    if (err?.message) return err.message;
+    return "Something went wrong. Please try again.";
+}
+
 export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPublished }) {
     const navigate = useNavigate();
 
-    // Confirm dialog state
     const [showConfirm,    setShowConfirm]    = useState(false);
-    const [criteriaExists, setCriteriaExists] = useState(null); // null = unknown
+    const [criteriaExists, setCriteriaExists] = useState(null);
     const [checking,       setChecking]       = useState(false);
     const [publishing,     setPublishing]     = useState(false);
     const [publishError,   setPublishError]   = useState(null);
-    const [showNoCriteria, setShowNoCriteria] = useState(false);
-    const isSinglePhase = phases.length === 1 && study?.isMultiPhase === false;
 
-    const totalQuestions = phases.reduce(
-        (acc, p) => acc + (p.questions?.length || 0),
-        0
-    );
+    // ── Derived flags ─────────────────────────────────────────────
+    const isSinglePhase  = phases.length === 1 && study?.isMultiPhase === false;
+    const totalQuestions = phases.reduce((acc, p) => acc + (p.questions?.length || 0), 0);
+    const hasPhases      = phases.length > 0;
+    const hasQuestions   = totalQuestions > 0;
 
     const endDate        = study?.endDate;
     const daysLeft       = endDate
@@ -45,30 +57,23 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
 
     const isPublished = study?.studyStatus === "PUBLISHED";
     const isCompleted = study?.studyStatus === "COMPLETED";
-    const canPublish  = !isPublished && !isCompleted && phases.length > 0;
+    // Only show the publish button if there's at least one phase with at least one question
+    const canPublish  = !isPublished && !isCompleted && hasPhases && hasQuestions;
 
     // ── Handle "Publish Study" click ──────────────────────────────
     const handlePublishClick = async () => {
-    setPublishError(null);
-    setChecking(true);
-
-    try {
-        const existing = await getCriteria(study.studyId).catch(() => null);
-        const hasCriteria = !!existing;
-
-        setCriteriaExists(hasCriteria);
-
-        if (!hasCriteria) {
-            setShowNoCriteria(true);
-        } else {
-            setShowConfirm(true);
+        setPublishError(null);
+        setChecking(true);
+        try {
+            const existing = await getCriteria(study.studyId).catch(() => null);
+            setCriteriaExists(!!existing);
+        } catch {
+            setCriteriaExists(false);
+        } finally {
+            setChecking(false);
+            setShowConfirm(true); // always open confirm, criteria or not
         }
-    } catch {
-        setShowNoCriteria(true);
-    } finally {
-        setChecking(false);
-    }
-};
+    };
 
     const handleConfirmPublish = async () => {
         setPublishing(true);
@@ -78,7 +83,7 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
             onPublished();
             setShowConfirm(false);
         } catch (err) {
-            setPublishError(err?.message || "Failed to publish study.");
+            setPublishError(extractError(err));
         } finally {
             setPublishing(false);
         }
@@ -88,6 +93,13 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
         setShowConfirm(false);
         navigate(`/recruit/study/${study.studyId}/manage`);
     };
+
+    // ── Publish readiness hint shown below the button area ────────
+    const publishBlockReason = !hasPhases
+        ? "Add at least one phase before publishing."
+        : !hasQuestions
+            ? "Add at least one question to a phase before publishing."
+            : null;
 
     return (
         <div className="phases">
@@ -132,25 +144,33 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
                     </p>
                 </div>
 
-                {canPublish && (
-                    <button
-                        className="phases__publish-btn"
-                        onClick={handlePublishClick}
-                        disabled={checking}
-                    >
-                        {checking
-                            ? <span className="phases__publish-spinner" />
-                            : <Send size={14} strokeWidth={2.5} />
-                        }
-                        {checking ? "Checking…" : "Publish Study"}
-                    </button>
-                )}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                    {!isPublished && !isCompleted && (
+                        <button
+                            className="phases__publish-btn"
+                            onClick={handlePublishClick}
+                            disabled={checking || !canPublish}
+                            style={{ opacity: canPublish ? 1 : 0.5, cursor: canPublish ? "pointer" : "not-allowed" }}
+                        >
+                            {checking
+                                ? <span className="phases__publish-spinner" />
+                                : <Send size={14} strokeWidth={2.5} />
+                            }
+                            {checking ? "Checking…" : "Publish Study"}
+                        </button>
+                    )}
 
-                {isPublished && (
-                    <div className="phases__published-badge">
-                        ✓ Published
-                    </div>
-                )}
+                    {/* Hint shown when button is disabled */}
+                    {publishBlockReason && !isPublished && !isCompleted && (
+                        <p style={{ fontSize: 12, color: "#EF4444", display: "flex", alignItems: "center", gap: 4, margin: 0 }}>
+                            <AlertTriangle size={12} /> {publishBlockReason}
+                        </p>
+                    )}
+
+                    {isPublished && (
+                        <div className="phases__published-badge">✓ Published</div>
+                    )}
+                </div>
             </div>
 
             {/* Phases list */}
@@ -166,11 +186,11 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
                 ))}
 
                 {!isSinglePhase && (
-    <button className="phases__add-btn" onClick={onAdd}>
-        <PlusCircle size={16} />
-        ADD NEW PHASE
-    </button>
-)}
+                    <button className="phases__add-btn" onClick={onAdd}>
+                        <PlusCircle size={16} />
+                        ADD NEW PHASE
+                    </button>
+                )}
             </div>
 
             {/* Stats */}
@@ -244,7 +264,7 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
                 Manage Study Info
             </button>
 
-            {/* ── Confirm Publish Dialog (criteria exists) ── */}
+            {/* ── Confirm Publish Dialog ── */}
             {showConfirm && (
                 <div className="phases__overlay" onClick={() => !publishing && setShowConfirm(false)}>
                     <div className="phases__confirm" onClick={(e) => e.stopPropagation()}>
@@ -253,12 +273,34 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
                         </div>
                         <h3>Publish Study?</h3>
                         <p>
-                            <strong>{study?.title}</strong> will be visible to eligible participants.
-                            Your eligibility criteria are set.
+                            <strong>{study?.title}</strong> will be visible to{" "}
+                            {criteriaExists
+                                ? "eligible participants based on your criteria."
+                                : "all participants — no eligibility criteria set."}
                         </p>
 
+                        {!criteriaExists && (
+                            <div style={{
+                                background: "#FFFBEB", border: "1px solid #FDE68A",
+                                borderRadius: 8, padding: "10px 14px", fontSize: 13,
+                                color: "#92400E", marginBottom: 4,
+                                display: "flex", alignItems: "flex-start", gap: 8,
+                            }}>
+                                <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
+                                <span>
+                                    Without criteria, anyone can apply to this study.
+                                    You can optionally add criteria before publishing.
+                                </span>
+                            </div>
+                        )}
+
                         {publishError && (
-                            <div className="phases__confirm-error">{publishError}</div>
+                            <div className="phases__confirm-error" style={{
+                                display: "flex", alignItems: "flex-start", gap: 8
+                            }}>
+                                <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                                {publishError}
+                            </div>
                         )}
 
                         <div className="phases__confirm-actions">
@@ -267,7 +309,8 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
                                 onClick={handleEditCriteria}
                                 disabled={publishing}
                             >
-                                <Pencil size={13} /> Edit Criteria
+                                <Pencil size={13} />
+                                {criteriaExists ? "Edit Criteria" : "Add Criteria"}
                             </button>
                             <button
                                 className="phases__confirm-btn phases__confirm-btn--publish"
@@ -278,7 +321,7 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
                                     ? <span className="phases__publish-spinner phases__publish-spinner--sm" />
                                     : <Send size={13} />
                                 }
-                                {publishing ? "Publishing…" : "Publish"}
+                                {publishing ? "Publishing…" : "Publish Anyway"}
                             </button>
                         </div>
                         <button
@@ -291,54 +334,6 @@ export default function Phases({ study, phases, onAdd, onDelete, onUpdate, onPub
                     </div>
                 </div>
             )}
-            {showNoCriteria && (
-    <div
-        className="phases__overlay"
-        onClick={() => setShowNoCriteria(false)}
-    >
-        <div
-            className="phases__confirm"
-            onClick={(e) => e.stopPropagation()}
-        >
-            <div className="phases__confirm-icon">
-                <HelpCircle size={22} />
-            </div>
-
-            <h3>No Eligibility Criteria Found</h3>
-
-            <p>
-                Before publishing this study, you must create at least one
-                eligibility criterion to define who can participate.
-            </p>
-
-            <div className="phases__confirm-actions">
-                <button
-                    className="phases__confirm-btn phases__confirm-btn--secondary"
-                    onClick={() => setShowNoCriteria(false)}
-                >
-                    Cancel
-                </button>
-
-                <button
-                    className="phases__confirm-btn phases__confirm-btn--publish"
-                    onClick={() =>
-                        navigate(`/recruit/study/${study.studyId}/manage`)
-                    }
-                >
-                    <Pencil size={13} />
-                    Add Criteria
-                </button>
-            </div>
-
-            <button
-                className="mp__confirm-close"
-                onClick={() => setShowNoCriteria(false)}
-            >
-                <X size={16} />
-            </button>
-        </div>
-    </div>
-)}
         </div>
     );
 }

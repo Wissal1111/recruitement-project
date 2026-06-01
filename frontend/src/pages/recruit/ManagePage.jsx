@@ -4,7 +4,7 @@ import { useRef } from "react";
 import {
     ArrowLeft, Send, Pencil, Check, X, ChevronDown,
     Lock, Unlock, Users, DollarSign, ToggleLeft, ToggleRight,
-    AlertTriangle, Loader2,HelpCircle
+    AlertTriangle, Loader2
 } from "lucide-react";
 import { getStudyById, updateStudy, publishStudy } from "../../api/StudyApi";
 import { updatePhase } from "../../api/PhasesApi";
@@ -42,6 +42,18 @@ function Spinner({ size = 16 }) {
     return <Loader2 size={size} className="mp__spin" />;
 }
 
+// Extract the most useful error message from an axios error
+function extractError(err) {
+    const data = err?.response?.data;
+    if (data) {
+        if (typeof data === "string" && data.trim()) return data.trim();
+        if (data.message) return data.message;
+        if (data.error)   return data.error;
+    }
+    if (err?.message) return err.message;
+    return "Something went wrong. Please try again.";
+}
+
 export default function ManagePage() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -59,8 +71,8 @@ export default function ManagePage() {
     const [savingInfo, setSavingInfo]   = useState(false);
 
     // Criteria
-    const [criteriaExists, setCriteriaExists]     = useState(false);
-    const [criteriaForm, setCriteriaForm]         = useState({
+    const [criteriaExists, setCriteriaExists]       = useState(false);
+    const [criteriaForm, setCriteriaForm]           = useState({
         ageMin: "", ageMax: "", gender: "", country: "", educationLevel: ""
     });
     const [selectedInterests, setSelectedInterests] = useState([]);
@@ -69,12 +81,10 @@ export default function ManagePage() {
     const [criteriaOpen, setCriteriaOpen]           = useState(false);
 
     // Publish
-    const [publishing, setPublishing]         = useState(false);
-    const [showConfirm, setShowConfirm]       = useState(false);
-    const [publishError, setPublishError]     = useState(null);
-    const [criteriaError, setCriteriaError]   = useState(null);
-    const [showNoCriteria, setShowNoCriteria] = useState(false);
-
+    const [publishing, setPublishing]       = useState(false);
+    const [showConfirm, setShowConfirm]     = useState(false);
+    const [publishError, setPublishError]   = useState(null);
+    const [criteriaError, setCriteriaError] = useState(null);
 
     // Phase toggling
     const [togglingPhase, setTogglingPhase] = useState(null);
@@ -86,7 +96,6 @@ export default function ManagePage() {
             getCriteria(id).catch(() => null),
             fetchInterests().catch(() => ({ interests: [] })),
         ]).then(([studyData, existingCriteria, interestsData]) => {
-            console.log(existingCriteria)
             setStudy(studyData);
             const rawPhases = studyData?.phases || [];
             setPhases(normalizePhases(rawPhases));
@@ -105,7 +114,6 @@ export default function ManagePage() {
                 : interestsData?.interests ?? [];
             setAllInterests(list);
 
-            // getCriteria returns an axios response — unwrap .data
             const criteria = existingCriteria?.data ?? existingCriteria;
             if (criteria) {
                 setCriteriaExists(true);
@@ -116,9 +124,7 @@ export default function ManagePage() {
                     country:        criteria.country        ?? "",
                     educationLevel: criteria.educationLevel ?? "",
                 });
-                setSelectedInterests(
-                    (criteria.interestIds ?? []).map(String)
-                );
+                setSelectedInterests((criteria.interestIds ?? []).map(String));
                 setCriteriaOpen(true);
             }
         }).finally(() => setLoading(false));
@@ -137,11 +143,25 @@ export default function ManagePage() {
             questions:       p.questions        ?? [],
         }));
 
+    // ── Derived publish readiness ──────────────────────────────────
+    const totalQuestions   = phases.reduce((acc, p) => acc + (p.questions?.length || 0), 0);
+    const hasPhases        = phases.length > 0;
+    const hasQuestions     = totalQuestions > 0;
+    const isPublished      = study?.studyStatus === "PUBLISHED";
+    const isCompleted      = study?.studyStatus === "COMPLETED";
+    const canPublish       = !isPublished && !isCompleted && hasPhases && hasQuestions;
+
+    const publishBlockReason = !hasPhases
+        ? "Add at least one phase before publishing."
+        : !hasQuestions
+            ? "Add at least one question to a phase before publishing."
+            : null;
+
     // ─── Study Info ───────────────────────────────────────────────
     const handleSaveInfo = async () => {
         setSavingInfo(true);
         try {
-            const updated = await updateStudy(id, infoForm);
+            await updateStudy(id, infoForm);
             setStudy((prev) => ({ ...prev, ...infoForm }));
             setEditingInfo(false);
         } catch (err) {
@@ -171,7 +191,7 @@ export default function ManagePage() {
                 setCriteriaExists(true);
             }
         } catch (err) {
-            setCriteriaError("Failed to save criteria.");
+            setCriteriaError(extractError(err));
         } finally {
             setSavingCriteria(false);
         }
@@ -212,7 +232,7 @@ export default function ManagePage() {
         setPublishing(true);
         setPublishError(null);
         try {
-            // Save criteria first if open and modified
+            // Save criteria first if panel is open
             if (criteriaOpen) {
                 const payload = {
                     ageMin:         criteriaForm.ageMin         ? parseInt(criteriaForm.ageMin)  : null,
@@ -233,15 +253,11 @@ export default function ManagePage() {
             setStudy((prev) => ({ ...prev, studyStatus: "PUBLISHED" }));
             setShowConfirm(false);
         } catch (err) {
-            setPublishError(err?.message || "Failed to publish study.");
+            setPublishError(extractError(err));
         } finally {
             setPublishing(false);
         }
     };
-
-    const isPublished = study?.studyStatus === "PUBLISHED";
-    const isCompleted = study?.studyStatus === "COMPLETED";
-    const canPublish  = !isPublished && !isCompleted;
 
     if (loading) {
         return (
@@ -274,23 +290,25 @@ export default function ManagePage() {
                             <span className={`mp__status-badge mp__status-badge--${(study?.studyStatus || "DRAFT").toLowerCase()}`}>
                                 {study?.studyStatus || "DRAFT"}
                             </span>
-                            {canPublish && (
-                                <button
-    className="mp__publish-btn"
-    onClick={() => {
-        if (criteriaExists) {
-            setShowConfirm(true);
-        } else {
-            setShowNoCriteria(true);
-        }
-    }}
-    disabled={publishing}
->
-                                    {publishing ? <Spinner size={14} /> : <Send size={14} strokeWidth={2.5} />}
-                                    {publishing ? "Publishing…" : "Publish Study"}
-                                </button>
-                            )}
-                            
+
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
+                                {!isPublished && !isCompleted && (
+                                    <button
+                                        className="mp__publish-btn"
+                                        onClick={() => setShowConfirm(true)}
+                                        disabled={publishing || !canPublish}
+                                        style={{ opacity: canPublish ? 1 : 0.5, cursor: canPublish ? "pointer" : "not-allowed" }}
+                                    >
+                                        {publishing ? <Spinner size={14} /> : <Send size={14} strokeWidth={2.5} />}
+                                        {publishing ? "Publishing…" : "Publish Study"}
+                                    </button>
+                                )}
+                                {publishBlockReason && !isPublished && !isCompleted && (
+                                    <p style={{ fontSize: 11, color: "#EF4444", display: "flex", alignItems: "center", gap: 4, margin: 0 }}>
+                                        <AlertTriangle size={11} /> {publishBlockReason}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -396,21 +414,16 @@ export default function ManagePage() {
                             {/* Eligibility Criteria Card */}
                             <div className="mp__card" ref={criteriaRef}>
                                 <div className="mp__card-header mp__card-header--clickable" onClick={() => {
-    setCriteriaOpen(o => {
-        const next = !o;
-
-        if (!o) {
-            setTimeout(() => {
-                criteriaRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                });
-            }, 100);
-        }
-
-        return next;
-    });
-}}>
+                                    setCriteriaOpen(o => {
+                                        const next = !o;
+                                        if (!o) {
+                                            setTimeout(() => {
+                                                criteriaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                            }, 100);
+                                        }
+                                        return next;
+                                    });
+                                }}>
                                     <div>
                                         <h2 className="mp__card-title">Eligibility Criteria</h2>
                                         <p className="mp__card-sub">
@@ -418,9 +431,10 @@ export default function ManagePage() {
                                         </p>
                                     </div>
                                     <div className="mp__card-header-right">
-                                        {criteriaExists ? (
-                                            <span className="mp__criteria-badge">Active</span>
-                                        ) : <span className="mp__criteria-badge">Add Criteria Here</span>}
+                                        {criteriaExists
+                                            ? <span className="mp__criteria-badge">Active</span>
+                                            : <span className="mp__criteria-badge">Add Criteria Here</span>
+                                        }
                                         <ChevronDown
                                             size={16}
                                             className={`mp__chevron ${criteriaOpen ? "mp__chevron--open" : ""}`}
@@ -477,7 +491,6 @@ export default function ManagePage() {
                                                 </select>
                                             </div>
 
-                                            {/* Interests */}
                                             <div>
                                                 <div className="mp__section-label">Related Interests</div>
                                                 <div className="mp__interests">
@@ -503,7 +516,10 @@ export default function ManagePage() {
                                             </div>
 
                                             {criteriaError && (
-                                                <div className="mp__error">{criteriaError}</div>
+                                                <div className="mp__error" style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                                                    <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+                                                    {criteriaError}
+                                                </div>
                                             )}
 
                                             <button
@@ -594,7 +610,7 @@ export default function ManagePage() {
                 </div>
             </div>
 
-            {/* Confirm Publish Dialog */}
+            {/* ── Confirm Publish Dialog ── */}
             {showConfirm && (
                 <div className="mp__overlay" onClick={() => !publishing && setShowConfirm(false)}>
                     <div className="mp__confirm" onClick={(e) => e.stopPropagation()}>
@@ -603,41 +619,50 @@ export default function ManagePage() {
                         </div>
                         <h3>Publish Study?</h3>
                         <p>
-                            Once published, <strong>{study?.title}</strong> will be visible to eligible participants.
+                            Once published, <strong>{study?.title}</strong> will be visible to{" "}
                             {criteriaExists
-                                ? " Your eligibility criteria are set."
-                                : " No eligibility criteria are set — it will be open to everyone."}
+                                ? "eligible participants based on your criteria."
+                                : "all participants — no eligibility criteria set."}
                         </p>
 
+                        {!criteriaExists && (
+                            <div style={{
+                                background: "#FFFBEB", border: "1px solid #FDE68A",
+                                borderRadius: 8, padding: "10px 14px", fontSize: 13,
+                                color: "#92400E", marginBottom: 4,
+                                display: "flex", alignItems: "flex-start", gap: 8,
+                            }}>
+                                <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
+                                <span>
+                                    Without criteria, anyone can apply to this study.
+                                    You can optionally add criteria before publishing.
+                                </span>
+                            </div>
+                        )}
+
                         {publishError && (
-                            <div className="mp__error" style={{ marginBottom: 0 }}>{publishError}</div>
+                            <div className="mp__error" style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 0 }}>
+                                <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+                                {publishError}
+                            </div>
                         )}
 
                         <div className="mp__confirm-actions">
-                            {criteriaExists ? (
-                                <button
-                                    className="mp__confirm-btn mp__confirm-btn--secondary"
-                                    onClick={() => { setShowConfirm(false); setCriteriaOpen(true); }}
-                                    disabled={publishing}
-                                >
-                                    <Pencil size={13} /> Edit Criteria
-                                </button>
-                            ) : (
-                                <button
-                                    className="mp__confirm-btn mp__confirm-btn--secondary"
-                                    onClick={() => { setShowConfirm(false); setCriteriaOpen(true); }}
-                                    disabled={publishing}
-                                >
-                                    <Pencil size={13} /> Set Criteria
-                                </button>
-                            )}
+                            <button
+                                className="mp__confirm-btn mp__confirm-btn--secondary"
+                                onClick={() => { setShowConfirm(false); setCriteriaOpen(true); }}
+                                disabled={publishing}
+                            >
+                                <Pencil size={13} />
+                                {criteriaExists ? "Edit Criteria" : "Add Criteria"}
+                            </button>
                             <button
                                 className="mp__confirm-btn mp__confirm-btn--publish"
                                 onClick={handlePublish}
                                 disabled={publishing}
                             >
                                 {publishing ? <Spinner size={13} /> : <Send size={13} />}
-                                {publishing ? "Publishing…" : "Publish"}
+                                {publishing ? "Publishing…" : "Publish Anyway"}
                             </button>
                         </div>
                         <button
@@ -650,62 +675,6 @@ export default function ManagePage() {
                     </div>
                 </div>
             )}
-                        {showNoCriteria && (
-    <div
-        className="phases__overlay"
-        onClick={() => setShowNoCriteria(false)}
-    >
-        <div
-            className="phases__confirm"
-            onClick={(e) => e.stopPropagation()}
-        >
-            <div className="phases__confirm-icon">
-                <HelpCircle size={22} />
-            </div>
-
-            <h3>No Eligibility Criteria Found</h3>
-
-            <p>
-                Before publishing this study, you must create at least one
-                eligibility criterion to define who can participate.
-            </p>
-
-            <div className="phases__confirm-actions">
-                <button
-                    className="phases__confirm-btn phases__confirm-btn--secondary"
-                    onClick={() => setShowNoCriteria(false)}
-                >
-                    Cancel
-                </button>
-
-                <button
-                    className="phases__confirm-btn phases__confirm-btn--publish"
-                    onClick={() => {
-    setShowNoCriteria(false);
-    setCriteriaOpen(true);
-
-    setTimeout(() => {
-        criteriaRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-        });
-    }, 100);
-}}
-                >
-                    <Pencil size={13} />
-                    Add Criteria
-                </button>
-            </div>
-
-            <button
-                className="mp__confirm-close"
-                onClick={() => setShowNoCriteria(false)}
-            >
-                <X size={16} />
-            </button>
-        </div>
-    </div>
-)}
         </div>
     );
 }

@@ -56,7 +56,7 @@ export default function Phase({ phase, index, onDelete, onUpdate }) {
                     <span className="phase__meta">
                         {form.phaseType}
                         {form.maxParticipants ? ` • ${form.maxParticipants} participants` : ""}
-                        {form.rewardAmount ? ` • $${form.rewardAmount} reward` : ""}
+                        {form.rewardAmount ? ` • ${form.rewardAmount} reward points` : ""}
                     </span>
                 </div>
 

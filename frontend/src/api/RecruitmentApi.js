@@ -1,4 +1,4 @@
-import api from "./recruitmentAxios";
+import api from "./axiosInstance";
 
 
 // SLOTS

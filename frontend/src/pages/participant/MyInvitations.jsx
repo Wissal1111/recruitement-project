@@ -2,17 +2,17 @@ import { useState, useEffect } from "react";
 import SideBarParticipant from "../../components/recruitment/SideBarParticipant";
 import TopNavBar from "../../components/TopNavBar";
 import { getMyInvitations, acceptInvitation, declineInvitation } from "../../api/RecruitmentApi";
-import { Clock, MapPin, Video, Calendar } from "lucide-react";
+import { Clock, Calendar, CheckCircle, XCircle, Mail, ChevronDown, ChevronUp, Inbox } from "lucide-react";
 
 export default function MyInvitations() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [invitations, setInvitations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
-    const [totalEarnings] = useState(1240.50);
+    const [expiredOpen, setExpiredOpen] = useState(false);
 
     const session = JSON.parse(localStorage.getItem("session") || "{}");
-    const firstName = session?.user?.firstName || "Alex";
+    const firstName = session?.user?.firstName || "there";
 
     useEffect(() => {
         getMyInvitations()
@@ -25,24 +25,33 @@ export default function MyInvitations() {
         setActionLoading(p => ({ ...p, [id]: "accept" }));
         try {
             await acceptInvitation(id);
-            setInvitations(inv => inv.map(i => i.invitationId === id ? { ...i, status: "ACCEPTED" } : i));
-        } catch (e) { console.error(e); }
-        finally { setActionLoading(p => ({ ...p, [id]: null })); }
+            setInvitations(inv => inv.map(i =>
+                i.invitationId === id ? { ...i, status: "ACCEPTED" } : i
+            ));
+        } catch (e) {
+            console.error("Accept error:", e.response?.data || e.message);
+        } finally {
+            setActionLoading(p => ({ ...p, [id]: null }));
+        }
     };
 
     const handleDecline = async (id) => {
         setActionLoading(p => ({ ...p, [id]: "decline" }));
         try {
             await declineInvitation(id);
-            setInvitations(inv => inv.map(i => i.invitationId === id ? { ...i, status: "DECLINED" } : i));
-        } catch (e) { console.error(e); }
-        finally { setActionLoading(p => ({ ...p, [id]: null })); }
+            setInvitations(inv => inv.map(i =>
+                i.invitationId === id ? { ...i, status: "DECLINED" } : i
+            ));
+        } catch (e) {
+            console.error("Decline error:", e.response?.data || e.message);
+        } finally {
+            setActionLoading(p => ({ ...p, [id]: null }));
+        }
     };
 
+    const active = invitations.filter(i => i.status !== "EXPIRED");
+    const expired = invitations.filter(i => i.status === "EXPIRED");
     const pending = invitations.filter(i => i.status === "PENDING");
-
-    // Mock pour le design si pas de données
-    const displayInvitations = invitations.length > 0 ? invitations : MOCK_INVITATIONS;
 
     return (
         <div className="dashboard">
@@ -50,178 +59,243 @@ export default function MyInvitations() {
             <SideBarParticipant page="invitations" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="wrapper">
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
                     <div>
                         <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--title)", marginBottom: 4 }}>
-                            Hello, {firstName}! 👋
+                            Hello, {firstName}!
                         </h2>
                         <p style={{ fontSize: 14, color: "var(--content)" }}>
-                            You have <span style={{ color: "var(--blue-text)", fontWeight: 700 }}>
-                {pending.length} new invitations
-              </span> waiting for your response. These opportunities match your editorial profile.
+                            You have{" "}
+                            <span style={{ color: "var(--blue-text)", fontWeight: 700 }}>
+                                {pending.length} pending invitation{pending.length !== 1 ? "s" : ""}
+                            </span>{" "}
+                            waiting for your response.
                         </p>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--content)", letterSpacing: "0.05em", marginBottom: 4 }}>
-                            TOTAL EARNINGS
-                        </div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--blue-text)" }}>
-                            ${totalEarnings.toFixed(2)}
-                        </div>
                     </div>
                 </div>
 
-                {/* Invitations Grid */}
                 {loading ? (
                     <LoadingSkeleton />
+                ) : active.length === 0 && expired.length === 0 ? (
+                    <EmptyState />
                 ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                        {displayInvitations.map(inv => (
-                            <InvitationCard
-                                key={inv.invitationId || inv.id}
-                                inv={inv}
-                                onAccept={() => handleAccept(inv.invitationId || inv.id)}
-                                onDecline={() => handleDecline(inv.invitationId || inv.id)}
-                                loading={actionLoading[inv.invitationId || inv.id]}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        {/* Active invitations */}
+                        {active.length === 0 ? (
+                            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--content)", fontSize: 14 }}>
+                                <Inbox size={28} style={{ marginBottom: 8, opacity: 0.5 }} />
+                                <p>No active invitations right now.</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                                {active.map(inv => (
+                                    <InvitationCard
+                                        key={inv.invitationId}
+                                        inv={inv}
+                                        onAccept={() => handleAccept(inv.invitationId)}
+                                        onDecline={() => handleDecline(inv.invitationId)}
+                                        loading={actionLoading[inv.invitationId]}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Expired — collapsible */}
+                        {expired.length > 0 && (
+                            <div style={{ marginTop: 24 }}>
+                                <button
+                                    onClick={() => setExpiredOpen(o => !o)}
+                                    style={{
+                                        display: "flex", alignItems: "center", gap: 6,
+                                        background: "none", border: "none", cursor: "pointer",
+                                        fontSize: 13, fontWeight: 600, color: "var(--content)",
+                                        padding: "4px 0", marginBottom: 10
+                                    }}>
+                                    <Clock size={14} />
+                                    {expired.length} expired invitation{expired.length !== 1 ? "s" : ""}
+                                    {expiredOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                </button>
+
+                                {expiredOpen && (
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, opacity: 0.6 }}>
+                                        {expired.map(inv => (
+                                            <InvitationCard key={inv.invitationId} inv={inv} />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
     );
 }
 
-function InvitationCard({ inv, onAccept, onDecline, loading }) {
-    const isPending = inv.status === "PENDING" || inv.status === undefined;
-    const isHighPriority = inv.priority === "HIGH" || inv.tag === "HIGH PRIORITY";
-    const tag = isHighPriority ? "HIGH PRIORITY" : "NEW INVITE";
-    const tagColor = isHighPriority ? "#FF6B35" : "#7073FF";
-    const tagBg = isHighPriority ? "#FFF3EE" : "#EEF0FF";
-    const borderColor = isHighPriority ? "rgba(255,107,53,0.2)" : "rgba(112,115,255,0.2)";
+function daysLeft(expiresAt) {
+    if (!expiresAt) return null;
+    return Math.ceil((new Date(expiresAt) - Date.now()) / 86400000);
+}
 
-    const formatDate = (d) => {
-        if (!d) return "Oct 24, 2023";
-        return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    };
+function formatDate(d) {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function InvitationCard({ inv, onAccept, onDecline, loading }) {
+    const isPending = inv.status === "PENDING";
+    const days = daysLeft(inv.expiresAt);
+
+    const expiryColor = days === null ? "var(--content)"
+        : days <= 1 ? "#DC2626"
+        : days <= 3 ? "#D97706"
+        : "var(--content)";
+
+    const expiryLabel = days === null ? null
+        : days <= 0 ? "Expires today"
+        : days === 1 ? "Expires tomorrow"
+        : `Expires in ${days}d`;
+
+    const statusBadge = {
+        PENDING:  { bg: "#EEF0FF", color: "#4338CA", label: "Pending" },
+        ACCEPTED: { bg: "#F0FDF4", color: "#15803D", label: "Accepted" },
+        DECLINED: { bg: "#F5F5F5", color: "#6B7280", label: "Declined" },
+        EXPIRED:  { bg: "#FEF2F2", color: "#B91C1C", label: "Expired" },
+    }[inv.status] || { bg: "#EEF0FF", color: "#4338CA", label: inv.status };
 
     return (
         <div style={{
-            background: "#fff",
-            borderRadius: 16,
-            border: `1.5px solid ${borderColor}`,
-            padding: "20px 24px",
-            boxShadow: "0 2px 16px rgba(112,115,255,0.06)",
-            borderLeft: `4px solid ${tagColor}`,
+            background: "#fff", borderRadius: "var(--medium-radius)",
+            border: "1px solid #E8ECF4", padding: "18px 20px",
+            display: "flex", flexDirection: "column", gap: 10,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
             transition: "box-shadow 0.15s"
         }}
-             onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 24px rgba(112,115,255,0.12)"}
-             onMouseLeave={e => e.currentTarget.style.boxShadow = "0 2px 16px rgba(112,115,255,0.06)"}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
         >
-            {/* Top row */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    {/* Icon */}
-                    <div style={{
-                        width: 40, height: 40, borderRadius: 10,
-                        background: isHighPriority ? "#FFF3EE" : "#EEF0FF",
-                        display: "flex", alignItems: "center", justifyContent: "center"
+            {/* Header row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{
+                    background: statusBadge.bg, color: statusBadge.color,
+                    borderRadius: 20, padding: "3px 10px",
+                    fontSize: 11, fontWeight: 600
+                }}>
+                    {statusBadge.label}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--content)" }}>
+                    Received {formatDate(inv.sentAt)}
+                </span>
+            </div>
+
+            {/* Study title + budget */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--title)", lineHeight: 1.4 }}>
+                    {inv.studyTitle || "Untitled Study"}
+                </div>
+                {inv.totalBudget && (
+                    <span style={{
+                        background: "#EEF0FF", color: "#4338CA",
+                        borderRadius: 20, padding: "3px 10px",
+                        fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0
                     }}>
-                        <span style={{ fontSize: 18 }}>{isHighPriority ? "📅" : "🎯"}</span>
-                    </div>
-                    <div>
-            <span style={{
-                background: tagBg, color: tagColor,
-                borderRadius: 4, padding: "2px 8px",
-                fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
-                display: "block", marginBottom: 4
-            }}>{tag}</span>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--title)" }}>
-                            {inv.title || "Study Invitation"}
-                        </div>
-                    </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: "var(--blue-text)" }}>
-                        ${inv.reward || "120"}.00
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--content)" }}>Estimated Reward</div>
-                </div>
+                        {inv.totalBudget} pts
+                    </span>
+                )}
             </div>
 
-            {/* Meta */}
-            <div style={{ display: "flex", gap: 16, marginBottom: 16, fontSize: 12, color: "var(--content)", flexWrap: "wrap" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <Clock size={12} /> {inv.duration || "45"} Minutes
-        </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#C2410C" }}>
-          <Calendar size={12} color="#C2410C" />
-          <span style={{ color: "#C2410C", fontWeight: 600 }}>
-            Expires: {formatDate(inv.expiresAt)}
-          </span>
-        </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {inv.format === "ZOOM" ? <Video size={12} /> : <MapPin size={12} />}
-                    {inv.location || "Remote"}
-        </span>
+            {/* Description */}
+{inv.studyDescription && (
+    <p style={{
+        margin: 0, fontSize: 12, color: "var(--content)",
+        lineHeight: 1.5,
+        display: "-webkit-box", WebkitLineClamp: 2,
+        WebkitBoxOrient: "vertical", overflow: "hidden"
+    }}>
+        {inv.studyDescription}
+    </p>
+)}
+
+            {/* Expiry */}
+            <div style={{ display: "flex", gap: 12, fontSize: 12, flexWrap: "wrap" }}>
+                {expiryLabel ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: expiryColor, fontWeight: days <= 3 ? 600 : 400 }}>
+                        <Calendar size={12} /> {expiryLabel}
+                    </span>
+                ) : inv.expiresAt ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--content)" }}>
+                        <Calendar size={12} /> {formatDate(inv.expiresAt)}
+                    </span>
+                ) : null}
             </div>
 
-            {/* Buttons */}
+            {/* Actions */}
             {isPending && (
-                <div style={{ display: "flex", gap: 10 }}>
-                    <button onClick={onAccept} disabled={!!loading} style={{
-                        flex: 1, background: "linear-gradient(135deg, #7073FF, #5B5EFF)",
-                        color: "#fff", border: "none", borderRadius: 10,
-                        padding: "12px", fontWeight: 700, fontSize: 14,
-                        cursor: loading ? "not-allowed" : "pointer",
-                        opacity: loading === "accept" ? 0.7 : 1,
-                        transition: "opacity 0.15s"
-                    }}>
-                        {loading === "accept" ? "Accepting..." : "Accept Invitation"}
+                <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                    <button
+                        onClick={onAccept}
+                        disabled={!!loading}
+                        style={{
+                            flex: 1, background: "var(--linear-blue)", color: "#fff",
+                            border: "none", borderRadius: 8, padding: "9px",
+                            fontWeight: 600, fontSize: 13,
+                            cursor: loading ? "not-allowed" : "pointer",
+                            opacity: loading === "accept" ? 0.6 : 1, transition: "opacity 0.15s"
+                        }}>
+                        <CheckCircle size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+                        {loading === "accept" ? "Accepting..." : "Accept"}
                     </button>
-                    <button onClick={onDecline} disabled={!!loading} style={{
-                        flex: 1, background: "#F5F6FA", color: "var(--content)",
-                        border: "none", borderRadius: 10, padding: "12px",
-                        fontWeight: 600, fontSize: 14, cursor: "pointer",
-                        opacity: loading === "decline" ? 0.7 : 1
-                    }}>
-                        Decline
+                    <button
+                        onClick={onDecline}
+                        disabled={!!loading}
+                        style={{
+                            flex: 1, background: "#F5F6FA", color: "var(--content)",
+                            border: "none", borderRadius: 8, padding: "9px",
+                            fontWeight: 600, fontSize: 13,
+                            cursor: loading ? "not-allowed" : "pointer",
+                            opacity: loading === "decline" ? 0.6 : 1
+                        }}>
+                        {loading === "decline" ? "Declining..." : "Decline"}
                     </button>
                 </div>
             )}
 
             {inv.status === "ACCEPTED" && (
-                <div style={{ textAlign: "center", padding: "10px", background: "#F0FDF4", borderRadius: 10, color: "#15803D", fontWeight: 700, fontSize: 13 }}>
-                    ✓ Accepted
+                <div style={{ textAlign: "center", padding: "8px", background: "#F0FDF4", borderRadius: 8, color: "#15803D", fontWeight: 600, fontSize: 13 }}>
+                    <CheckCircle size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+                    Accepted
                 </div>
             )}
             {inv.status === "DECLINED" && (
-                <div style={{ textAlign: "center", padding: "10px", background: "#FEF2F2", borderRadius: 10, color: "#B91C1C", fontWeight: 700, fontSize: 13 }}>
-                    ✗ Declined
+                <div style={{ textAlign: "center", padding: "8px", background: "#F5F5F5", borderRadius: 8, color: "#6B7280", fontWeight: 600, fontSize: 13 }}>
+                    <XCircle size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+                    Declined
                 </div>
             )}
         </div>
     );
 }
 
-const MOCK_INVITATIONS = [
-    { id: 1, title: "UX Research: The Future of Editorial AI", reward: 120, duration: 45, status: "PENDING", priority: "NEW", location: "Remote", tag: "NEW INVITE" },
-    { id: 2, title: "Reader Behavior Study: Long-form Digital Journalism", reward: 85, duration: 30, status: "PENDING", priority: "HIGH", location: "Zoom Interview", format: "ZOOM", tag: "HIGH PRIORITY" },
-    { id: 3, title: "UX Research: The Future of Editorial AI", reward: 120, duration: 45, status: "PENDING", priority: "NEW", location: "Remote", tag: "NEW INVITE" },
-    { id: 4, title: "Reader Behavior Study: Long-form Digital Journalism", reward: 85, duration: 30, status: "PENDING", priority: "HIGH", location: "Zoom Interview", format: "ZOOM", tag: "HIGH PRIORITY" },
-];
+function EmptyState() {
+    return (
+        <div style={{ textAlign: "center", padding: "70px 20px", background: "#fff", borderRadius: "var(--radius)", border: "1px solid #E8ECF4" }}>
+            <Mail size={28} style={{ color: "var(--blue-text)", marginBottom: 12 }} />
+            <h3 style={{ fontWeight: 700, color: "var(--title)", marginBottom: 6 }}>No invitations yet</h3>
+            <p style={{ color: "var(--content)", fontSize: 14 }}>You'll be notified when a researcher invites you to a study.</p>
+        </div>
+    );
+}
 
 function LoadingSkeleton() {
     return (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            {[1,2,3,4].map(i => (
-                <div key={i} style={{ background: "#fff", borderRadius: 16, padding: "20px 24px", border: "1px solid #E8ECF4", height: 180 }}>
-                    <div style={{ width: "60%", height: 14, background: "#F0F4FA", borderRadius: 4, marginBottom: 10 }} />
-                    <div style={{ width: "40%", height: 11, background: "#F0F4FA", borderRadius: 4, marginBottom: 20 }} />
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <div style={{ flex: 1, height: 40, background: "#EEF0FF", borderRadius: 10 }} />
-                        <div style={{ flex: 1, height: 40, background: "#F5F6FA", borderRadius: 10 }} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            {[1, 2, 3, 4].map(i => (
+                <div key={i} style={{ background: "#fff", borderRadius: "var(--medium-radius)", padding: "18px 20px", border: "1px solid #E8ECF4", height: 160 }}>
+                    <div style={{ width: "40%", height: 12, background: "#F0F4FA", borderRadius: 4, marginBottom: 12 }} />
+                    <div style={{ width: "70%", height: 11, background: "#F0F4FA", borderRadius: 4, marginBottom: 18 }} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                        <div style={{ flex: 1, height: 36, background: "#EEF0FF", borderRadius: 8 }} />
+                        <div style={{ flex: 1, height: 36, background: "#F5F6FA", borderRadius: 8 }} />
                     </div>
                 </div>
             ))}

@@ -45,17 +45,17 @@ export default function HomeParticipant() {
             .catch(() => {});
     }, []);
 
-    const studiesToShow = eligibleStudies.length > 0
-        ? eligibleStudies.map(s => ({
-            id: s.studyId || s._id,
-            title: s.title,
-            tags: [s.studyCategory || "Research"],
-            reward: s.totalBudget || 0,
-            duration: 30,
-            match: 95,
-            icon: "🔬"
-        }))
-        : MOCK_STUDIES;
+   const studiesToShow = eligibleStudies.length > 0
+    ? eligibleStudies.map(s => ({
+        id: s.studyId || s._id,
+        title: s.title,
+        tags: [s.studyCategory || "Research"],
+        reward: parseFloat(s.totalBudget?.$numberDecimal ?? s.totalBudget ?? 0),
+        duration: 30,
+        match: 95,
+        icon: "🔬"
+    }))
+    : MOCK_STUDIES;
 
     return (
         <div className="dashboard">
@@ -202,7 +202,9 @@ function StudyCard({ study }) {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: "var(--title)" }}>${study.reward}.00</div>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: "var(--title)" }}>
+    ${Number(study.reward).toFixed(2)}
+</div>
                     <div style={{ fontSize: 12, color: "var(--content)" }}>{study.duration} mins duration</div>
                 </div>
                 <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--background-blue)", display: "flex", alignItems: "center", justifyContent: "center" }}>

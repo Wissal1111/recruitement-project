@@ -538,7 +538,7 @@ exports.getPhaseById = async (req, res) => {
 exports.getActiveStudies = async (req, res) => {
   try {
     const studies = await Study.find({
-      studyStatus: { $in: ['ACTIVE', 'PUBLISHED'] }
+      studyStatus: 'PUBLISHED' 
     });
     res.json(studies);
   } catch (err) {

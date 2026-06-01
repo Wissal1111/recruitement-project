@@ -10,25 +10,45 @@ export default function BrowseStudies() {
     const [loading, setLoading] = useState(true);
     const [applying, setApplying] = useState({});
     const [applied, setApplied] = useState({});
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        getEligibleStudies()
-            .then(res => setStudies(res.data))
+       getEligibleStudies()
+    .then(res => {
+        console.log("Study sample:", res.data[0]);
+        // Make sure phaseId exists ↑ in the logged object
+        setStudies(res.data);
+    })
             .catch(() => setStudies([]))
             .finally(() => setLoading(false));
     }, []);
 
-    const handleApply = async (studyId) => {
-        setApplying(p => ({ ...p, [studyId]: true }));
-        try {
-            await applyToStudy({ studyId });
-            setApplied(p => ({ ...p, [studyId]: true }));
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setApplying(p => ({ ...p, [studyId]: false }));
-        }
-    };
+    const handleApply = async (study) => {
+    const studyId = study.studyId;   // ← use studyId (UUID), not _id (Mongo ObjectId)
+
+    // Pick the first phase — replace with phase selector later if needed
+    const firstPhase = study.phases?.[0];
+    const phaseId = firstPhase?._id || firstPhase?.phaseId;
+
+    if (!phaseId) {
+        setErrors(p => ({ ...p, [studyId]: "No phase available for this study." }));
+        return;
+    }
+
+    setApplying(p => ({ ...p, [studyId]: true }));
+    setErrors(p => ({ ...p, [studyId]: null }));
+
+    try {
+        await applyToStudy({ studyId, phaseId });
+        setApplied(p => ({ ...p, [studyId]: true }));
+    } catch (e) {
+        const msg = e.response?.data?.message || "Failed to apply. Please try again.";
+        setErrors(p => ({ ...p, [studyId]: msg }));
+        console.error("Apply error:", e.response?.data || e.message);
+    } finally {
+        setApplying(p => ({ ...p, [studyId]: false }));
+    }
+};
 
     return (
         <div className="dashboard">
@@ -52,14 +72,15 @@ export default function BrowseStudies() {
                 ) : (
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
                         {studies.map(study => (
-                            <StudyCard
-                                key={study._id}
-                                study={study}
-                                onApply={() => handleApply(study._id)}
-                                loading={applying[study._id]}
-                                applied={applied[study._id]}
-                            />
-                        ))}
+    <StudyCard
+        key={study.studyId}          
+        study={study}
+        onApply={() => handleApply(study)}
+        loading={applying[study.studyId]}
+        applied={applied[study.studyId]}
+        error={errors[study.studyId]}
+    />
+))}
                     </div>
                 )}
             </div>
@@ -67,17 +88,18 @@ export default function BrowseStudies() {
     );
 }
 
-function StudyCard({ study, onApply, loading, applied }) {
+function StudyCard({ study, onApply, loading, applied, error }) {
     return (
-        <div style={{
-            background: "#fff", borderRadius: "var(--medium-radius)",
-            border: "1px solid #E8ECF4", padding: "20px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-            display: "flex", flexDirection: "column", gap: 12,
-            transition: "box-shadow 0.15s"
-        }}
-             onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"}
-             onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
+        <div
+            style={{
+                background: "#fff", borderRadius: "var(--medium-radius)",
+                border: "1px solid #E8ECF4", padding: "20px",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+                display: "flex", flexDirection: "column", gap: 12,
+                transition: "box-shadow 0.15s"
+            }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"}
         >
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{
@@ -120,6 +142,13 @@ function StudyCard({ study, onApply, loading, applied }) {
                 )}
             </div>
 
+            {/* Error message */}
+            {error && (
+                <p style={{ margin: 0, fontSize: 12, color: "#DC2626", background: "#FEF2F2", padding: "6px 10px", borderRadius: 6 }}>
+                    {error}
+                </p>
+            )}
+
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{
                     background: "#F0FDF4", color: "#15803D",
@@ -130,13 +159,13 @@ function StudyCard({ study, onApply, loading, applied }) {
                 </span>
                 <button
                     onClick={onApply}
-                    disabled={!!loading || applied}
+                    disabled={!!loading || !!applied}
                     style={{
                         background: applied ? "#F0FDF4" : "var(--linear-blue)",
                         color: applied ? "#15803D" : "#fff",
                         border: "none", borderRadius: 8, padding: "8px 16px",
                         fontWeight: 600, fontSize: 13,
-                        cursor: applied ? "default" : "pointer",
+                        cursor: (loading || applied) ? "default" : "pointer",
                         opacity: loading ? 0.6 : 1, transition: "all 0.2s"
                     }}>
                     {loading ? "..." : applied ? "Applied ✓" : "Apply"}

@@ -51,7 +51,6 @@ router.put('/:studyId/phases/:phaseId/questions/:questionId', authMiddleware, st
 ///récupérer une phase par son phaseId seul
 router.get('/phase/:phaseId', authMiddleware, studyController.getPhaseById);
 
-router.get('/active', authMiddleware, studyController.getActiveStudies);
 
 
 

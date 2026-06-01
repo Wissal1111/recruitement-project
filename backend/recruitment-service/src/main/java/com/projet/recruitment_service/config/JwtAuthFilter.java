@@ -80,15 +80,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
 
-        } catch (Exception e) {
-            log.warn("TOKEN INVALID: {}", e.getMessage());
+        // JwtAuthFilter.java — in the catch block
+} catch (Exception e) {
+    log.warn("TOKEN INVALID: {}", e.getMessage());
+    SecurityContextHolder.clearContext();
 
-            SecurityContextHolder.clearContext();
-
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\":\"Token is not valid\"}");
-        }
+    // Return 401 (Unauthorized) not 403 (Forbidden) for expired/invalid tokens
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // ← was SC_FORBIDDEN
+    response.setContentType("application/json");
+    response.getWriter().write("{\"message\":\"Token is not valid\"}");
+}
     }
 
     private Map<String, Object> verifyAndParseToken(String token) throws Exception {

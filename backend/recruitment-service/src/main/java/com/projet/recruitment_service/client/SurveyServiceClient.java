@@ -14,11 +14,17 @@ import com.projet.recruitment_service.dto.response.PhaseInfoDto;
 @FeignClient(name = "survey-service", url = "${services.survey-service.url}", configuration = FeignConfig.class)
 public interface SurveyServiceClient {
 
-        @GetMapping("/api/studies/phase/{phaseId}")
-        PhaseInfoDto getPhaseInfo(
-                        @RequestHeader("Authorization") String token,
-                        @PathVariable("phaseId") String phaseId);
+    @GetMapping("/api/studies/phase/{phaseId}")
+    PhaseInfoDto getPhaseInfo(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("phaseId") String phaseId);
 
-        @GetMapping("/api/studies/active")
-        List<Map<String, Object>> getActiveStudies(@RequestHeader("Authorization") String token);
+    @GetMapping("/api/studies/active")
+    List<Map<String, Object>> getActiveStudies(
+            @RequestHeader("Authorization") String token);
+
+    // No auth needed — uses /extern/ route
+    @GetMapping("/api/studies/extern/{studyId}")
+    Map<String, Object> getStudyById(
+            @PathVariable("studyId") String studyId);
 }
