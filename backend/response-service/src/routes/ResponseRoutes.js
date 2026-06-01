@@ -56,7 +56,12 @@ router.get("/study/:studyId/phase/:phaseId", auth,isStudyCreator, ctrl.getRespon
 // GET: /api/responses/participant/:participantId - done: get all responses of a specific participant of this creator's studies (all phases)
 router.get("/participant/:participantId",     auth,isStudyCreator, ctrl.getResponsesByParticipant);
 
-
+// Update an already submitted response for a specific phase
+router.put(
+  "/study/:studyId/phase/:phaseId",
+  auth,
+  ctrl.upsertSubmittedResponse
+);
 //=================
 // GET: /api/responses/:responseId - done: get a single response by its ID (only if it belongs to the logged-in participant)
 router.get("/:responseId",    auth, ctrl.getResponseById);

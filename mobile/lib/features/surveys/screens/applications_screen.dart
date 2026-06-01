@@ -19,7 +19,7 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
   List<dynamic> _applications = [];
   List<dynamic> _allResponses = [];
   bool _isLoading = true;
-  int _tabIndex = 0; // 0 = Pending, 1 = All
+  int _tabIndex = 0;
 
   @override
   void initState() {
@@ -156,7 +156,6 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
     }).toList();
 
     final all = _applications;
-
     final displayed = _tabIndex == 0 ? pending : all;
 
     return Scaffold(
@@ -186,7 +185,6 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Tab switcher
                 Container(
                   color: Colors.white,
                   padding:
@@ -205,7 +203,6 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
                     ),
                   ]),
                 ),
-
                 Expanded(
                   child: displayed.isEmpty
                       ? Center(
@@ -241,7 +238,8 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
                                 displayed[index] as Map<String, dynamic>;
                             final participantId =
                                 app['participantId']?.toString() ?? '';
-                            final status = app['status'] ?? 'PENDING';
+                            final status =
+                                app['status']?.toString() ?? 'PENDING';
                             final responses = _responsesFor(participantId);
                             final hasResponses = responses.isNotEmpty;
                             final lastPhaseIndex = hasResponses
@@ -259,7 +257,6 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
                               isMultiPhase: isMultiPhase,
                               lastPhaseIndex: lastPhaseIndex,
                               hasResponses: hasResponses,
-                              // Only show action buttons for pending
                               showActions: isPending,
                               onApprove: () =>
                                   _approveParticipant(app, lastPhaseIndex),
@@ -346,11 +343,71 @@ class _ParticipantCardState extends State<_ParticipantCard> {
     }
   }
 
+  // ✅ Get participant display name
+  String get _participantName {
+    // Try firstname + lastname from app data
+    final firstname = widget.app['firstname']?.toString() ?? '';
+    final lastname = widget.app['lastname']?.toString() ?? '';
+    if (firstname.isNotEmpty) return '$firstname $lastname'.trim();
+
+    // Try participantName
+    final name = widget.app['participantName']?.toString() ?? '';
+    if (name.isNotEmpty) return name;
+
+    // Try from responses
+    for (final r in widget.responses) {
+      final pName = r['participantName']?.toString() ?? '';
+      if (pName.isNotEmpty) return pName;
+      final pFirst = r['firstname']?.toString() ?? '';
+      if (pFirst.isNotEmpty) {
+        return '$pFirst ${r['lastname'] ?? ''}'.trim();
+      }
+    }
+
+    // Fallback to short ID
+    final shortId = widget.participantId.length > 8
+        ? widget.participantId.substring(0, 8)
+        : widget.participantId;
+    return 'Participant $shortId';
+  }
+
+  String get _avatarLetter {
+    final name = _participantName;
+    return name.isNotEmpty ? name[0].toUpperCase() : 'P';
+  }
+
+  // ✅ Determine the real display status based on responses
+  String get _displayStatus {
+    // If participant has submitted responses, they're active not rejected
+    if (widget.hasResponses) {
+      if (widget.responses.length >= widget.survey.phases.length) {
+        return 'COMPLETED';
+      }
+      return 'ACTIVE';
+    }
+    // Use actual status from backend
+    final s = widget.status;
+    if (s == 'APPLIED') return 'PENDING';
+    return s;
+  }
+
+  Color get _displayStatusColor {
+    switch (_displayStatus) {
+      case 'APPROVED':
+        return AppTheme.successColor;
+      case 'COMPLETED':
+        return const Color(0xFF059669);
+      case 'ACTIVE':
+        return AppTheme.primary;
+      case 'REJECTED':
+        return AppTheme.errorColor;
+      default:
+        return AppTheme.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final shortId = widget.participantId.length > 8
-        ? '${widget.participantId.substring(0, 8)}...'
-        : widget.participantId;
     final isLastPhase =
         widget.lastPhaseIndex >= widget.survey.phases.length - 1;
 
@@ -361,17 +418,14 @@ class _ParticipantCardState extends State<_ParticipantCard> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: AppTheme.ambientShadow),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header
+        // ── Header ─────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.all(20),
           child: Row(children: [
             CircleAvatar(
                 backgroundColor: AppTheme.primaryContainer,
                 radius: 22,
-                child: Text(
-                    shortId.isNotEmpty
-                        ? shortId.substring(0, 1).toUpperCase()
-                        : 'P',
+                child: Text(_avatarLetter,
                     style: const TextStyle(
                         color: AppTheme.primary,
                         fontWeight: FontWeight.bold,
@@ -381,45 +435,51 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text('Participant $shortId',
+                  // ✅ Show name, not ID
+                  Text(_participantName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 15)),
                   const SizedBox(height: 4),
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                          color: _statusColor(widget.status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6)),
-                      child: Text(widget.status,
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: _statusColor(widget.status))),
-                    ),
-                    if (widget.hasResponses) ...[
-                      const SizedBox(width: 8),
+                  // ✅ Wrap in Flexible to prevent overflow
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                            color: AppTheme.successColor.withOpacity(0.1),
+                            color: _displayStatusColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6)),
-                        child: Text(
-                            '${widget.responses.length}/${widget.survey.phases.length} phases',
-                            style: const TextStyle(
+                        child: Text(_displayStatus,
+                            style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.successColor)),
+                                color: _displayStatusColor)),
                       ),
+                      if (widget.hasResponses)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                              color: AppTheme.successColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6)),
+                          child: Text(
+                              '${widget.responses.length}/${widget.survey.phases.length} phases',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.successColor)),
+                        ),
                     ],
-                  ]),
+                  ),
                 ])),
           ]),
         ),
 
-        // Answers toggle
+        // ── Answers Toggle ──────────────────────────────────────────
         if (widget.hasResponses) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -440,14 +500,17 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                       size: 16,
                       color: AppTheme.primary),
                   const SizedBox(width: 8),
-                  Text(
-                      _showAnswers
-                          ? 'Hide Answers'
-                          : 'View All Answers (${widget.responses.length} phase${widget.responses.length > 1 ? 's' : ''})',
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.primary)),
+                  Flexible(
+                    child: Text(
+                        _showAnswers
+                            ? 'Hide Answers'
+                            : 'View All Answers (${widget.responses.length} phase${widget.responses.length > 1 ? 's' : ''})',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.primary)),
+                  ),
                 ]),
               ),
             ),
@@ -471,50 +534,227 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ✅ Phase header with name
                       Row(children: [
                         const Icon(Icons.assignment_outlined,
                             size: 14, color: AppTheme.primary),
                         const SizedBox(width: 6),
-                        Text(
-                            'Phase ${phaseIdx >= 0 ? phaseIdx + 1 : '?'} Answers',
-                            style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.primary)),
+                        Expanded(
+                          child: Text(
+                              'Phase ${phaseIdx >= 0 ? phaseIdx + 1 : '?'} — Answers by $_participantName',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.primary)),
+                        ),
                       ]),
                       const SizedBox(height: 12),
-                      ...answers.map((answer) {
+
+                      ...answers.asMap().entries.map((entry) {
+                        final answerIndex = entry.key;
+                        final answer = entry.value;
                         final qId = answer['questionId'] ?? '';
                         final question = questions.firstWhere(
                             (q) => q['questionId'] == qId,
                             orElse: () => <String, dynamic>{});
                         final qText =
                             question['text']?.toString() ?? 'Question';
+                        final qType =
+                            question['questionType']?.toString() ?? 'TEXT';
+                        final options = question['options'] as List? ?? [];
                         final value = answer['value'];
                         final displayValue = value is List
-                            ? value.join(', ')
-                            : value?.toString() ?? '-';
+                            ? (value as List)
+                                .map((e) => e.toString())
+                                .join(', ')
+                            : value?.toString() ?? '';
 
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.surfaceHigh)),
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Row(children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                        color: AppTheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(6)),
+                                    child: Text('Q${answerIndex + 1}',
+                                        style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.primary)),
+                                  ),
+                                ]),
+                                const SizedBox(height: 8),
                                 Text(qText,
                                     style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppTheme.textSecondary,
-                                        fontWeight: FontWeight.w500)),
-                                const SizedBox(height: 6),
-                                Text(displayValue,
-                                    style: const TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppTheme.textPrimary)),
+                                        color: AppTheme.textPrimary,
+                                        height: 1.4)),
+                                const SizedBox(height: 12),
+
+                                // ✅ TEXT
+                                if (qType == 'TEXT')
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                        color: AppTheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color: AppTheme.primary
+                                                .withOpacity(0.3))),
+                                    child: Text(
+                                        displayValue.isEmpty
+                                            ? '(no answer)'
+                                            : displayValue,
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppTheme.primary,
+                                            fontWeight: FontWeight.w500)),
+                                  ),
+
+                                // ✅ SINGLE_CHOICE
+                                if (qType == 'SINGLE_CHOICE')
+                                  ...options.map((opt) {
+                                    final label =
+                                        opt['label'] ?? opt.toString();
+                                    final isSelected = displayValue == label;
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppTheme.primaryContainer
+                                            : AppTheme.surfaceLow,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: isSelected
+                                            ? Border.all(
+                                                color: AppTheme.primary)
+                                            : null,
+                                      ),
+                                      child: Row(children: [
+                                        Icon(
+                                            isSelected
+                                                ? Icons.radio_button_checked
+                                                : Icons.radio_button_unchecked,
+                                            color: isSelected
+                                                ? AppTheme.primary
+                                                : AppTheme.textTertiary,
+                                            size: 18),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(label.toString(),
+                                              style: TextStyle(
+                                                  color: isSelected
+                                                      ? AppTheme.primary
+                                                      : AppTheme.textPrimary,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w600
+                                                      : FontWeight.w400)),
+                                        ),
+                                      ]),
+                                    );
+                                  }),
+
+                                // ✅ MULTIPLE_CHOICE
+                                if (qType == 'MULTIPLE_CHOICE')
+                                  ...options.map((opt) {
+                                    final label =
+                                        opt['label'] ?? opt.toString();
+                                    final selectedList = value is List
+                                        ? (value as List)
+                                            .map((e) => e.toString())
+                                            .toList()
+                                        : displayValue
+                                            .split(', ')
+                                            .where((e) => e.isNotEmpty)
+                                            .toList();
+                                    final isSelected =
+                                        selectedList.contains(label);
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppTheme.primaryContainer
+                                            : AppTheme.surfaceLow,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: isSelected
+                                            ? Border.all(
+                                                color: AppTheme.primary)
+                                            : null,
+                                      ),
+                                      child: Row(children: [
+                                        Icon(
+                                            isSelected
+                                                ? Icons.check_box
+                                                : Icons.check_box_outline_blank,
+                                            color: isSelected
+                                                ? AppTheme.primary
+                                                : AppTheme.textTertiary,
+                                            size: 18),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(label.toString(),
+                                              style: TextStyle(
+                                                  color: isSelected
+                                                      ? AppTheme.primary
+                                                      : AppTheme.textPrimary,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w600
+                                                      : FontWeight.w400)),
+                                        ),
+                                      ]),
+                                    );
+                                  }),
+
+                                // ✅ RATING_SCALE
+                                if (qType == 'RATING_SCALE')
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: List.generate(5, (i) {
+                                      final val = i + 1;
+                                      final isSelected =
+                                          displayValue == val.toString() ||
+                                              value == val;
+                                      return Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? AppTheme.primary
+                                              : AppTheme.surfaceLow,
+                                          shape: BoxShape.circle,
+                                          border: isSelected
+                                              ? null
+                                              : Border.all(
+                                                  color: AppTheme.surfaceHigh),
+                                        ),
+                                        child: Center(
+                                            child: Text('$val',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: isSelected
+                                                        ? Colors.white
+                                                        : AppTheme
+                                                            .textSecondary))),
+                                      );
+                                    }),
+                                  ),
                               ]),
                         );
                       }),
@@ -534,15 +774,17 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                 Icon(Icons.hourglass_empty_outlined,
                     size: 14, color: AppTheme.textTertiary),
                 SizedBox(width: 8),
-                Text('No answers submitted yet.',
-                    style:
-                        TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                Expanded(
+                  child: Text('No answers submitted yet.',
+                      style: TextStyle(
+                          fontSize: 13, color: AppTheme.textSecondary)),
+                ),
               ]),
             ),
           ),
         ],
 
-        // Action buttons — only for pending
+        // ── Action Buttons ──────────────────────────────────────────
         if (widget.showActions)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
@@ -574,29 +816,41 @@ class _ParticipantCardState extends State<_ParticipantCard> {
             ]),
           )
         else
+          // ✅ Show correct status message (not "declined" when approved)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                  color: _statusColor(widget.status).withOpacity(0.08),
+                  color: _displayStatusColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8)),
               child: Row(children: [
                 Icon(
-                    widget.status == 'APPROVED'
-                        ? Icons.check_circle_outline
-                        : Icons.cancel_outlined,
+                    _displayStatus == 'COMPLETED'
+                        ? Icons.check_circle
+                        : _displayStatus == 'APPROVED' ||
+                                _displayStatus == 'ACTIVE'
+                            ? Icons.check_circle_outline
+                            : Icons.cancel_outlined,
                     size: 14,
-                    color: _statusColor(widget.status)),
+                    color: _displayStatusColor),
                 const SizedBox(width: 8),
-                Text(
-                    widget.status == 'APPROVED'
-                        ? 'Participant approved'
-                        : 'Participant declined',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: _statusColor(widget.status),
-                        fontWeight: FontWeight.w500)),
+                Expanded(
+                  child: Text(
+                      _displayStatus == 'COMPLETED'
+                          ? 'All phases completed'
+                          : _displayStatus == 'APPROVED'
+                              ? 'Participant approved'
+                              : _displayStatus == 'ACTIVE'
+                                  ? 'Participant active — ${widget.responses.length}/${widget.survey.phases.length} phases done'
+                                  : _displayStatus == 'REJECTED'
+                                      ? 'Participant declined'
+                                      : 'Pending review',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: _displayStatusColor,
+                          fontWeight: FontWeight.w500)),
+                ),
               ]),
             ),
           ),

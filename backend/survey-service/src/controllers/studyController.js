@@ -507,7 +507,6 @@ exports.updateQuestion = async (req, res) => {
 exports.getPhaseById = async (req, res) => {
   try {
     const { phaseId } = req.params;
-
     const study = await Study.findOne({
       'phases.phaseId': phaseId
     }).select('studyId phases isMultiPhase').lean();
@@ -517,7 +516,6 @@ exports.getPhaseById = async (req, res) => {
     }
 
     const phase = study.phases.find(p => p.phaseId === phaseId);
-
     const previousPhase = study.phases.find(
         p => p.phaseOrder === phase.phaseOrder - 1
     );
@@ -528,7 +526,9 @@ exports.getPhaseById = async (req, res) => {
       phaseOrder: phase.phaseOrder,
       phaseType: phase.phaseType,
       isMultiPhase: study.isMultiPhase,
-      previousPhaseId: previousPhase ? previousPhase.phaseId : null
+      previousPhaseId: previousPhase ? previousPhase.phaseId : null,
+      maxParticipants: phase.maxParticipants ?? 10,  
+      rewardAmount: phase.rewardAmount ?? 0,          
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

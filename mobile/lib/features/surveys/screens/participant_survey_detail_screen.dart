@@ -22,22 +22,38 @@ class _ParticipantSurveyDetailScreenState
   Future<void> _apply() async {
     setState(() => _isApplying = true);
     try {
-      // ✅ REMOVE firstPhaseId - applyToStudy only needs studyId now
+      // ✅ Get first phase ID
+      String? firstPhaseId;
+      if (widget.survey.phases.isNotEmpty) {
+        firstPhaseId = widget.survey.phases[0]['phaseId']?.toString();
+      }
+
       await ref.read(recruitmentRepositoryProvider).applyToStudy(
             widget.survey.studyId,
+            phaseId: firstPhaseId,
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Application submitted! Waiting for approval.'),
-            backgroundColor: AppTheme.successColor));
-        context.pop();
+        // ✅ Go directly to Phase 1 instead of popping back
+        context.pushReplacement('/surveys/answer', extra: {
+          'survey': widget.survey,
+          'phaseIndex': 0,
+        });
       }
     } catch (e) {
       if (mounted) {
+        // ✅ Handle already applied case nicely
+        final errMsg = e.toString().replaceAll('Exception: ', '');
+        if (errMsg.contains('already_applied')) {
+          // Already applied — just go to answer phase directly
+          context.pushReplacement('/surveys/answer', extra: {
+            'survey': widget.survey,
+            'phaseIndex': 0,
+          });
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content:
-                Text('Failed: ${e.toString().replaceAll("Exception: ", "")}'),
+            content: Text('Failed: $errMsg'),
             backgroundColor: AppTheme.errorColor));
       }
     } finally {
@@ -139,6 +155,7 @@ class _ParticipantSurveyDetailScreenState
             const SizedBox(height: 24),
 
             // Creator Info
+            // REPLACE the Creator Info section:
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -148,9 +165,12 @@ class _ParticipantSurveyDetailScreenState
                     backgroundColor: AppTheme.primaryContainer,
                     radius: 24,
                     child: Text(
-                        survey.creatorId.isNotEmpty
-                            ? survey.creatorId[0].toUpperCase()
-                            : 'C',
+                        // ✅ Use name initial, fallback to creatorId initial
+                        (survey.creatorName.isNotEmpty
+                                ? survey.creatorName
+                                : survey.creatorId)
+                            .substring(0, 1)
+                            .toUpperCase(),
                         style: const TextStyle(
                             color: AppTheme.primary,
                             fontWeight: FontWeight.bold,
@@ -167,7 +187,11 @@ class _ParticipantSurveyDetailScreenState
                               color: AppTheme.textSecondary,
                               letterSpacing: 1)),
                       const SizedBox(height: 4),
-                      Text('Creator ${survey.creatorId.substring(0, 8)}...',
+                      // ✅ Show name if available, else show short ID
+                      Text(
+                          survey.creatorName.isNotEmpty
+                              ? survey.creatorName
+                              : 'User ${survey.creatorId.substring(0, 8)}...',
                           style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,

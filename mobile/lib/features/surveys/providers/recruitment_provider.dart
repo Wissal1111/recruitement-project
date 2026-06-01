@@ -48,15 +48,20 @@ class RecruitmentRepository {
     }
   }
 
-  /// Apply to a public study. Backend only needs studyId.
-  Future<void> applyToStudy(String studyId) async {
+
+  /// Apply to a public study. Sends studyId + first phaseId.
+  Future<void> applyToStudy(String studyId, {String? phaseId}) async {
     try {
-      debugPrint('applyToStudy → studyId=$studyId');
-      final res = await _dio.post('/api/recruitment/apply',
-          data: {'studyId': studyId});
+      debugPrint('applyToStudy → studyId=$studyId phaseId=$phaseId');
+      final data = <String, dynamic>{'studyId': studyId};
+      if (phaseId != null && phaseId.isNotEmpty) {
+        data['phaseId'] = phaseId;
+      }
+      final res = await _dio.post('/api/recruitment/apply', data: data);
       debugPrint('applyToStudy response: ${res.statusCode} ${res.data}');
     } on DioException catch (e) {
-      debugPrint('applyToStudy error: ${e.response?.statusCode} ${e.response?.data}');
+      debugPrint(
+          'applyToStudy error: ${e.response?.statusCode} ${e.response?.data}');
       if (e.response?.statusCode == 409) {
         throw Exception('already_applied');
       }
@@ -69,7 +74,8 @@ class RecruitmentRepository {
     try {
       final res = await _dio.get('/api/responses/study/$studyId',
           options: Options(receiveTimeout: const Duration(seconds: 10)));
-      debugPrint('getStudyResponses: ${res.statusCode} count=${res.data is List ? (res.data as List).length : '?'}');
+      debugPrint(
+          'getStudyResponses: ${res.statusCode} count=${res.data is List ? (res.data as List).length : '?'}');
       if (res.data is List) return res.data as List;
       if (res.data is Map) {
         final map = res.data as Map<String, dynamic>;
@@ -78,7 +84,8 @@ class RecruitmentRepository {
       }
       return [];
     } on DioException catch (e) {
-      debugPrint('getStudyResponses error: ${e.response?.statusCode} ${e.response?.data}');
+      debugPrint(
+          'getStudyResponses error: ${e.response?.statusCode} ${e.response?.data}');
       return [];
     }
   }
@@ -226,7 +233,8 @@ class RecruitmentRepository {
           await _dio.post('/api/recruitment/studies/$studyId/invite/$userId');
       debugPrint('inviteUser response: ${res.statusCode} ${res.data}');
     } on DioException catch (e) {
-      debugPrint('inviteUser error: ${e.response?.statusCode} ${e.response?.data}');
+      debugPrint(
+          'inviteUser error: ${e.response?.statusCode} ${e.response?.data}');
       if (e.response?.statusCode == 409) {
         throw Exception('User already invited');
       }

@@ -80,9 +80,10 @@ class SurveyRepository {
     }
   }
 
-  // Returns studyIds Sarah has already participated in OR accepted invitations for
-  Future<Set<String>> getMyParticipatedStudyIds() async {
+  // ✅ Returns studyIds the current user has already applied to or participated in
+  Future<Set<String>> getMyInvolvedStudyIds() async {
     final Set<String> ids = {};
+
     try {
       // 1. Submitted responses
       final res = await _dio.get('/api/responses/me/by-study',
@@ -96,14 +97,27 @@ class SurveyRepository {
       }
       for (final e in data) {
         final id = e['studyId']?.toString();
-        if (id != null) ids.add(id);
+        if (id != null && id.isNotEmpty) ids.add(id);
       }
     } catch (e) {
       debugPrint('Responses fetch error: $e');
     }
 
     try {
-      // 2. Accepted/completed invitations
+      // 2. Applications (PENDING/APPROVED) from recruitment
+      final res = await _dio.get('/api/recruitment/applications/me',
+          options: Options(receiveTimeout: const Duration(seconds: 8)));
+      final List apps = res.data is List ? res.data : [];
+      for (final app in apps) {
+        final studyId = app['studyId']?.toString();
+        if (studyId != null && studyId.isNotEmpty) ids.add(studyId);
+      }
+    } catch (e) {
+      debugPrint('Applications fetch error: $e');
+    }
+
+    try {
+      // 3. Accepted/completed invitations
       final res = await _dio.get('/api/recruitment/invitations/me',
           options: Options(receiveTimeout: const Duration(seconds: 8)));
       final List invites = res.data is List ? res.data : [];
@@ -111,7 +125,7 @@ class SurveyRepository {
         final status = (inv['status'] ?? '').toString().toUpperCase();
         if (status == 'ACCEPTED' || status == 'COMPLETED') {
           final studyId = inv['studyId']?.toString();
-          if (studyId != null) ids.add(studyId);
+          if (studyId != null && studyId.isNotEmpty) ids.add(studyId);
         }
       }
     } catch (e) {
@@ -134,17 +148,39 @@ class SurveyRepository {
   }
 }
 
+// ✅ Tracks current logged-in user ID
+final currentUserIdProvider = FutureProvider<String?>((ref) async {
+  final storage = ref.watch(secureStorageProvider);
+  return storage.getUserId();
+});
+
+// ✅ My Surveys — only for logged-in user
 final mySurveysProvider = FutureProvider<List<Study>>((ref) async {
   ref.watch(authProvider);
   return ref.watch(surveyRepositoryProvider).getMyStudies();
 });
 
-final browseSurveysProvider = FutureProvider<List<Study>>((ref) async {
+// ✅ Tracks all studyIds user is already involved in (applied/participated)
+final userInvolvedStudyIdsProvider = FutureProvider<Set<String>>((ref) async {
   ref.watch(authProvider);
-  return ref.watch(surveyRepositoryProvider).getActiveStudies();
+  return ref.watch(surveyRepositoryProvider).getMyInvolvedStudyIds();
 });
 
+// ✅ Browse — excludes own surveys AND already involved surveys
+final browseSurveysProvider = FutureProvider<List<Study>>((ref) async {
+  ref.watch(authProvider);
+  final userId = await ref.watch(currentUserIdProvider.future);
+  final involved = await ref.watch(userInvolvedStudyIdsProvider.future);
+  final all = await ref.watch(surveyRepositoryProvider).getActiveStudies();
+  return all.where((s) {
+    if (userId != null && s.creatorId == userId) return false;
+    if (involved.contains(s.studyId)) return false;
+    return true;
+  }).toList();
+});
+
+// Keep for backward compat
 final myParticipatedStudyIdsProvider = FutureProvider<Set<String>>((ref) async {
   ref.watch(authProvider);
-  return ref.watch(surveyRepositoryProvider).getMyParticipatedStudyIds();
+  return ref.watch(surveyRepositoryProvider).getMyInvolvedStudyIds();
 });

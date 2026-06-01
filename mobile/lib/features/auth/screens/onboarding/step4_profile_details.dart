@@ -24,16 +24,29 @@ class Step4ProfileDetails extends StatefulWidget {
 }
 
 class _Step4State extends State<Step4ProfileDetails> {
-  late final TextEditingController _professionCtrl;
-  String? _education;
-  String? _country;
-  String? _city;
-  DateTime? _dateOfBirth;
-
-  List<String> _countries = [];
-  List<String> _cities = [];
-  bool _loadingCountries = true;
-  bool _loadingCities = false;
+  final _professions = [
+    'Technology & Design',
+    'Healthcare',
+    'Education',
+    'Finance',
+    'Marketing & Advertising',
+    'Legal',
+    'Engineering',
+    'Arts & Entertainment',
+    'Science & Research',
+    'Human Resources',
+    'Sales & Business Development',
+    'Operations & Management',
+    'Customer Service',
+    'Construction & Architecture',
+    'Transportation & Logistics',
+    'Hospitality & Tourism',
+    'Agriculture',
+    'Non-Profit & Social Work',
+    'Student',
+    'Unemployed',
+    'Other',
+  ];
 
   final _educationLevels = [
     'No Formal Education',
@@ -53,10 +66,29 @@ class _Step4State extends State<Step4ProfileDetails> {
     'Other',
   ];
 
+  String? _profession;
+  final _customProfCtrl = TextEditingController();
+  String? _education;
+  String? _country;
+  String? _city;
+  DateTime? _dateOfBirth;
+
+  List<String> _countries = [];
+  List<String> _cities = [];
+  bool _loadingCountries = true;
+  bool _loadingCities = false;
+
   @override
   void initState() {
     super.initState();
-    _professionCtrl = TextEditingController(text: widget.data.profession);
+    // Match existing profession to list or set as Other
+    final existingProf = widget.data.profession ?? '';
+    if (_professions.contains(existingProf)) {
+      _profession = existingProf;
+    } else if (existingProf.isNotEmpty) {
+      _profession = 'Other';
+      _customProfCtrl.text = existingProf;
+    }
     _education = widget.data.education;
     _country = widget.data.country;
     _city = widget.data.city;
@@ -66,7 +98,7 @@ class _Step4State extends State<Step4ProfileDetails> {
 
   @override
   void dispose() {
-    _professionCtrl.dispose();
+    _customProfCtrl.dispose();
     super.dispose();
   }
 
@@ -83,7 +115,6 @@ class _Step4State extends State<Step4ProfileDetails> {
           _countries = names;
           _loadingCountries = false;
         });
-        // If we already have a country pre-filled, load its cities
         if (_country != null) _loadCities(_country!);
       }
     } catch (_) {
@@ -157,7 +188,6 @@ class _Step4State extends State<Step4ProfileDetails> {
     }
   }
 
-  // Hardcoded cities for key countries — reliable + instant, no API needed
   static const Map<String, List<String>> _hardcodedCities = {
     'Algeria': [
       'Adrar',
@@ -476,7 +506,6 @@ class _Step4State extends State<Step4ProfileDetails> {
       _cities = [];
     });
 
-    // Use hardcoded list if available — instant and reliable
     if (_hardcodedCities.containsKey(countryName)) {
       if (mounted) {
         setState(() {
@@ -487,7 +516,6 @@ class _Step4State extends State<Step4ProfileDetails> {
       return;
     }
 
-    // Fallback to API for other countries
     try {
       final dio = Dio();
       final res = await dio.post(
@@ -515,7 +543,6 @@ class _Step4State extends State<Step4ProfileDetails> {
     }
   }
 
-  // Format DateTime to display string
   String get _dobDisplay {
     if (_dateOfBirth == null) return '';
     final d = _dateOfBirth!;
@@ -526,34 +553,25 @@ class _Step4State extends State<Step4ProfileDetails> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final minDate = DateTime(now.year - 100);
-    final maxDate = DateTime(now.year - 13); // must be 13+
-
     final picked = await showDatePicker(
       context: context,
       initialDate: _dateOfBirth ?? DateTime(2000, 1, 1),
-      firstDate: minDate,
-      lastDate: maxDate,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.primary,
-              onPrimary: Colors.white,
-              surface: AppTheme.surfaceLowest,
-              onSurface: AppTheme.textPrimary,
-            ),
-            dialogTheme:
-                DialogThemeData(backgroundColor: AppTheme.surfaceLowest),
+      firstDate: DateTime(now.year - 100),
+      lastDate: DateTime(now.year - 13),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppTheme.primary,
+            onPrimary: Colors.white,
+            surface: AppTheme.surfaceLowest,
+            onSurface: AppTheme.textPrimary,
           ),
-          child: child!,
-        );
-      },
+          dialogTheme: DialogThemeData(backgroundColor: AppTheme.surfaceLowest),
+        ),
+        child: child!,
+      ),
     );
-
-    if (picked != null) {
-      setState(() => _dateOfBirth = picked);
-    }
+    if (picked != null) setState(() => _dateOfBirth = picked);
   }
 
   @override
@@ -567,7 +585,7 @@ class _Step4State extends State<Step4ProfileDetails> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // ── Header ────────────────────────────────────────
                   Row(children: [
                     GestureDetector(
                       onTap: widget.onBack,
@@ -627,7 +645,6 @@ class _Step4State extends State<Step4ProfileDetails> {
                     ),
                   ),
                   const SizedBox(height: 28),
-
                   const Text('Finalize Your Profile',
                       style: TextStyle(
                         fontSize: 28,
@@ -646,7 +663,7 @@ class _Step4State extends State<Step4ProfileDetails> {
                   ),
                   const SizedBox(height: 28),
 
-                  // ── Date of Birth ──────────────────────────────────
+                  // ── Date of Birth ─────────────────────────────────
                   _SectionCard(
                     icon: Icons.calendar_today_outlined,
                     title: 'Date of Birth',
@@ -684,11 +701,34 @@ class _Step4State extends State<Step4ProfileDetails> {
                   _SectionCard(
                     icon: Icons.work_outline,
                     title: 'Profession',
-                    child: TextField(
-                      controller: _professionCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Senior Creative Director',
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: _professions.contains(_profession)
+                              ? _profession
+                              : null,
+                          hint: const Text('Select your profession',
+                              style: TextStyle(
+                                  color: AppTheme.textTertiary, fontSize: 15)),
+                          decoration: const InputDecoration(),
+                          isExpanded: true,
+                          items: _professions
+                              .map((e) =>
+                                  DropdownMenuItem(value: e, child: Text(e)))
+                              .toList(),
+                          onChanged: (v) => setState(() => _profession = v),
+                        ),
+                        if (_profession == 'Other') ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _customProfCtrl,
+                            decoration: const InputDecoration(
+                              hintText: 'Please specify your profession...',
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -883,7 +923,9 @@ class _Step4State extends State<Step4ProfileDetails> {
                 child: GradientButton(
                   label: 'Continue',
                   onPressed: () => widget.onNext(widget.data.copyWith(
-                    profession: _professionCtrl.text.trim(),
+                    profession: _profession == 'Other'
+                        ? _customProfCtrl.text.trim()
+                        : _profession ?? '',
                     education: _education,
                     country: _country,
                     city: _city,
@@ -900,7 +942,6 @@ class _Step4State extends State<Step4ProfileDetails> {
   }
 }
 
-// ── Reusable section card ─────────────────────────────────────────────────────
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String title;
