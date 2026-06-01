@@ -1,6 +1,7 @@
-// service/ParticipationService.java
+// service/ParticipationService.java  (only getMyParticipations changed)
 package com.projet.recruitment_service.service;
 
+import com.projet.recruitment_service.dto.response.ParticipationDTO;
 import com.projet.recruitment_service.entity.*;
 import com.projet.recruitment_service.enums.*;
 import com.projet.recruitment_service.exception.BusinessException;
@@ -11,7 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +26,7 @@ public class ParticipationService {
     private final RecruitmentSlotRepository slotRepository;
     private final RewardTransactionRepository rewardRepository;
 
-    // RC-25: Start participation (when application APPROVED)
+    // RC-25
     @Transactional
     public Participation startParticipation(UUID applicationId) {
         StudyApplication application = applicationRepository.findById(applicationId)
@@ -33,7 +37,6 @@ public class ParticipationService {
                     "Application must be APPROVED to start participation", HttpStatus.CONFLICT);
         }
 
-        // Decrement slot
         RecruitmentSlot slot = slotRepository.findByPhaseId(application.getPhaseId())
                 .orElseThrow(() -> new BusinessException("Slot not found", HttpStatus.NOT_FOUND));
         slot.incrementFilled();
@@ -49,7 +52,7 @@ public class ParticipationService {
         return participationRepository.save(participation);
     }
 
-    // RC-26: Complete participation → create reward
+    // RC-26
     @Transactional
     public Participation completeParticipation(UUID participationId, UUID participantId) {
         Participation participation = getOwnedParticipation(participationId, participantId);
@@ -61,7 +64,6 @@ public class ParticipationService {
         participation.complete();
         participationRepository.save(participation);
 
-        // Create reward transaction
         RecruitmentSlot slot = slotRepository.findByPhaseId(participation.getPhaseId())
                 .orElseThrow(() -> new BusinessException("Slot not found", HttpStatus.NOT_FOUND));
 
@@ -73,12 +75,10 @@ public class ParticipationService {
                 .build();
         rewardRepository.save(reward);
 
-        // TODO: publish PARTICIPATION_COMPLETED event to Payment Service
-
         return participation;
     }
 
-    // RC-27: Drop or disqualify
+    // RC-27
     @Transactional
     public Participation updateParticipationStatus(UUID participationId,
                                                    UUID participantId,
@@ -97,7 +97,6 @@ public class ParticipationService {
             throw new BusinessException("Invalid status transition", HttpStatus.BAD_REQUEST);
         }
 
-        // Release slot
         slotRepository.findByPhaseId(participation.getPhaseId())
                 .ifPresent(slot -> {
                     slot.decrementFilled();
@@ -107,12 +106,38 @@ public class ParticipationService {
         return participationRepository.save(participation);
     }
 
-    // RC-28: Get my participations
-    public List<Participation> getMyParticipations(UUID participantId) {
-        return participationRepository.findByParticipantId(participantId);
+    // RC-28: Get my participations — enriched with studyId from application
+    public List<ParticipationDTO> getMyParticipations(UUID participantId) {
+        List<Participation> participations = participationRepository.findByParticipantId(participantId);
+
+        // Batch-fetch all related applications in one query
+        List<UUID> applicationIds = participations.stream()
+                .map(Participation::getApplicationId)
+                .collect(Collectors.toList());
+
+        Map<UUID, StudyApplication> applicationMap = applicationRepository.findAllById(applicationIds)
+                .stream()
+                .collect(Collectors.toMap(StudyApplication::getApplicationId, Function.identity()));
+
+        return participations.stream()
+                .map(p -> {
+                    StudyApplication app = applicationMap.get(p.getApplicationId());
+                    return ParticipationDTO.builder()
+                            .participationId(p.getParticipationId())
+                            .applicationId(p.getApplicationId())
+                            .participantId(p.getParticipantId())
+                            .phaseId(p.getPhaseId())
+                            .studyId(app != null ? app.getStudyId() : null)  // ← the key field
+                            .status(p.getStatus())
+                            .startedAt(p.getStartedAt())
+                            .completedAt(p.getCompletedAt())
+                            .droppedAt(p.getDroppedAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
-    // RC-29: List participants of a phase
+    // RC-29
     public List<Participation> getPhaseParticipants(UUID phaseId) {
         return participationRepository.findByPhaseId(phaseId);
     }

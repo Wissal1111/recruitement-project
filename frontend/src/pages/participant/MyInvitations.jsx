@@ -3,12 +3,14 @@ import SideBarParticipant from "../../components/recruitment/SideBarParticipant"
 import TopNavBar from "../../components/TopNavBar";
 import { getMyInvitations, acceptInvitation, declineInvitation } from "../../api/RecruitmentApi";
 import { Clock, Calendar, CheckCircle, XCircle, Mail, ChevronDown, ChevronUp, Inbox } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function MyInvitations() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [invitations, setInvitations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
+    const navigate = useNavigate();
     const [expiredOpen, setExpiredOpen] = useState(false);
 
     const session = JSON.parse(localStorage.getItem("session") || "{}");
@@ -22,18 +24,31 @@ export default function MyInvitations() {
     }, []);
 
     const handleAccept = async (id) => {
-        setActionLoading(p => ({ ...p, [id]: "accept" }));
-        try {
-            await acceptInvitation(id);
-            setInvitations(inv => inv.map(i =>
-                i.invitationId === id ? { ...i, status: "ACCEPTED" } : i
-            ));
-        } catch (e) {
-            console.error("Accept error:", e.response?.data || e.message);
-        } finally {
-            setActionLoading(p => ({ ...p, [id]: null }));
+    setActionLoading(p => ({ ...p, [id]: "accept" }));
+
+    try {
+        const invitation = invitations.find(i => i.invitationId === id);
+
+        await acceptInvitation(id);
+
+        // update UI instantly
+        setInvitations(inv =>
+            inv.map(i =>
+                i.invitationId === id
+                    ? { ...i, status: "ACCEPTED" }
+                    : i
+            )
+        );
+        if (invitation?.studyId) {
+            navigate(`/participate/responses/${invitation.studyId}`);
         }
-    };
+
+    } catch (e) {
+        console.error("Accept error:", e.response?.data || e.message);
+    } finally {
+        setActionLoading(p => ({ ...p, [id]: null }));
+    }
+};
 
     const handleDecline = async (id) => {
         setActionLoading(p => ({ ...p, [id]: "decline" }));

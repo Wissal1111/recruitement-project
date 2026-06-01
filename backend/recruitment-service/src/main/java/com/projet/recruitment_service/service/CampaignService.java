@@ -34,55 +34,62 @@ public class CampaignService {
         private final EligibilityCriteriaRepository criteriaRepository;
 
         // RC-06: Launch campaign
-        @Transactional
-        public InvitationCampaign launchCampaign(UUID studyId, UUID creatorId,
-                        CampaignRequest request, String authToken) {
-                EligibilityCriteria criteria = criteriaRepository.findByStudyId(studyId)
-                                .orElseThrow(() -> new BusinessException(
-                                                "Define eligibility criteria before launching a campaign",
-                                                HttpStatus.BAD_REQUEST));
+@Transactional
+public InvitationCampaign launchCampaign(
+        UUID studyId,
+        UUID creatorId,
+        CampaignRequest request,
+        String authToken) {
 
-                // Fetch eligible users from User Service
-                List<UserProfileDto> eligibleUsers = eligibilityService.fetchEligibleUsers(criteria, authToken);
+    // Allow no criteria → means "everyone is eligible"
+    EligibilityCriteria criteria = criteriaRepository
+            .findByStudyId(studyId)
+            .orElse(null);
 
-                // Create the campaign
-                InvitationCampaign campaign = InvitationCampaign.builder()
-                                .studyId(studyId)
-                                .creatorId(creatorId)
-                                .targetCount(request.getTargetCount())
-                                .expirationDays(request.getExpirationDays())
-                                .status(CampaignStatus.ACTIVE)
-                                .build();
-                campaign.launch();
-                campaign = campaignRepository.save(campaign);
+    List<UserProfileDto> eligibleUsers =
+            eligibilityService.fetchEligibleUsers(criteria, authToken);
 
-                // RC-15: Create invitations, skip duplicates
-                final UUID campaignId = campaign.getCampaignId();
-                final int expDays = campaign.getExpirationDays();
+    InvitationCampaign campaign = InvitationCampaign.builder()
+            .studyId(studyId)
+            .creatorId(creatorId)
+            .targetCount(request.getTargetCount())
+            .expirationDays(request.getExpirationDays())
+            .status(CampaignStatus.ACTIVE)
+            .build();
 
-                for (UserProfileDto user : eligibleUsers) {
-                        // Skip if user already has active/accepted/completed invitation for this study
-                        boolean alreadyInvited = invitationRepository.existsByUserIdAndStudyIdAndStatusIn(
-                                        user.getUserId(), studyId,
-                                        List.of(InvitationStatus.PENDING, InvitationStatus.ACCEPTED,
-                                                        InvitationStatus.COMPLETED));
-                        if (alreadyInvited)
-                                continue;
+    campaign.launch();
+    campaign = campaignRepository.save(campaign);
 
-                        SurveyInvitation invitation = SurveyInvitation.builder()
-                                        .campaignId(campaignId)
-                                        .userId(user.getUserId())
-                                        .studyId(studyId)
-                                        .status(InvitationStatus.PENDING)
-                                        .expiresAt(LocalDateTime.now().plusDays(expDays))
-                                        .build();
-                        invitationRepository.save(invitation);
-                }
+    final UUID campaignId = campaign.getCampaignId();
+    final int expDays = campaign.getExpirationDays();
 
-                return campaign;
-        }
+    for (UserProfileDto user : eligibleUsers) {
 
-        // RC-13: List campaigns for a study
+        boolean alreadyInvited =
+                invitationRepository.existsByUserIdAndStudyIdAndStatusIn(
+                        user.getUserId(),
+                        studyId,
+                        List.of(
+                                InvitationStatus.PENDING,
+                                InvitationStatus.ACCEPTED,
+                                InvitationStatus.COMPLETED));
+
+        if (alreadyInvited) continue;
+
+        SurveyInvitation invitation = SurveyInvitation.builder()
+                .campaignId(campaignId)
+                .userId(user.getUserId())
+                .studyId(studyId)
+                .status(InvitationStatus.PENDING)
+                .expiresAt(LocalDateTime.now().plusDays(expDays))
+                .build();
+
+        invitationRepository.save(invitation);
+    }
+
+    return campaign;
+}
+      // RC-13: List campaigns for a study
         public List<InvitationCampaign> getCampaignsByStudy(UUID studyId) {
                 return campaignRepository.findByStudyId(studyId);
         }

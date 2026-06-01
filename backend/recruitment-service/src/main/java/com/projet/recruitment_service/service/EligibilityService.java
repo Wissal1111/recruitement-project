@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.projet.recruitment_service.client.UserServiceClient;
@@ -110,68 +112,62 @@ public class EligibilityService {
      * If userServiceClient.searchProfiles(empty map) does not return all users,
      * then user-service needs an endpoint that returns searchable users.
      */
-    public List<UserProfileDto> fetchEligibleUsers(EligibilityCriteria criteria, String authToken) {
-        try {
-            String bearerToken = authToken.startsWith("Bearer ")
-                    ? authToken
-                    : "Bearer " + authToken;
+   public List<UserProfileDto> fetchEligibleUsers(
+        EligibilityCriteria criteria,
+        String authToken) {
 
-            UUID requesterId = extractUserIdFromToken(bearerToken);
+    try {
+        String bearerToken = authToken.startsWith("Bearer ")
+                ? authToken
+                : "Bearer " + authToken;
 
-            // Users already invited for this study
-            List<SurveyInvitation> existingInvitations = invitationRepository.findByStudyId(criteria.getStudyId());
+        UUID requesterId = extractUserIdFromToken(bearerToken);
 
-            java.util.Set<UUID> invitedUserIds = new java.util.HashSet<>();
-            for (SurveyInvitation inv : existingInvitations) {
-                invitedUserIds.add(inv.getUserId());
-            }
+        // ✅ FETCH ALL USERS (already supported by empty map)
+        List<UserProfileDto> users = userServiceClient.searchProfiles(
+                bearerToken,
+                new HashMap<>());
 
-            List<UserProfileDto> users = userServiceClient.searchProfiles(
-                    bearerToken,
-                    new HashMap<>());
-
-            if (users == null) {
-                return Collections.emptyList();
-            }
-
-            List<UserProfileDto> matchedUsers = new ArrayList<>();
-
-            for (UserProfileDto user : users) {
-                if (user.getUserId() == null)
-                    continue;
-
-                // Skip creator
-                if (requesterId != null && user.getUserId().equals(requesterId)) {
-                    continue;
-                }
-
-                // Skip already invited users
-                if (invitedUserIds.contains(user.getUserId())) {
-                    continue;
-                }
-
-                MatchResult result = calculateMatch(user, criteria);
-
-                if (result.matchScore >= 60 || result.matchedCount >= 2) {
-                    user.setMatchScore(result.matchScore);
-                    user.setMatchedCriteria(result.matchedCriteria);
-                    matchedUsers.add(user);
-                }
-            }
-
-            matchedUsers.sort((a, b) -> {
-                int scoreA = a.getMatchScore() == null ? 0 : a.getMatchScore();
-                int scoreB = b.getMatchScore() == null ? 0 : b.getMatchScore();
-                return Integer.compare(scoreB, scoreA);
-            });
-
-            return matchedUsers;
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (users == null) {
             return Collections.emptyList();
         }
+
+        List<UserProfileDto> result = new ArrayList<>();
+
+        for (UserProfileDto user : users) {
+
+            if (user.getUserId() == null) continue;
+
+            // skip creator
+            if (requesterId != null && user.getUserId().equals(requesterId)) continue;
+
+            // ✅ NO CRITERIA = EVERYONE IS ELIGIBLE
+            if (criteria == null) {
+                result.add(user);
+                continue;
+            }
+
+            MatchResult match = calculateMatch(user, criteria);
+
+            if (match.matchScore >= 60 || match.matchedCount >= 2) {
+                user.setMatchScore(match.matchScore);
+                user.setMatchedCriteria(match.matchedCriteria);
+                result.add(user);
+            }
+        }
+
+        result.sort((a, b) -> Integer.compare(
+                b.getMatchScore() == null ? 0 : b.getMatchScore(),
+                a.getMatchScore() == null ? 0 : a.getMatchScore()
+        ));
+
+        return result;
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return Collections.emptyList();
     }
+}
 
     private MatchResult calculateMatch(UserProfileDto profile, EligibilityCriteria criteria) {
         int totalCriteria = 0;
@@ -354,4 +350,5 @@ public class EligibilityService {
             this.matchedCriteria = matchedCriteria;
         }
     }
+
 }

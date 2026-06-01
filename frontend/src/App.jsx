@@ -26,6 +26,8 @@ import Screening from "./pages/recruit/Screening";
 import SlotsRewards from "./pages/recruit/SlotsRewards";
 import Wallet from "./pages/home/Wallet";
 import Cards from "./pages/home/Cards";
+import Responses from "./pages/participant/Responses";
+import RespondPage from "./pages/participant/RespondPage";
 
 
 
@@ -49,6 +51,16 @@ function App() {
                 <Route path="/participate/invitations" element={<ProtectedRoute><MyInvitations /></ProtectedRoute>} />
                 <Route path="/participate/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
                 <Route path="/participate/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
+                <Route path="/participate/responses" element={<ProtectedRoute><Responses /></ProtectedRoute>} />
+                <Route
+    path="/participate/responses/:studyId"
+    element={<ProtectedRoute><Responses /></ProtectedRoute>}
+/>
+<Route
+    path="/participate/respond/:studyId/:phaseId"
+    element={<ProtectedRoute><RespondPage /></ProtectedRoute>}
+/>
+
                 <Route path="/participate" element={<ProtectedRoute><HomeParticipant /></ProtectedRoute>} />
                 <Route path="/home/rewards" element={<ProtectedRoute><Rewards /></ProtectedRoute>} />
 

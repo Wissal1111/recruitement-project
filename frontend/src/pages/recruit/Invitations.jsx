@@ -57,17 +57,20 @@ export default function Invitations() {
     };
 
     const handleLaunch = async () => {
-        if (!studyId) return;
-        setLaunching(true);
-        try {
-            await launchCampaign(studyId, form);
-            load(studyId);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLaunching(false);
-        }
-    };
+    if (!studyId) return;
+
+    setLaunching(true);
+
+    try {
+        await launchCampaign(studyId, form);
+        load(studyId);
+    } catch (e) {
+        console.error("Status:", e.response?.status);
+        console.error("Response:", e.response?.data);
+    } finally {
+        setLaunching(false);
+    }
+};
 
     const handleCancel = async (campaignId) => {
         setActionLoading(p => ({ ...p, [campaignId]: "cancel" }));

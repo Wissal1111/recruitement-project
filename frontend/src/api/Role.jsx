@@ -1,4 +1,4 @@
-import api from "../api/axiosInstance";
+import api from "./axiosInstance";
 
 
 export const getMyRoles = async () => {

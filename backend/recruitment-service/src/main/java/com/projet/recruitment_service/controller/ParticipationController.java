@@ -2,6 +2,7 @@
 package com.projet.recruitment_service.controller;
 
 import com.projet.recruitment_service.dto.request.ParticipationStatusRequest;
+import com.projet.recruitment_service.dto.response.ParticipationDTO;
 import com.projet.recruitment_service.entity.Participation;
 import com.projet.recruitment_service.service.ParticipationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,9 +48,9 @@ public class ParticipationController {
                 participationService.updateParticipationStatus(id, participantId, body.getStatus()));
     }
 
-    // RC-28
+    // RC-28 — now returns enriched DTOs with studyId
     @GetMapping("/me")
-    public ResponseEntity<List<Participation>> getMyParticipations(HttpServletRequest request) {
+    public ResponseEntity<List<ParticipationDTO>> getMyParticipations(HttpServletRequest request) {
         UUID participantId = (UUID) request.getAttribute("userId");
         return ResponseEntity.ok(participationService.getMyParticipations(participantId));
     }
