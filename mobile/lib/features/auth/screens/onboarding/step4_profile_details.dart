@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import '../../models/registration_state.dart';
+
 import '../../../../shared/theme.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../models/registration_state.dart';
 
 class Step4ProfileDetails extends StatefulWidget {
   final int currentStep;
@@ -22,215 +24,525 @@ class Step4ProfileDetails extends StatefulWidget {
 }
 
 class _Step4State extends State<Step4ProfileDetails> {
-  late final TextEditingController _professionCtrl;
+  final _professions = [
+    'Technology & Design',
+    'Healthcare',
+    'Education',
+    'Finance',
+    'Marketing & Advertising',
+    'Legal',
+    'Engineering',
+    'Arts & Entertainment',
+    'Science & Research',
+    'Human Resources',
+    'Sales & Business Development',
+    'Operations & Management',
+    'Customer Service',
+    'Construction & Architecture',
+    'Transportation & Logistics',
+    'Hospitality & Tourism',
+    'Agriculture',
+    'Non-Profit & Social Work',
+    'Student',
+    'Unemployed',
+    'Other',
+  ];
+
+  final _educationLevels = [
+    'No Formal Education',
+    'Primary School',
+    'Middle School / Junior High',
+    'High School Diploma / GED',
+    'Some College (No Degree)',
+    'Vocational / Trade School',
+    'Associate Degree',
+    "Bachelor's Degree",
+    'Post-Graduate Certificate',
+    "Master's Degree",
+    'MBA',
+    'Professional Degree (JD, MD, PharmD…)',
+    'PhD / Doctorate',
+    'Postdoctoral Research',
+    'Other',
+  ];
+
+  String? _profession;
+  final _customProfCtrl = TextEditingController();
   String? _education;
   String? _country;
   String? _city;
   DateTime? _dateOfBirth;
 
-  final _educationLevels = [
-    'High School',
-    'Associate Degree',
-    "Bachelor's Degree",
-    "Master's Degree",
-    'PhD / Doctorate',
-    'Other',
-  ];
+  List<String> _countries = [];
+  List<String> _cities = [];
+  bool _loadingCountries = true;
+  bool _loadingCities = false;
 
-  final _countries = [
-    'Algeria',
-    'Argentina',
-    'Australia',
-    'Austria',
-    'Belgium',
-    'Brazil',
-    'Canada',
-    'Chile',
-    'China',
-    'Colombia',
-    'Czech Republic',
-    'Denmark',
-    'Egypt',
-    'Finland',
-    'France',
-    'Germany',
-    'Greece',
-    'Hungary',
-    'India',
-    'Indonesia',
-    'Iran',
-    'Iraq',
-    'Ireland',
-    'Israel',
-    'Italy',
-    'Japan',
-    'Jordan',
-    'Kenya',
-    'Lebanon',
-    'Malaysia',
-    'Mexico',
-    'Morocco',
-    'Netherlands',
-    'New Zealand',
-    'Nigeria',
-    'Norway',
-    'Pakistan',
-    'Peru',
-    'Philippines',
-    'Poland',
-    'Portugal',
-    'Romania',
-    'Russia',
-    'Saudi Arabia',
-    'South Africa',
-    'South Korea',
-    'Spain',
-    'Sweden',
-    'Switzerland',
-    'Thailand',
-    'Tunisia',
-    'Turkey',
-    'Ukraine',
-    'United Arab Emirates',
-    'United Kingdom',
-    'United States',
-    'Venezuela',
-    'Vietnam',
-    'Other',
-  ];
-
-  final Map<String, List<String>> _citiesByCountry = {
-    'Algeria': [
-      'Algiers',
-      'Oran',
-      'Constantine',
-      'Annaba',
-      'Blida',
-      'Batna',
-      'Tlemcen',
-      'Sétif',
-      'Other'
-    ],
-    'United States': [
-      'New York City',
-      'Los Angeles',
-      'Chicago',
-      'Houston',
-      'Phoenix',
-      'San Francisco',
-      'Other'
-    ],
-    'France': [
-      'Paris',
-      'Lyon',
-      'Marseille',
-      'Toulouse',
-      'Nice',
-      'Nantes',
-      'Other'
-    ],
-    'United Kingdom': [
-      'London',
-      'Manchester',
-      'Birmingham',
-      'Leeds',
-      'Glasgow',
-      'Edinburgh',
-      'Other'
-    ],
-    'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne', 'Frankfurt', 'Other'],
-    'Canada': [
-      'Toronto',
-      'Montreal',
-      'Vancouver',
-      'Calgary',
-      'Ottawa',
-      'Other'
-    ],
-    'Australia': [
-      'Sydney',
-      'Melbourne',
-      'Brisbane',
-      'Perth',
-      'Adelaide',
-      'Other'
-    ],
-    'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Other'],
-    'India': [
-      'Mumbai',
-      'Delhi',
-      'Bangalore',
-      'Hyderabad',
-      'Chennai',
-      'Kolkata',
-      'Other'
-    ],
-    'China': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Other'],
-    'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama', 'Nagoya', 'Other'],
-    'Morocco': [
-      'Casablanca',
-      'Rabat',
-      'Marrakech',
-      'Fès',
-      'Tangier',
-      'Agadir',
-      'Other'
-    ],
-    'Saudi Arabia': ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Other'],
-    'United Arab Emirates': ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Other'],
-    'Turkey': ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya', 'Other'],
-    'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Luxor', 'Other'],
-    'Nigeria': ['Lagos', 'Abuja', 'Kano', 'Ibadan', 'Other'],
-    'South Africa': [
-      'Johannesburg',
-      'Cape Town',
-      'Durban',
-      'Pretoria',
-      'Other'
-    ],
-    'Mexico': ['Mexico City', 'Guadalajara', 'Monterrey', 'Puebla', 'Other'],
-    'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Other'],
-    'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Florence', 'Other'],
-    'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht', 'Other'],
-    'Sweden': ['Stockholm', 'Gothenburg', 'Malmö', 'Uppsala', 'Other'],
-    'Norway': ['Oslo', 'Bergen', 'Trondheim', 'Other'],
-    'Pakistan': ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Other'],
-    'Indonesia': ['Jakarta', 'Surabaya', 'Bandung', 'Medan', 'Other'],
-    'Malaysia': ['Kuala Lumpur', 'Penang', 'Johor Bahru', 'Other'],
-    'Philippines': ['Manila', 'Quezon City', 'Cebu', 'Davao', 'Other'],
-    'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang', 'Other'],
-    'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Other'],
-    'Lebanon': ['Beirut', 'Tripoli', 'Sidon', 'Other'],
-    'Jordan': ['Amman', 'Zarqa', 'Irbid', 'Other'],
-    'Tunisia': ['Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Other'],
-    'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Other'],
-    'Poland': ['Warsaw', 'Kraków', 'Łódź', 'Wrocław', 'Other'],
-    'Ukraine': ['Kyiv', 'Kharkiv', 'Odessa', 'Other'],
-    'Romania': ['Bucharest', 'Cluj-Napoca', 'Timișoara', 'Other'],
-    'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Other'],
-    'Colombia': ['Bogotá', 'Medellín', 'Cali', 'Other'],
-    'Chile': ['Santiago', 'Valparaíso', 'Concepción', 'Other'],
-    'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Other'],
-    'Portugal': ['Lisbon', 'Porto', 'Braga', 'Other'],
-    'Belgium': ['Brussels', 'Antwerp', 'Ghent', 'Other'],
-    'Switzerland': ['Zurich', 'Geneva', 'Basel', 'Bern', 'Other'],
-    'Greece': ['Athens', 'Thessaloniki', 'Patras', 'Other'],
-    'Israel': ['Tel Aviv', 'Jerusalem', 'Haifa', 'Other'],
-    'Iran': ['Tehran', 'Isfahan', 'Mashhad', 'Other'],
-    'Iraq': ['Baghdad', 'Basra', 'Mosul', 'Erbil', 'Other'],
-    'New Zealand': ['Auckland', 'Wellington', 'Christchurch', 'Other'],
-    'Ireland': ['Dublin', 'Cork', 'Limerick', 'Galway', 'Other'],
-    'Kenya': ['Nairobi', 'Mombasa', 'Kisumu', 'Other'],
-    'Venezuela': ['Caracas', 'Maracaibo', 'Valencia', 'Other'],
-    'Peru': ['Lima', 'Arequipa', 'Trujillo', 'Other'],
-  };
-
-  List<String> get _availableCities {
-    if (_country == null) return [];
-    return _citiesByCountry[_country!] ?? ['Other'];
+  @override
+  void initState() {
+    super.initState();
+    // Match existing profession to list or set as Other
+    final existingProf = widget.data.profession ?? '';
+    if (_professions.contains(existingProf)) {
+      _profession = existingProf;
+    } else if (existingProf.isNotEmpty) {
+      _profession = 'Other';
+      _customProfCtrl.text = existingProf;
+    }
+    _education = widget.data.education;
+    _country = widget.data.country;
+    _city = widget.data.city;
+    _dateOfBirth = widget.data.dateOfBirth;
+    _loadCountries();
   }
 
-  // Format DateTime to display string
+  @override
+  void dispose() {
+    _customProfCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCountries() async {
+    try {
+      final dio = Dio();
+      final res =
+          await dio.get('https://restcountries.com/v3.1/all?fields=name');
+      final List data = res.data;
+      final names = data.map((c) => c['name']['common'].toString()).toList();
+      names.sort();
+      if (mounted) {
+        setState(() {
+          _countries = names;
+          _loadingCountries = false;
+        });
+        if (_country != null) _loadCities(_country!);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _countries = [
+            'Algeria',
+            'Argentina',
+            'Australia',
+            'Austria',
+            'Belgium',
+            'Brazil',
+            'Canada',
+            'Chile',
+            'China',
+            'Colombia',
+            'Czech Republic',
+            'Denmark',
+            'Egypt',
+            'Finland',
+            'France',
+            'Germany',
+            'Greece',
+            'Hungary',
+            'India',
+            'Indonesia',
+            'Iran',
+            'Iraq',
+            'Ireland',
+            'Israel',
+            'Italy',
+            'Japan',
+            'Jordan',
+            'Kenya',
+            'Lebanon',
+            'Malaysia',
+            'Mexico',
+            'Morocco',
+            'Netherlands',
+            'New Zealand',
+            'Nigeria',
+            'Norway',
+            'Pakistan',
+            'Peru',
+            'Philippines',
+            'Poland',
+            'Portugal',
+            'Romania',
+            'Russia',
+            'Saudi Arabia',
+            'South Africa',
+            'South Korea',
+            'Spain',
+            'Sweden',
+            'Switzerland',
+            'Thailand',
+            'Tunisia',
+            'Turkey',
+            'Ukraine',
+            'United Arab Emirates',
+            'United Kingdom',
+            'United States',
+            'Venezuela',
+            'Vietnam',
+            'Other',
+          ];
+          _loadingCountries = false;
+        });
+        if (_country != null) _loadCities(_country!);
+      }
+    }
+  }
+
+  static const Map<String, List<String>> _hardcodedCities = {
+    'Algeria': [
+      'Adrar',
+      'Aïn Defla',
+      'Aïn Témouchent',
+      'Algiers',
+      'Annaba',
+      'Batna',
+      'Béchar',
+      'Béjaïa',
+      'Biskra',
+      'Blida',
+      'Bordj Bou Arréridj',
+      'Bouira',
+      'Boumerdès',
+      'Chlef',
+      'Constantine',
+      'Djelfa',
+      'El Bayadh',
+      'El Oued',
+      'El Tarf',
+      'Ghardaïa',
+      'Guelma',
+      'Illizi',
+      'Jijel',
+      'Khenchela',
+      'Laghouat',
+      'Mascara',
+      'Médéa',
+      'Mila',
+      'Mostaganem',
+      "M'Sila",
+      'Naâma',
+      'Oran',
+      'Ouargla',
+      'Oum El Bouaghi',
+      'Relizane',
+      'Saïda',
+      'Sétif',
+      'Sidi Bel Abbès',
+      'Skikda',
+      'Souk Ahras',
+      'Tamanrasset',
+      'Tébessa',
+      'Tiaret',
+      'Tindouf',
+      'Tipaza',
+      'Tissemsilt',
+      'Tizi Ouzou',
+      'Tlemcen',
+      'Bordj Badji Mokhtar',
+      'Ouled Djellal',
+      'Béni Abbès',
+      'In Salah',
+      'In Guezzam',
+      'Touggourt',
+      'Djanet',
+      'El MGhair',
+      'El Meniaa',
+      'Other',
+    ],
+    'France': [
+      'Aix-en-Provence',
+      'Amiens',
+      'Angers',
+      'Avignon',
+      'Besançon',
+      'Bordeaux',
+      'Brest',
+      'Caen',
+      'Clermont-Ferrand',
+      'Dijon',
+      'Grenoble',
+      'Le Havre',
+      'Le Mans',
+      'Lille',
+      'Limoges',
+      'Lyon',
+      'Marseille',
+      'Metz',
+      'Montpellier',
+      'Mulhouse',
+      'Nancy',
+      'Nantes',
+      'Nice',
+      'Nîmes',
+      'Orléans',
+      'Paris',
+      'Perpignan',
+      'Reims',
+      'Rennes',
+      'Rouen',
+      'Saint-Étienne',
+      'Strasbourg',
+      'Toulon',
+      'Toulouse',
+      'Tours',
+      'Villeurbanne',
+      'Other',
+    ],
+    'Tunisia': [
+      'Ariana',
+      'Béja',
+      'Ben Arous',
+      'Bizerte',
+      'Gabès',
+      'Gafsa',
+      'Jendouba',
+      'Kairouan',
+      'Kasserine',
+      'Kebili',
+      'La Manouba',
+      'Le Kef',
+      'Mahdia',
+      'Médenine',
+      'Monastir',
+      'Nabeul',
+      'Sfax',
+      'Sidi Bouzid',
+      'Siliana',
+      'Sousse',
+      'Tataouine',
+      'Tozeur',
+      'Tunis',
+      'Zaghouan',
+      'Other',
+    ],
+    'Morocco': [
+      'Agadir',
+      'Al Hoceima',
+      'Béni Mellal',
+      'Casablanca',
+      'Dakhla',
+      'El Jadida',
+      'Errachidia',
+      'Essaouira',
+      'Fès',
+      'Guelmim',
+      'Ifrane',
+      'Kenitra',
+      'Khénifra',
+      'Khouribga',
+      'Laâyoune',
+      'Larache',
+      'Marrakech',
+      'Meknès',
+      'Mohammedia',
+      'Nador',
+      'Ouarzazate',
+      'Oujda',
+      'Rabat',
+      'Safi',
+      'Salé',
+      'Settat',
+      'Tan-Tan',
+      'Tanger',
+      'Taroudant',
+      'Taza',
+      'Tétouan',
+      'Tiznit',
+      'Other',
+    ],
+    'United States': [
+      'Atlanta',
+      'Austin',
+      'Baltimore',
+      'Boston',
+      'Charlotte',
+      'Chicago',
+      'Columbus',
+      'Dallas',
+      'Denver',
+      'Detroit',
+      'El Paso',
+      'Fort Worth',
+      'Fresno',
+      'Houston',
+      'Indianapolis',
+      'Jacksonville',
+      'Las Vegas',
+      'Los Angeles',
+      'Louisville',
+      'Memphis',
+      'Mesa',
+      'Miami',
+      'Milwaukee',
+      'Minneapolis',
+      'Nashville',
+      'New York City',
+      'Oklahoma City',
+      'Omaha',
+      'Philadelphia',
+      'Phoenix',
+      'Portland',
+      'Raleigh',
+      'Sacramento',
+      'San Antonio',
+      'San Diego',
+      'San Francisco',
+      'San Jose',
+      'Seattle',
+      'Tucson',
+      'Washington D.C.',
+      'Other',
+    ],
+    'United Kingdom': [
+      'Birmingham',
+      'Bradford',
+      'Bristol',
+      'Coventry',
+      'Edinburgh',
+      'Glasgow',
+      'Leeds',
+      'Leicester',
+      'Liverpool',
+      'London',
+      'Manchester',
+      'Newcastle',
+      'Nottingham',
+      'Oxford',
+      'Sheffield',
+      'Southampton',
+      'Other',
+    ],
+    'Germany': [
+      'Berlin',
+      'Bremen',
+      'Cologne',
+      'Dortmund',
+      'Dresden',
+      'Düsseldorf',
+      'Essen',
+      'Frankfurt',
+      'Hamburg',
+      'Hanover',
+      'Leipzig',
+      'Munich',
+      'Nuremberg',
+      'Stuttgart',
+      'Other',
+    ],
+    'Canada': [
+      'Calgary',
+      'Edmonton',
+      'Halifax',
+      'Montreal',
+      'Ottawa',
+      'Quebec City',
+      'Toronto',
+      'Vancouver',
+      'Winnipeg',
+      'Other',
+    ],
+    'Saudi Arabia': [
+      'Abha',
+      'Al Khobar',
+      'Buraidah',
+      'Dammam',
+      'Hail',
+      'Jeddah',
+      'Jizan',
+      'Mecca',
+      'Medina',
+      'Riyadh',
+      'Tabuk',
+      'Taif',
+      'Other',
+    ],
+    'United Arab Emirates': [
+      'Abu Dhabi',
+      'Ajman',
+      'Al Ain',
+      'Dubai',
+      'Fujairah',
+      'Ras Al Khaimah',
+      'Sharjah',
+      'Umm Al Quwain',
+      'Other',
+    ],
+    'Egypt': [
+      'Alexandria',
+      'Assiut',
+      'Cairo',
+      'Giza',
+      'Hurghada',
+      'Ismailia',
+      'Luxor',
+      'Mansoura',
+      'Port Said',
+      'Sharm El Sheikh',
+      'Suez',
+      'Tanta',
+      'Zagazig',
+      'Other',
+    ],
+    'India': [
+      'Ahmedabad',
+      'Bangalore',
+      'Chennai',
+      'Delhi',
+      'Hyderabad',
+      'Jaipur',
+      'Kolkata',
+      'Lucknow',
+      'Mumbai',
+      'Nagpur',
+      'Pune',
+      'Surat',
+      'Other',
+    ],
+  };
+
+  Future<void> _loadCities(String countryName) async {
+    setState(() {
+      _loadingCities = true;
+      _cities = [];
+    });
+
+    if (_hardcodedCities.containsKey(countryName)) {
+      if (mounted) {
+        setState(() {
+          _cities = _hardcodedCities[countryName]!;
+          _loadingCities = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final dio = Dio();
+      final res = await dio.post(
+        'https://countriesnow.space/api/v0.1/countries/cities',
+        data: {'country': countryName},
+      );
+      final List? cityList = res.data['data'];
+      if (mounted) {
+        final sorted = (cityList ?? []).map((e) => e.toString()).toList()
+          ..sort();
+        if (sorted.isEmpty) sorted.add('Other');
+        if (!sorted.contains('Other')) sorted.add('Other');
+        setState(() {
+          _cities = sorted;
+          _loadingCities = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _cities = ['Other'];
+          _loadingCities = false;
+        });
+      }
+    }
+  }
+
   String get _dobDisplay {
     if (_dateOfBirth == null) return '';
     final d = _dateOfBirth!;
@@ -241,42 +553,25 @@ class _Step4State extends State<Step4ProfileDetails> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final minDate = DateTime(now.year - 100);
-    final maxDate = DateTime(now.year - 13); // must be 13+
-
     final picked = await showDatePicker(
       context: context,
       initialDate: _dateOfBirth ?? DateTime(2000, 1, 1),
-      firstDate: minDate,
-      lastDate: maxDate,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.primary,
-              onPrimary: Colors.white,
-              surface: AppTheme.surfaceLowest,
-              onSurface: AppTheme.textPrimary,
-            ), dialogTheme: DialogThemeData(backgroundColor: AppTheme.surfaceLowest),
+      firstDate: DateTime(now.year - 100),
+      lastDate: DateTime(now.year - 13),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppTheme.primary,
+            onPrimary: Colors.white,
+            surface: AppTheme.surfaceLowest,
+            onSurface: AppTheme.textPrimary,
           ),
-          child: child!,
-        );
-      },
+          dialogTheme: DialogThemeData(backgroundColor: AppTheme.surfaceLowest),
+        ),
+        child: child!,
+      ),
     );
-
-    if (picked != null) {
-      setState(() => _dateOfBirth = picked);
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _professionCtrl = TextEditingController(text: widget.data.profession);
-    _education = widget.data.education;
-    _country = widget.data.country;
-    _city = widget.data.city;
-    _dateOfBirth = widget.data.dateOfBirth;
+    if (picked != null) setState(() => _dateOfBirth = picked);
   }
 
   @override
@@ -290,7 +585,7 @@ class _Step4State extends State<Step4ProfileDetails> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // ── Header ────────────────────────────────────────
                   Row(children: [
                     GestureDetector(
                       onTap: widget.onBack,
@@ -350,7 +645,6 @@ class _Step4State extends State<Step4ProfileDetails> {
                     ),
                   ),
                   const SizedBox(height: 28),
-
                   const Text('Finalize Your Profile',
                       style: TextStyle(
                         fontSize: 28,
@@ -369,7 +663,7 @@ class _Step4State extends State<Step4ProfileDetails> {
                   ),
                   const SizedBox(height: 28),
 
-                  // ── Date of Birth ──────────────────────────────────
+                  // ── Date of Birth ─────────────────────────────────
                   _SectionCard(
                     icon: Icons.calendar_today_outlined,
                     title: 'Date of Birth',
@@ -407,11 +701,34 @@ class _Step4State extends State<Step4ProfileDetails> {
                   _SectionCard(
                     icon: Icons.work_outline,
                     title: 'Profession',
-                    child: TextField(
-                      controller: _professionCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Senior Creative Director',
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: _professions.contains(_profession)
+                              ? _profession
+                              : null,
+                          hint: const Text('Select your profession',
+                              style: TextStyle(
+                                  color: AppTheme.textTertiary, fontSize: 15)),
+                          decoration: const InputDecoration(),
+                          isExpanded: true,
+                          items: _professions
+                              .map((e) =>
+                                  DropdownMenuItem(value: e, child: Text(e)))
+                              .toList(),
+                          onChanged: (v) => setState(() => _profession = v),
+                        ),
+                        if (_profession == 'Other') ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _customProfCtrl,
+                            decoration: const InputDecoration(
+                              hintText: 'Please specify your profession...',
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -421,7 +738,9 @@ class _Step4State extends State<Step4ProfileDetails> {
                     icon: Icons.school_outlined,
                     title: 'Level of studies',
                     child: DropdownButtonFormField<String>(
-                      initialValue: _education,
+                      value: _educationLevels.contains(_education)
+                          ? _education
+                          : null,
                       hint: const Text('Select your highest degree',
                           style: TextStyle(
                               color: AppTheme.textTertiary, fontSize: 15)),
@@ -440,22 +759,34 @@ class _Step4State extends State<Step4ProfileDetails> {
                   _SectionCard(
                     icon: Icons.public_outlined,
                     title: 'Country',
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _country,
-                      hint: const Text('Select your country',
-                          style: TextStyle(
-                              color: AppTheme.textTertiary, fontSize: 15)),
-                      decoration: const InputDecoration(),
-                      isExpanded: true,
-                      items: _countries
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: (v) => setState(() {
-                        _country = v;
-                        _city = null;
-                      }),
-                    ),
+                    child: _loadingCountries
+                        ? const Center(
+                            child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ))
+                        : DropdownButtonFormField<String>(
+                            value:
+                                _countries.contains(_country) ? _country : null,
+                            hint: const Text('Select your country',
+                                style: TextStyle(
+                                    color: AppTheme.textTertiary,
+                                    fontSize: 15)),
+                            decoration: const InputDecoration(),
+                            isExpanded: true,
+                            items: _countries
+                                .map((c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)))
+                                .toList(),
+                            onChanged: (v) {
+                              setState(() {
+                                _country = v;
+                                _city = null;
+                                _cities = [];
+                              });
+                              if (v != null) _loadCities(v);
+                            },
+                          ),
                   ),
                   const SizedBox(height: 14),
 
@@ -463,25 +794,33 @@ class _Step4State extends State<Step4ProfileDetails> {
                   _SectionCard(
                     icon: Icons.location_city_outlined,
                     title: 'City',
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _availableCities.contains(_city) ? _city : null,
-                      hint: Text(
-                        _country == null
-                            ? 'Select country first'
-                            : 'Select your city',
-                        style: const TextStyle(
-                            color: AppTheme.textTertiary, fontSize: 15),
-                      ),
-                      decoration: const InputDecoration(),
-                      isExpanded: true,
-                      items: _availableCities
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: _country == null
-                          ? null
-                          : (v) => setState(() => _city = v),
-                    ),
+                    child: _loadingCities
+                        ? const Center(
+                            child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ))
+                        : DropdownButtonFormField<String>(
+                            value: _cities.contains(_city) ? _city : null,
+                            hint: Text(
+                              _country == null
+                                  ? 'Select country first'
+                                  : _cities.isEmpty
+                                      ? 'No cities found'
+                                      : 'Select your city',
+                              style: const TextStyle(
+                                  color: AppTheme.textTertiary, fontSize: 15),
+                            ),
+                            decoration: const InputDecoration(),
+                            isExpanded: true,
+                            items: _cities
+                                .map((c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)))
+                                .toList(),
+                            onChanged: (_country == null || _cities.isEmpty)
+                                ? null
+                                : (v) => setState(() => _city = v),
+                          ),
                   ),
                   const SizedBox(height: 24),
 
@@ -498,7 +837,6 @@ class _Step4State extends State<Step4ProfileDetails> {
                       ),
                     ),
                     child: Stack(children: [
-                      // Decorative circles
                       Positioned(
                         top: -20,
                         right: -20,
@@ -585,7 +923,9 @@ class _Step4State extends State<Step4ProfileDetails> {
                 child: GradientButton(
                   label: 'Continue',
                   onPressed: () => widget.onNext(widget.data.copyWith(
-                    profession: _professionCtrl.text.trim(),
+                    profession: _profession == 'Other'
+                        ? _customProfCtrl.text.trim()
+                        : _profession ?? '',
                     education: _education,
                     country: _country,
                     city: _city,
@@ -602,7 +942,6 @@ class _Step4State extends State<Step4ProfileDetails> {
   }
 }
 
-// ── Reusable section card ─────────────────────────────────────────────────────
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String title;

@@ -1,5 +1,12 @@
 package com.projet.recruitment_service.service;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.projet.recruitment_service.client.SurveyServiceClient;
 import com.projet.recruitment_service.dto.request.ApplicationRequest;
 import com.projet.recruitment_service.dto.request.ReviewRequest;
@@ -13,14 +20,9 @@ import com.projet.recruitment_service.repository.ParticipantBlacklistRepository;
 import com.projet.recruitment_service.repository.ParticipationRepository;
 import com.projet.recruitment_service.repository.RecruitmentSlotRepository;
 import com.projet.recruitment_service.repository.StudyApplicationRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -51,13 +53,44 @@ public class ApplicationService {
                     "Candidature déjà existante pour cette phase", HttpStatus.CONFLICT);
         }
 
-        // 3. Slot check
+        // 3. Slot check — auto-create if missing (study is published so slots are
+        // valid)
+        // REPLACE the orElseGet block with this:
         RecruitmentSlot slot = slotRepository.findByPhaseId(phaseId)
-                .orElseThrow(() -> new BusinessException(
-                        "Slots non configurés pour cette phase", HttpStatus.BAD_REQUEST));
-        if (!slot.hasAvailableSlot()) {
-            throw new BusinessException("Aucune place disponible", HttpStatus.CONFLICT);
-        }
+                .orElseGet(() -> {
+                    try {
+                        PhaseInfoDto phaseInfo = surveyServiceClient.getPhaseInfo(authToken, phaseId.toString());
+                        int maxParticipants = phaseInfo.getMaxParticipants() != null
+                                ? phaseInfo.getMaxParticipants()
+                                : 10;
+                        // ✅ Get rewardAmount, default to 0 if null
+                        java.math.BigDecimal rewardAmount = phaseInfo.getRewardAmount() != null
+                                ? phaseInfo.getRewardAmount()
+                                : java.math.BigDecimal.ZERO;
+
+                        RecruitmentSlot newSlot = RecruitmentSlot.builder()
+                                .phaseId(phaseId)
+                                .studyId(studyId) // ✅ Add studyId
+                                .totalSlots(maxParticipants)
+                                .filledSlots(0)
+                                .rewardAmount(rewardAmount) // ✅ Add rewardAmount
+                                .status(com.projet.recruitment_service.enums.SlotStatus.OPEN) // ✅ Add status
+                                .build();
+                        return slotRepository.save(newSlot);
+                    } catch (Exception e) {
+                        log.warn("Could not auto-create slot: {}", e.getMessage());
+                        // ✅ Safe defaults for all NOT NULL columns
+                        RecruitmentSlot newSlot = RecruitmentSlot.builder()
+                                .phaseId(phaseId)
+                                .studyId(studyId)
+                                .totalSlots(10)
+                                .filledSlots(0)
+                                .rewardAmount(java.math.BigDecimal.ZERO) // ✅ Default 0
+                                .status(com.projet.recruitment_service.enums.SlotStatus.OPEN)
+                                .build();
+                        return slotRepository.save(newSlot);
+                    }
+                });
 
         // 4. Vérification ordre des phases via survey-service
         try {

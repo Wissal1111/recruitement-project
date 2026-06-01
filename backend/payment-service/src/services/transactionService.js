@@ -47,60 +47,52 @@ async function purchasePoints(externalUserId, dto) {
   return transaction;
 }
 
-// ✅ FIX: swapped argument order (was: userId, rewardId, points)
-async function recordRewardTransaction(userId, points, externalRef) {
+async function recordRewardTransaction(userId, points) {
   return prisma.transaction.create({
     data: {
       userId,
       type: 'reward',
       amount: 0,
       pointsValue: points,
-      externalRef: externalRef || null, // ✅ FIX: was rewardId (not in schema)
       description: 'Reward for completed phase',
       status: 'completed',
     },
   });
 }
 
-// ✅ FIX: replaced surveyId with externalRef (not in schema)
-async function recordCommissionTransaction(creatorId, points, externalRef) {
+async function recordCommissionTransaction(creatorId, points) {
   return prisma.transaction.create({
     data: {
       userId: creatorId,
       type: 'commission',
       amount: 0,
       pointsValue: points,
-      externalRef: externalRef || null, // ✅ FIX: was surveyId (not in schema)
       description: 'Platform commission (15%)',
       status: 'completed',
     },
   });
 }
 
-// ✅ FIX: renamed from recordSurveyAllocationTransaction to match import in points.routes.js
-async function recordAllocationTransaction(creatorId, points, externalRef) {
+async function recordAllocationTransaction(creatorId, points) {
   return prisma.transaction.create({
     data: {
       userId: creatorId,
       type: 'allocation',
       amount: 0,
       pointsValue: points,
-      externalRef: externalRef || null, // ✅ FIX: was surveyId (not in schema)
       description: 'Points allocated to study',
       status: 'completed',
     },
   });
 }
 
-// ✅ FIX: renamed from recordSurveyDeallocationTransaction to match import in points.routes.js
-async function recordReleaseTransaction(creatorId, points, externalRef) {
+async function recordReleaseTransaction(creatorId, points) {
   return prisma.transaction.create({
     data: {
       userId: creatorId,
       type: 'refund',
       amount: 0,
       pointsValue: points,
-      externalRef: externalRef || null, // ✅ FIX: was surveyId (not in schema)
       description: 'Points released back to creator',
       status: 'completed',
     },
@@ -131,7 +123,7 @@ async function getTransactionHistory(externalUserId, query = {}) {
     orderBy: { createdAt: 'desc' },
     take: Number(query.limit ?? 50),
     skip: Number(query.offset ?? 0),
-    include: { paymentCard: true }, // ✅ FIX: removed reward: true (not a relation in schema)
+    include: { paymentCard: true },
   });
 
   const total = await prisma.transaction.count({ where });
@@ -154,8 +146,8 @@ module.exports = {
   purchasePoints,
   recordRewardTransaction,
   recordCommissionTransaction,
-  recordAllocationTransaction,   // ✅ FIX: renamed export
-  recordReleaseTransaction,      // ✅ FIX: renamed export
+  recordAllocationTransaction,
+  recordReleaseTransaction,
   getTransactionHistory,
   getTransactionSummary,
 };

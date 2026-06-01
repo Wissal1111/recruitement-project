@@ -42,7 +42,48 @@ exports.saveDraft = async (req, res) => {
     return res.status(500).json({ message: "Error saving draft", error: err.message });
   }
 };
+exports.upsertSubmittedResponse = async (req, res) => {
+  try {
+    const participantId =
+      req.user.userId || req.user.id || req.user.sub || req.user._id;
 
+    const { studyId, phaseId } = req.params;
+    const { answers } = req.body;
+
+    if (!studyId || !phaseId) {
+      return res.status(400).json({
+        message: "studyId and phaseId are required",
+      });
+    }
+
+    // Find the existing submitted response for this participant/phase
+    const response = await Response.findOne({
+      participantId,
+      studyId,
+      phaseId,
+      status: "SUBMITTED",
+    });
+
+    if (!response) {
+      return res.status(404).json({
+        message: "Submitted response not found",
+      });
+    }
+
+    // Update answers
+    response.answers = Array.isArray(answers) ? answers : [];
+    response.status = "SUBMITTED";
+    response.submittedAt = new Date(); // update timestamp
+    await response.save();
+
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      detail: error.message,
+    });
+  }
+};
 /**
  * PATCH /api/responses/draft/answer
  * Save a single answer into the draft (per-question auto-save)

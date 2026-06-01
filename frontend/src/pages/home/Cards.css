@@ -1,0 +1,301 @@
+.cards-page .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+/* ── Card wrapper (handles click-to-reveal state) ── */
+.cards-page .card-wrapper {
+    cursor: pointer;
+}
+
+/* ── Card visual ── */
+.cards-page .card-visual {
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cards-page .card-wrapper:hover .card-visual {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.cards-page .card-visual.paypal   { background: linear-gradient(135deg, #003087, #009CDE); }
+.cards-page .card-visual.payoneer { background: linear-gradient(135deg, #FF4800, #FF7C44); }
+.cards-page .card-visual.stripe   { background: linear-gradient(135deg, #635BFF, #8B85FF); }
+.cards-page .card-visual.custom   { background: linear-gradient(135deg, #374151, #6B7280); }
+
+.cards-page .card-visual::after {
+    content: "";
+    position: absolute;
+    right: -30px;
+    top: -30px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+}
+
+/* ── Overlay (hidden until card-wrapper--active) ── */
+.cards-page .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(2px);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+}
+
+.cards-page .card-wrapper--active .card-overlay {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.cards-page .card-overlay-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+    transform: translateY(6px);
+}
+
+.cards-page .card-wrapper--active .card-overlay-btn {
+    transform: translateY(0);
+    transition: opacity 0.18s ease 0.05s, transform 0.18s ease 0.05s;
+}
+
+.cards-page .card-overlay-btn:hover { opacity: 0.85; }
+
+.cards-page .card-overlay-btn--delete {
+    background: #fff;
+    color: #B91C1C;
+}
+
+/* ── Card badges & text ── */
+.cards-page .card-type-badge {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.85;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.cards-page .card-number {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 3px;
+}
+
+.cards-page .card-name {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.cards-page .card-budget {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.cards-page .inactive-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    z-index: 1;
+}
+
+/* ── Add card box ── */
+.cards-page .add-card-box {
+    border: 2px dashed #E8ECF4;
+    border-radius: 16px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--content);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.cards-page .add-card-box:hover {
+    border-color: #7073FF;
+    color: #7073FF;
+    background: #FAFBFF;
+}
+
+/* ══════════════════════════════════════════
+   Modals — matching app-wide modal style
+══════════════════════════════════════════ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 18, 35, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal-box {
+    background: var(--card, #fff);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.14);
+    animation: modal-in 0.22s cubic-bezier(0.34, 1.36, 0.64, 1) both;
+}
+
+@keyframes modal-in {
+    from { opacity: 0; transform: scale(0.94) translateY(8px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+.modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--title);
+    margin-bottom: 6px;
+}
+
+.modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.modal-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--title);
+}
+
+.modal-field input,
+.modal-field select {
+    height: 40px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border, #E8ECF4);
+    padding: 0 12px;
+    font-size: 14px;
+    color: var(--title);
+    background: var(--input-bg, #F8FAFD);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.modal-field input:focus,
+.modal-field select:focus {
+    border-color: #7073FF;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.btn-secondary {
+    padding: 9px 18px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border, #E8ECF4);
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--content);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-secondary:hover { background: var(--hover, #F4F6FA); }
+.btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: none;
+    background: #7073FF;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-primary.btn-danger { background: #DC2626; }
+
+/* ── Delete spinner ── */
+.modal-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.modal-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--content);
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.modal-close-btn:hover {
+    background: var(--hover, #F2F4F8);
+}

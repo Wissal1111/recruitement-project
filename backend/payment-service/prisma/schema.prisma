@@ -83,7 +83,6 @@ model Transaction {
   pointsValue   Decimal?          @db.Decimal(15, 2)
   paymentCardId Int?
   paymentCard   PaymentCard?      @relation(fields: [paymentCardId], references: [id], onDelete: SetNull)
-  externalRef   String?
   description   String?
   status        TransactionStatus @default(completed)
   createdAt     DateTime          @default(now())

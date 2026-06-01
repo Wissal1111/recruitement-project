@@ -3,8 +3,9 @@ import './SideBar.css'
 import {
     Info, LayoutDashboard, UserRound, Settings, Bell,
     Activity, Files, SquarePlus, Search, UsersRound,
-    Target, MailPlus, ClipboardList,DollarSign
+    Target, MailPlus, ClipboardList,DollarSign,CreditCard,Coins
 } from "lucide-react"
+
 
 export default function SideBar({ page, part, isOpen, onClose }) {
     const navigate = useNavigate()
@@ -28,11 +29,15 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                         <li className={page === "profile" ? 'selected-page' : ''} onClick={() => go("/home/profile")}>
                             <UserRound size={16} /> Profile
                         </li>
+                        
+<li className={page === "wallet" ? 'selected-page' : ''} onClick={() => go("/home/wallet")}>
+    <Coins size={16} /> My Wallet
+</li>
+<li className={page === "cards" ? 'selected-page' : ''} onClick={() => go("/home/cards")}>
+    <CreditCard size={16} /> My Cards
+</li>
                         <li className={page === "notifications" ? 'selected-page' : ''} onClick={() => go("/home/notifications")}>
                             <Bell size={16} /> Notifications
-                        </li>
-                        <li className={page === "activity" ? 'selected-page' : ''} onClick={() => go("/home/activity")}>
-                            <Activity size={16} /> Activity
                         </li>
                         <li className={page === "settings" ? 'selected-page' : ''} onClick={() => go("/home/settings")}>
                             <Settings size={16} /> Settings
@@ -51,6 +56,9 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                         </li>
                         <li className={page === "createsurvey" ? 'selected-page' : ''} onClick={() => go("/recruit/create")}>
                             <SquarePlus size={16} /> Build Survey
+                        </li>
+                        <li className={page === "payments" ? 'selected-page' : ''} onClick={() => go("/recruit/payments")}>
+                            <CreditCard size={16} /> Payments
                         </li>
                     </ul>
                     <p>CANDIDATES</p>
@@ -74,6 +82,7 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                             <DollarSign size={16} /> Slots & Rewards
                         </li>
                     </ul>
+
                 </>}
             </div>
         </>

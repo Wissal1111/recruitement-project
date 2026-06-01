@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,58 +22,179 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
 
   bool _isMultiPhase = false;
   RangeValues _ageRange = const RangeValues(18, 45);
-  String? _profession = 'Technology & Design';
+  String? _profession;
   String? _education = "Master's Degree";
-  String? _country = 'United Kingdom';
-  final Set<String> _selectedInterests = {'UX Research'};
-  DateTime? _endDate; // ← NEW
+  String? _country;
+  final Set<String> _selectedInterests = {};
 
-  final _professions = [
-    'Technology & Design',
-    'Healthcare',
-    'Education',
-    'Finance',
-    'Marketing',
-    'Other'
+  List<String> _countries = [];
+  bool _loadingCountries = true;
+
+  final List<String> _professions = [
+    'Software Engineer',
+    'Web Developer',
+    'Mobile Developer',
+    'Data Scientist',
+    'Machine Learning Engineer',
+    'DevOps Engineer',
+    'Cybersecurity Analyst',
+    'UI/UX Designer',
+    'Product Manager',
+    'Project Manager',
+    'Business Analyst',
+    'Marketing Manager',
+    'Digital Marketer',
+    'Content Creator',
+    'Social Media Manager',
+    'SEO Specialist',
+    'Graphic Designer',
+    'Video Editor',
+    'Photographer',
+    'Doctor',
+    'Nurse',
+    'Pharmacist',
+    'Dentist',
+    'Psychologist',
+    'Teacher',
+    'Professor',
+    'Researcher',
+    'Scientist',
+    'Accountant',
+    'Financial Analyst',
+    'Banker',
+    'Investment Manager',
+    'Lawyer',
+    'Paralegal',
+    'Judge',
+    'Architect',
+    'Civil Engineer',
+    'Mechanical Engineer',
+    'Electrical Engineer',
+    'HR Manager',
+    'Recruiter',
+    'Operations Manager',
+    'Entrepreneur',
+    'Freelancer',
+    'Consultant',
+    'Sales Representative',
+    'Customer Service',
+    'Logistics Manager',
+    'Chef',
+    'Nutritionist',
+    'Personal Trainer',
+    'Coach',
+    'Journalist',
+    'Writer',
+    'Editor',
+    'Translator',
+    'Artist',
+    'Musician',
+    'Actor',
+    'Student',
+    'Retired',
+    'Other',
   ];
-  final _educationLevels = [
-    'High School',
+
+  final List<String> _educationLevels = [
+    'No Formal Education',
+    'Primary School',
+    'Middle School / Junior High',
+    'High School Diploma / GED',
+    'Some College (No Degree)',
+    'Vocational / Trade School',
+    'Associate Degree',
     "Bachelor's Degree",
+    'Post-Graduate Certificate',
     "Master's Degree",
-    'PhD',
-    'Other'
+    'MBA',
+    'Professional Degree (JD, MD, PharmD…)',
+    'PhD / Doctorate',
+    'Postdoctoral Research',
+    'Other',
   ];
-  final _countries = [
-    'United Kingdom',
-    'United States',
-    'France',
-    'Germany',
-    'Algeria',
-    'Other'
-  ];
-  final _interests = [
+
+  final List<String> _interests = [
     'UX Research',
     'SaaS Growth',
     'AI Ethics',
     'Product Design',
     'Data Science',
-    'Marketing'
+    'Marketing',
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Environment',
+    'Social Media',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCountries();
+  }
+
+  Future<void> _loadCountries() async {
+    try {
+      final dio = Dio();
+      final res =
+          await dio.get('https://restcountries.com/v3.1/all?fields=name');
+      final List data = res.data;
+      final names = data.map((c) => c['name']['common'].toString()).toList();
+      names.sort();
+      if (mounted) {
+        setState(() {
+          _countries = names;
+          _loadingCountries = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _countries = [
+            'Algeria',
+            'Australia',
+            'Brazil',
+            'Canada',
+            'China',
+            'Egypt',
+            'France',
+            'Germany',
+            'India',
+            'Indonesia',
+            'Italy',
+            'Japan',
+            'Mexico',
+            'Morocco',
+            'Netherlands',
+            'Nigeria',
+            'Pakistan',
+            'Russia',
+            'Saudi Arabia',
+            'South Africa',
+            'Spain',
+            'Tunisia',
+            'Turkey',
+            'United Arab Emirates',
+            'United Kingdom',
+            'United States',
+            'Other',
+          ];
+          _loadingCountries = false;
+        });
+      }
+    }
+  }
 
   int get _estimatedAudience {
     final ageSpan = _ageRange.end - _ageRange.start;
     return (ageSpan * 500 + _selectedInterests.length * 1200).round();
   }
 
-  bool get _isFormValid {
-    return _titleCtrl.text.isNotEmpty &&
-        _budgetCtrl.text.isNotEmpty &&
-        _maxParticipantsCtrl.text.isNotEmpty;
-  }
-
-  String _formatEndDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  bool get _isFormValid =>
+      _titleCtrl.text.isNotEmpty &&
+      _budgetCtrl.text.isNotEmpty &&
+      _maxParticipantsCtrl.text.isNotEmpty;
 
   Future<void> _pickEndDate() async {
     final picked = await showDatePicker(
@@ -90,6 +212,11 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
     if (picked != null) setState(() => _endDate = picked);
   }
 
+  DateTime? _endDate;
+
+  String _formatEndDate(DateTime date) =>
+      '${date.day}/${date.month}/${date.year}';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,7 +228,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(children: [
                 GestureDetector(
-                  onTap: () => context.pop(),
+                  onTap: () => Navigator.pop(context),
                   child: Container(
                     width: 36,
                     height: 36,
@@ -184,7 +311,6 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     ]),
                     const SizedBox(height: 16),
 
-                    // ── END DATE PICKER ──
                     _Label('EXPIRY DATE (OPTIONAL)'),
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -292,6 +418,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     ]),
                     const SizedBox(height: 24),
 
+                    // Target participants card
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -343,34 +470,55 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                       setState(() => _ageRange = v)),
                             ),
                             const SizedBox(height: 16),
-                            _DropdownField(
-                                label: 'PROFESSION',
-                                value: _profession,
-                                items: _professions,
-                                onChanged: (v) =>
-                                    setState(() => _profession = v)),
+
+                            // Profession dropdown
+                            _Label('PROFESSION'),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _profession,
+                              isExpanded: true,
+                              hint: const Text('Select profession'),
+                              decoration: const InputDecoration(),
+                              items: _professions
+                                  .map((e) => DropdownMenuItem(
+                                      value: e, child: Text(e)))
+                                  .toList(),
+                              onChanged: (v) => setState(() => _profession = v),
+                            ),
                             if (_profession == 'Other') ...[
                               const SizedBox(height: 8),
                               TextField(
                                   controller: _otherProfCtrl,
                                   decoration: const InputDecoration(
-                                      hintText: 'Type custom profession...'))
+                                      hintText: 'Type custom profession...')),
                             ],
                             const SizedBox(height: 16),
-                            _DropdownField(
-                                label: 'EDUCATION',
-                                value: _education,
-                                items: _educationLevels,
-                                onChanged: (v) =>
-                                    setState(() => _education = v)),
+
+                            // Education dropdown
+                            _Label('EDUCATION'),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _educationLevels.contains(_education)
+                                  ? _education
+                                  : null,
+                              isExpanded: true,
+                              hint: const Text('Select education level'),
+                              decoration: const InputDecoration(),
+                              items: _educationLevels
+                                  .map((e) => DropdownMenuItem(
+                                      value: e, child: Text(e)))
+                                  .toList(),
+                              onChanged: (v) => setState(() => _education = v),
+                            ),
                             if (_education == 'Other') ...[
                               const SizedBox(height: 8),
                               TextField(
                                   controller: _otherEduCtrl,
                                   decoration: const InputDecoration(
-                                      hintText: 'Type custom education...'))
+                                      hintText: 'Type custom education...')),
                             ],
                             const SizedBox(height: 16),
+
                             const Text('KEY INTERESTS',
                                 style: TextStyle(
                                     fontSize: 11,
@@ -410,12 +558,32 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                   );
                                 }).toList()),
                             const SizedBox(height: 16),
-                            _DropdownField(
-                                label: 'COUNTRY',
-                                value: _country,
-                                items: _countries,
-                                trailingIcon: Icons.public_outlined,
-                                onChanged: (v) => setState(() => _country = v)),
+
+                            // Country dropdown — from API
+                            _Label('COUNTRY'),
+                            const SizedBox(height: 8),
+                            _loadingCountries
+                                ? const Center(
+                                    child: Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ))
+                                : DropdownButtonFormField<String>(
+                                    value: _country,
+                                    isExpanded: true,
+                                    hint: const Text('Select country'),
+                                    decoration: const InputDecoration(
+                                        suffixIcon: Icon(Icons.public_outlined,
+                                            size: 18,
+                                            color: AppTheme.textTertiary)),
+                                    items: _countries
+                                        .map((e) => DropdownMenuItem(
+                                            value: e, child: Text(e)))
+                                        .toList(),
+                                    onChanged: (v) =>
+                                        setState(() => _country = v),
+                                  ),
                           ]),
                     ),
                     const SizedBox(height: 16),
@@ -470,18 +638,17 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                         _maxParticipantsCtrl.text.trim()) ??
                                     0,
                                 'isMultiPhase': _isMultiPhase,
-
-                                // criteria
-                                'ageMin': _ageRange.start.round(),
-                                'ageMax': _ageRange.end.round(),
-                                'country': _country,
+                                'profession': _profession == 'Other'
+                                    ? _otherProfCtrl.text
+                                    : _profession,
                                 'education': _education == 'Other'
                                     ? _otherEduCtrl.text
                                     : _education,
-                                'gender': null,
-
-                                // for now, until interest IDs are connected
-                                'interestIds': [],
+                                'ageMin': _ageRange.start.round(),
+                                'ageMax': _ageRange.end.round(),
+                                'country': _country,
+                                'interests': _selectedInterests.toList(),
+                                'endDate': _endDate?.toIso8601String(),
                               });
                             }
                           : null,
@@ -509,44 +676,4 @@ class _Label extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
           color: AppTheme.textSecondary));
-}
-
-class _DropdownField extends StatelessWidget {
-  final String label;
-  final String? value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-  final IconData? trailingIcon;
-  const _DropdownField(
-      {required this.label,
-      required this.value,
-      required this.items,
-      required this.onChanged,
-      this.trailingIcon});
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                  color: AppTheme.textSecondary)),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: value,
-            isExpanded: true,
-            decoration: InputDecoration(
-                suffixIcon: trailingIcon != null
-                    ? Icon(trailingIcon, color: AppTheme.textTertiary, size: 18)
-                    : null),
-            items: items
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-            onChanged: onChanged,
-          ),
-        ],
-      );
 }
