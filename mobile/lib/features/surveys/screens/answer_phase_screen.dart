@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,8 +23,47 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
 
   bool get _isMultiPhase => widget.survey.phases.length > 1;
   bool get _isLastPhase => widget.phaseIndex == widget.survey.phases.length - 1;
+
   // Only phase 1 (index 0) requires creator approval in multi-phase surveys
   bool get _requiresApproval => _isMultiPhase && widget.phaseIndex == 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillExistingAnswers();
+  }
+
+  // ✅ Pre-fill answers if user is updating existing responses
+  Future<void> _prefillExistingAnswers() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final phase = widget.survey.phases[widget.phaseIndex];
+      final phaseId = phase['phaseId']?.toString() ?? '';
+
+      final res = await dio.get(
+        '/api/responses/study/${widget.survey.studyId}/phase/$phaseId',
+        options: Options(
+          validateStatus: (s) => s != null && s < 500,
+          receiveTimeout: const Duration(seconds: 8),
+        ),
+      );
+
+      if (res.statusCode == 200 && res.data != null) {
+        final answers = res.data['answers'] as List? ?? [];
+        for (final answer in answers) {
+          final qId = answer['questionId']?.toString() ?? '';
+          final value = answer['value'];
+          if (qId.isNotEmpty) {
+            if (mounted) {
+              setState(() => _answers[qId] = value);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Prefill answers error (non-fatal): $e');
+    }
+  }
 
   Future<void> _submit() async {
     setState(() => _isSubmitting = true);
@@ -42,13 +82,30 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
         };
       }).toList();
 
-      await dio.post('/api/responses', data: {
+      final payload = {
         'studyId': widget.survey.studyId,
         'phaseId': phaseId,
         'answers': answers,
-      });
+      };
 
-      // Notify creator
+      // ✅ Try POST first, if 409 (already exists) → PUT to update
+      try {
+        await dio.post('/api/responses', data: payload);
+        debugPrint('Response submitted successfully');
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 409) {
+          debugPrint('Response exists → updating...');
+          await dio.put(
+            '/api/responses/study/${widget.survey.studyId}/phase/$phaseId',
+            data: payload,
+          );
+          debugPrint('Response updated successfully');
+        } else {
+          rethrow;
+        }
+      }
+
+      // ✅ Notify creator
       try {
         await dio.post('/api/notifications', data: {
           'userId': widget.survey.creatorId,
@@ -82,7 +139,7 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
           });
         }
       } else {
-        // Last phase done
+        // ✅ Last phase done — go home
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('All phases completed! Great job!'),
             backgroundColor: AppTheme.successColor));
@@ -115,11 +172,11 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                   fontWeight: FontWeight.w800,
                   color: AppTheme.textPrimary)),
           const SizedBox(height: 8),
-          Text(
+          const Text(
               'The creator will review your answers. '
-              'You will receive a notification when Phase 2 is approved.',
+              'You will receive a notification when the next phase is approved.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 14, color: AppTheme.textSecondary, height: 1.5)),
           const SizedBox(height: 20),
           SizedBox(
@@ -167,6 +224,7 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
       ),
       body: Column(
         children: [
+          // ── Progress Header ─────────────────────────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -222,6 +280,8 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
               ],
             ]),
           ),
+
+          // ── Questions List ──────────────────────────────────────
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(20),
@@ -243,6 +303,7 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Q label + required marker
                         Row(children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -271,13 +332,22 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                                 color: AppTheme.textPrimary,
                                 height: 1.4)),
                         const SizedBox(height: 16),
+
+                        // ── TEXT ──────────────────────────────────
                         if (qType == 'TEXT')
                           TextField(
+                            controller: TextEditingController(
+                                text: _answers[qId]?.toString() ?? '')
+                              ..selection = TextSelection.collapsed(
+                                  offset:
+                                      (_answers[qId]?.toString() ?? '').length),
                             onChanged: (v) => _answers[qId] = v,
-                            maxLines: 2,
+                            maxLines: 3,
                             decoration: const InputDecoration(
                                 hintText: 'Type your answer...'),
                           ),
+
+                        // ── SINGLE CHOICE ─────────────────────────
                         if (qType == 'SINGLE_CHOICE')
                           ...options.map((opt) {
                             final label = opt['label'] ?? opt.toString();
@@ -308,23 +378,28 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                                           : AppTheme.textTertiary,
                                       size: 20),
                                   const SizedBox(width: 12),
-                                  Text(label.toString(),
-                                      style: TextStyle(
-                                          color: isSelected
-                                              ? AppTheme.primary
-                                              : AppTheme.textPrimary,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w600
-                                              : FontWeight.w400)),
+                                  Expanded(
+                                    child: Text(label.toString(),
+                                        style: TextStyle(
+                                            color: isSelected
+                                                ? AppTheme.primary
+                                                : AppTheme.textPrimary,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.w400)),
+                                  ),
                                 ]),
                               ),
                             );
                           }),
+
+                        // ── MULTIPLE CHOICE ───────────────────────
                         if (qType == 'MULTIPLE_CHOICE')
                           ...options.map((opt) {
                             final label = opt['label'] ?? opt.toString();
-                            final selected =
-                                (_answers[qId] as List<String>?) ?? [];
+                            final selected = _answers[qId] is List
+                                ? List<String>.from(_answers[qId])
+                                : <String>[];
                             final isSelected = selected.contains(label);
                             return GestureDetector(
                               onTap: () {
@@ -359,17 +434,29 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                                           : AppTheme.textTertiary,
                                       size: 20),
                                   const SizedBox(width: 12),
-                                  Text(label.toString()),
+                                  Expanded(
+                                    child: Text(label.toString(),
+                                        style: TextStyle(
+                                            color: isSelected
+                                                ? AppTheme.primary
+                                                : AppTheme.textPrimary,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.w400)),
+                                  ),
                                 ]),
                               ),
                             );
                           }),
+
+                        // ── RATING SCALE ──────────────────────────
                         if (qType == 'RATING_SCALE')
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: List.generate(5, (i) {
                               final val = i + 1;
-                              final isSelected = _answers[qId] == val;
+                              final isSelected = _answers[qId] == val ||
+                                  _answers[qId]?.toString() == val.toString();
                               return GestureDetector(
                                 onTap: () =>
                                     setState(() => _answers[qId] = val),
@@ -381,6 +468,10 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                                         ? AppTheme.primary
                                         : AppTheme.surfaceLow,
                                     shape: BoxShape.circle,
+                                    border: isSelected
+                                        ? null
+                                        : Border.all(
+                                            color: AppTheme.surfaceHigh),
                                   ),
                                   child: Center(
                                       child: Text('$val',
@@ -393,6 +484,8 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
                               );
                             }),
                           ),
+
+                        // ── YES / NO ──────────────────────────────
                         if (qType == 'YES_NO')
                           Row(children: [
                             Expanded(
@@ -445,6 +538,8 @@ class _AnswerPhaseScreenState extends ConsumerState<AnswerPhaseScreen> {
           ),
         ],
       ),
+
+      // ── Submit Button ─────────────────────────────────────────────
       bottomNavigationBar: Container(
         color: Colors.white,
         padding: const EdgeInsets.all(20),

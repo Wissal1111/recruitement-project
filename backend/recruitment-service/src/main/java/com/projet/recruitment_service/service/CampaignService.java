@@ -1,58 +1,91 @@
-// service/CampaignService.java
 package com.projet.recruitment_service.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.projet.recruitment_service.client.PaymentServiceClient; // ✅ AJOUT
 import com.projet.recruitment_service.dto.request.CampaignRequest;
 import com.projet.recruitment_service.dto.response.CampaignStatsResponse;
 import com.projet.recruitment_service.dto.response.UserProfileDto;
 import com.projet.recruitment_service.entity.EligibilityCriteria;
 import com.projet.recruitment_service.entity.InvitationCampaign;
+import com.projet.recruitment_service.entity.RecruitmentSlot; // ✅ AJOUT
 import com.projet.recruitment_service.entity.SurveyInvitation;
 import com.projet.recruitment_service.enums.CampaignStatus;
 import com.projet.recruitment_service.enums.InvitationStatus;
 import com.projet.recruitment_service.exception.BusinessException;
 import com.projet.recruitment_service.repository.EligibilityCriteriaRepository;
 import com.projet.recruitment_service.repository.InvitationCampaignRepository;
+import com.projet.recruitment_service.repository.RecruitmentSlotRepository; // ✅ AJOUT
 import com.projet.recruitment_service.repository.SurveyInvitationRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CampaignService {
 
         private final InvitationCampaignRepository campaignRepository;
         private final SurveyInvitationRepository invitationRepository;
         private final EligibilityService eligibilityService;
         private final EligibilityCriteriaRepository criteriaRepository;
+        private final PaymentServiceClient paymentServiceClient; // ✅ AJOUT
+        private final RecruitmentSlotRepository slotRepository; // ✅ AJOUT
 
-        // RC-06: Launch campaign
+        // RC-06: Launch campaign → ALLOUER les points
         @Transactional
         public InvitationCampaign launchCampaign(UUID studyId, UUID creatorId,
-                        CampaignRequest request, String authToken) {
+                                                 CampaignRequest request, String authToken) {
                 EligibilityCriteria criteria = criteriaRepository.findByStudyId(studyId)
-                                .orElseThrow(() -> new BusinessException(
-                                                "Define eligibility criteria before launching a campaign",
-                                                HttpStatus.BAD_REQUEST));
+                        .orElseThrow(() -> new BusinessException(
+                                "Define eligibility criteria before launching a campaign",
+                                HttpStatus.BAD_REQUEST));
+
+                // ✅ CALCULER le budget total nécessaire
+                BigDecimal totalPoints = calculateTotalPoints(studyId, request.getTargetCount());
+
+                // ✅ ALLOUER les points via payment-service (bloquer dans le wallet)
+                try {
+                        String serviceToken = "Bearer " + System.getenv("SERVICE_SECRET");
+
+                        Map<String, Object> allocationResponse = paymentServiceClient.allocatePoints(
+                                serviceToken,
+                                Map.of(
+                                        "creatorId", creatorId.toString(),
+                                        "studyId", studyId.toString(),
+                                        "totalPoints", totalPoints.toString()
+                                )
+                        );
+
+                        log.info("Points allocated for study {}: {}", studyId, allocationResponse);
+
+                } catch (Exception e) {
+                        log.error("Failed to allocate points: {}", e.getMessage());
+                        throw new BusinessException(
+                                "Insufficient wallet points to launch campaign. Please purchase more points.",
+                                HttpStatus.PAYMENT_REQUIRED);
+                }
 
                 // Fetch eligible users from User Service
                 List<UserProfileDto> eligibleUsers = eligibilityService.fetchEligibleUsers(criteria, authToken);
 
                 // Create the campaign
                 InvitationCampaign campaign = InvitationCampaign.builder()
-                                .studyId(studyId)
-                                .creatorId(creatorId)
-                                .targetCount(request.getTargetCount())
-                                .expirationDays(request.getExpirationDays())
-                                .status(CampaignStatus.ACTIVE)
-                                .build();
+                        .studyId(studyId)
+                        .creatorId(creatorId)
+                        .targetCount(request.getTargetCount())
+                        .expirationDays(request.getExpirationDays())
+                        .status(CampaignStatus.ACTIVE)
+                        .build();
                 campaign.launch();
                 campaign = campaignRepository.save(campaign);
 
@@ -61,25 +94,38 @@ public class CampaignService {
                 final int expDays = campaign.getExpirationDays();
 
                 for (UserProfileDto user : eligibleUsers) {
-                        // Skip if user already has active/accepted/completed invitation for this study
                         boolean alreadyInvited = invitationRepository.existsByUserIdAndStudyIdAndStatusIn(
-                                        user.getUserId(), studyId,
-                                        List.of(InvitationStatus.PENDING, InvitationStatus.ACCEPTED,
-                                                        InvitationStatus.COMPLETED));
+                                user.getUserId(), studyId,
+                                List.of(InvitationStatus.PENDING, InvitationStatus.ACCEPTED,
+                                        InvitationStatus.COMPLETED));
                         if (alreadyInvited)
                                 continue;
 
                         SurveyInvitation invitation = SurveyInvitation.builder()
-                                        .campaignId(campaignId)
-                                        .userId(user.getUserId())
-                                        .studyId(studyId)
-                                        .status(InvitationStatus.PENDING)
-                                        .expiresAt(LocalDateTime.now().plusDays(expDays))
-                                        .build();
+                                .campaignId(campaignId)
+                                .userId(user.getUserId())
+                                .studyId(studyId)
+                                .status(InvitationStatus.PENDING)
+                                .expiresAt(LocalDateTime.now().plusDays(expDays))
+                                .build();
                         invitationRepository.save(invitation);
                 }
 
                 return campaign;
+        }
+
+        // ✅ CALCULER le budget total : rewardAmount × targetCount pour chaque phase
+        private BigDecimal calculateTotalPoints(UUID studyId, int targetCount) {
+                List<RecruitmentSlot> slots = slotRepository.findByStudyId(studyId);
+
+                if (slots.isEmpty()) {
+                        log.warn("No slots found for study {}, using default", studyId);
+                        return BigDecimal.ZERO;
+                }
+
+                return slots.stream()
+                        .map(slot -> slot.getRewardAmount().multiply(BigDecimal.valueOf(targetCount)))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
         // RC-13: List campaigns for a study
@@ -87,18 +133,43 @@ public class CampaignService {
                 return campaignRepository.findByStudyId(studyId);
         }
 
-        // RC-14: Cancel campaign
+        // RC-14: Cancel campaign → LIBÉRER les points
         @Transactional
         public InvitationCampaign cancelCampaign(UUID campaignId) {
                 InvitationCampaign campaign = campaignRepository.findById(campaignId)
-                                .orElseThrow(() -> new BusinessException("Campaign not found", HttpStatus.NOT_FOUND));
+                        .orElseThrow(() -> new BusinessException("Campaign not found", HttpStatus.NOT_FOUND));
+
+                // ✅ LIBÉRER les points bloqués
+                try {
+                        String serviceToken = "Bearer " + System.getenv("SERVICE_SECRET");
+
+                        // Calculer les points à libérer
+                        BigDecimal totalPoints = calculateTotalPoints(
+                                campaign.getStudyId(),
+                                campaign.getTargetCount());
+
+                        paymentServiceClient.releasePoints(
+                                serviceToken,
+                                Map.of(
+                                        "creatorId", campaign.getCreatorId().toString(),
+                                        "studyId", campaign.getStudyId().toString(),
+                                        "totalPoints", totalPoints.toString()
+                                )
+                        );
+
+                        log.info("Points released for cancelled campaign {}", campaignId);
+
+                } catch (Exception e) {
+                        log.error("Failed to release points for campaign {}: {}", campaignId, e.getMessage());
+                        // Ne pas bloquer l'annulation si payment échoue
+                }
 
                 campaign.cancel();
                 campaignRepository.save(campaign);
 
                 // Cancel all PENDING invitations
                 List<SurveyInvitation> pending = invitationRepository
-                                .findByCampaignIdAndStatusIn(campaignId, List.of(InvitationStatus.PENDING));
+                        .findByCampaignIdAndStatusIn(campaignId, List.of(InvitationStatus.PENDING));
                 pending.forEach(inv -> inv.setStatus(InvitationStatus.CANCELLED));
                 invitationRepository.saveAll(pending);
 
@@ -109,14 +180,14 @@ public class CampaignService {
         @Transactional
         public InvitationCampaign updateExpiration(UUID campaignId, int expirationDays) {
                 InvitationCampaign campaign = campaignRepository.findById(campaignId)
-                                .orElseThrow(() -> new BusinessException("Campaign not found", HttpStatus.NOT_FOUND));
+                        .orElseThrow(() -> new BusinessException("Campaign not found", HttpStatus.NOT_FOUND));
 
                 campaign.setExpirationDays(expirationDays);
                 campaignRepository.save(campaign);
 
                 // Recalculate expiresAt for all PENDING invitations
                 List<SurveyInvitation> pending = invitationRepository
-                                .findByCampaignIdAndStatusIn(campaignId, List.of(InvitationStatus.PENDING));
+                        .findByCampaignIdAndStatusIn(campaignId, List.of(InvitationStatus.PENDING));
                 LocalDateTime newExpiry = LocalDateTime.now().plusDays(expirationDays);
                 pending.forEach(inv -> inv.setExpiresAt(newExpiry));
                 invitationRepository.saveAll(pending);
@@ -128,11 +199,11 @@ public class CampaignService {
         @Transactional
         public int resendInvitations(UUID campaignId) {
                 InvitationCampaign campaign = campaignRepository.findById(campaignId)
-                                .orElseThrow(() -> new BusinessException("Campaign not found", HttpStatus.NOT_FOUND));
+                        .orElseThrow(() -> new BusinessException("Campaign not found", HttpStatus.NOT_FOUND));
 
                 List<SurveyInvitation> toResend = invitationRepository
-                                .findByCampaignIdAndStatusIn(campaignId,
-                                                List.of(InvitationStatus.EXPIRED, InvitationStatus.DECLINED));
+                        .findByCampaignIdAndStatusIn(campaignId,
+                                List.of(InvitationStatus.EXPIRED, InvitationStatus.DECLINED));
 
                 LocalDateTime newExpiry = LocalDateTime.now().plusDays(campaign.getExpirationDays());
                 toResend.forEach(inv -> {
@@ -148,65 +219,63 @@ public class CampaignService {
         // RC-31: Campaign stats
         public CampaignStatsResponse getCampaignStats(UUID campaignId) {
                 long totalInvited = invitationRepository.countByCampaignIdAndStatus(campaignId,
-                                InvitationStatus.PENDING)
-                                + invitationRepository.countByCampaignIdAndStatus(campaignId, InvitationStatus.ACCEPTED)
-                                + invitationRepository.countByCampaignIdAndStatus(campaignId,
-                                                InvitationStatus.COMPLETED)
-                                + invitationRepository.countByCampaignIdAndStatus(campaignId, InvitationStatus.DECLINED)
-                                + invitationRepository.countByCampaignIdAndStatus(campaignId, InvitationStatus.EXPIRED);
+                        InvitationStatus.PENDING)
+                        + invitationRepository.countByCampaignIdAndStatus(campaignId, InvitationStatus.ACCEPTED)
+                        + invitationRepository.countByCampaignIdAndStatus(campaignId,
+                        InvitationStatus.COMPLETED)
+                        + invitationRepository.countByCampaignIdAndStatus(campaignId, InvitationStatus.DECLINED)
+                        + invitationRepository.countByCampaignIdAndStatus(campaignId, InvitationStatus.EXPIRED);
 
                 long totalAccepted = invitationRepository.countByCampaignIdAndStatus(campaignId,
-                                InvitationStatus.ACCEPTED);
+                        InvitationStatus.ACCEPTED);
                 long totalCompleted = invitationRepository.countByCampaignIdAndStatus(campaignId,
-                                InvitationStatus.COMPLETED);
+                        InvitationStatus.COMPLETED);
                 long totalDeclined = invitationRepository.countByCampaignIdAndStatus(campaignId,
-                                InvitationStatus.DECLINED);
+                        InvitationStatus.DECLINED);
                 long totalExpired = invitationRepository.countByCampaignIdAndStatus(campaignId,
-                                InvitationStatus.EXPIRED);
+                        InvitationStatus.EXPIRED);
 
                 double conversionRate = totalInvited > 0
-                                ? (double) totalCompleted / totalInvited * 100
-                                : 0;
+                        ? (double) totalCompleted / totalInvited * 100
+                        : 0;
 
                 return CampaignStatsResponse.builder()
-                                .totalInvited(totalInvited)
-                                .totalAccepted(totalAccepted)
-                                .totalCompleted(totalCompleted)
-                                .totalDeclined(totalDeclined)
-                                .totalExpired(totalExpired)
-                                .conversionRate(conversionRate)
-                                .build();
+                        .totalInvited(totalInvited)
+                        .totalAccepted(totalAccepted)
+                        .totalCompleted(totalCompleted)
+                        .totalDeclined(totalDeclined)
+                        .totalExpired(totalExpired)
+                        .conversionRate(conversionRate)
+                        .build();
         }
 
         @Transactional
         public SurveyInvitation inviteSpecificUser(UUID studyId, UUID creatorId, UUID targetUserId, String authToken) {
-                // Check not already invited
                 boolean alreadyInvited = invitationRepository.existsByUserIdAndStudyIdAndStatusIn(
-                                targetUserId, studyId,
-                                List.of(InvitationStatus.PENDING, InvitationStatus.ACCEPTED,
-                                                InvitationStatus.COMPLETED));
+                        targetUserId, studyId,
+                        List.of(InvitationStatus.PENDING, InvitationStatus.ACCEPTED,
+                                InvitationStatus.COMPLETED));
                 if (alreadyInvited) {
                         throw new BusinessException("User already invited to this study", HttpStatus.CONFLICT);
                 }
 
-                // campaign_id is NOT NULL in DB — create a single-user campaign first
                 InvitationCampaign campaign = InvitationCampaign.builder()
-                                .studyId(studyId)
-                                .creatorId(creatorId)
-                                .targetCount(1)
-                                .expirationDays(7)
-                                .status(CampaignStatus.ACTIVE)
-                                .build();
+                        .studyId(studyId)
+                        .creatorId(creatorId)
+                        .targetCount(1)
+                        .expirationDays(7)
+                        .status(CampaignStatus.ACTIVE)
+                        .build();
                 campaign.launch();
                 campaign = campaignRepository.save(campaign);
 
                 SurveyInvitation invitation = SurveyInvitation.builder()
-                                .campaignId(campaign.getCampaignId())
-                                .userId(targetUserId)
-                                .studyId(studyId)
-                                .status(InvitationStatus.PENDING)
-                                .expiresAt(LocalDateTime.now().plusDays(7))
-                                .build();
+                        .campaignId(campaign.getCampaignId())
+                        .userId(targetUserId)
+                        .studyId(studyId)
+                        .status(InvitationStatus.PENDING)
+                        .expiresAt(LocalDateTime.now().plusDays(7))
+                        .build();
                 return invitationRepository.save(invitation);
         }
 }

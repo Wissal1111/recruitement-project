@@ -15,7 +15,7 @@ import com.projet.recruitment_service.config.FeignConfig;
 import com.projet.recruitment_service.dto.response.UserProfileDto;
 
 @FeignClient(name = "user-service",
-        url = "${services.user-service.url}",
+        url = "${services.gateway.url}",
         configuration = FeignConfig.class)
 public interface UserServiceClient {
 

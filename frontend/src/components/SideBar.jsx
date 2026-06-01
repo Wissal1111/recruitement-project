@@ -3,8 +3,9 @@ import './SideBar.css'
 import {
     Info, LayoutDashboard, UserRound, Settings, Bell,
     Activity, Files, SquarePlus, Search, UsersRound,
-    Target, MailPlus, ClipboardList,DollarSign
+    Target, MailPlus, ClipboardList,DollarSign,CreditCard
 } from "lucide-react"
+
 
 export default function SideBar({ page, part, isOpen, onClose }) {
     const navigate = useNavigate()
@@ -52,6 +53,9 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                         <li className={page === "createsurvey" ? 'selected-page' : ''} onClick={() => go("/recruit/create")}>
                             <SquarePlus size={16} /> Build Survey
                         </li>
+                        <li className={page === "payments" ? 'selected-page' : ''} onClick={() => go("/recruit/payments")}>
+                            <CreditCard size={16} /> Payments
+                        </li>
                     </ul>
                     <p>CANDIDATES</p>
                     <ul>
@@ -74,6 +78,7 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                             <DollarSign size={16} /> Slots & Rewards
                         </li>
                     </ul>
+
                 </>}
             </div>
         </>

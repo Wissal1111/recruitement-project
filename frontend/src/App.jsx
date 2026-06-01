@@ -24,8 +24,11 @@ import RecruitRouter from "./pages/RecruitRouter";
 import Rewards from "./pages/participant/Rewards";
 import Screening from "./pages/recruit/Screening";
 import SlotsRewards from "./pages/recruit/SlotsRewards";
-import Dashboard from "./pages/home/Dashboard";
 
+
+
+
+import Payments from "./pages/recruit/Payments";
 function App() {
     return (
         <BrowserRouter>
@@ -70,6 +73,7 @@ function App() {
                 <Route path="/recruit/become-creator" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />
                 <Route path="/recruit/screening" element={<ProtectedRoute><Screening /></ProtectedRoute>} />
                 <Route path="/recruit/slots" element={<ProtectedRoute><SlotsRewards /></ProtectedRoute>} />
+                <Route path="/recruit/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     );
