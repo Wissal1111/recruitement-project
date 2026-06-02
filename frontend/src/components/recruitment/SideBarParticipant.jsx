@@ -34,11 +34,8 @@ export default function SideBarParticipant({ page, isOpen, onClose }) {
     className={page === "responses" ? "selected-page" : ""}
     onClick={() => go("/participate/responses")}
 >
-    <ClipboardCheck size={16} /> Responses
+    <ClipboardCheck size={16} /> Participations
 </li>
-                    <li className={page === "activity" ? 'selected-page' : ''} onClick={() => go("/participate/activity")}>
-                        <Activity size={16} /> My Participations
-                    </li>
                     <li className={page === "rewards" ? 'selected-page' : ''} onClick={() => go("/participate/rewards")}>
                         <Trophy size={16} /> Rewards
                     </li>

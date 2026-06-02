@@ -21,7 +21,6 @@
     font-weight: 800;
     color: var(--title);
     margin: 0 0 4px 0;
-    line-height: 1.2;
 }
 
 .responses-heading-accent {
@@ -94,7 +93,6 @@
 .counter-bubble-value {
     font-size: 22px;
     font-weight: 800;
-    line-height: 1;
     color: var(--title);
 }
 
@@ -429,7 +427,6 @@
     font-weight: 800;
     color: var(--title);
     margin: 0 0 8px 0;
-    line-height: 1.3;
 }
 
 .study-desc {

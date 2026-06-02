@@ -4,15 +4,14 @@ import SideBarParticipant from "../../components/recruitment/SideBarParticipant"
 import TopNavBar from "../../components/TopNavBar";
 import ResponseApi from "../../api/ResponseApi";
 import * as RecruitmentApi from "../../api/RecruitmentApi";
-import { getStudyById } from "../../api/StudyApi"; // ← NEW: study service fallback
+import { getStudyByIdPublic } from "../../api/StudyApi";
 import {
-    FileText, CheckCircle2, Clock, ChevronRight, BookOpen,
+    FileText, CheckCircle2, Clock, ChevronRight, BookOpen,ChevronLeft ,
     Lock, PlayCircle, AlertCircle, Search,
-    Calendar, Award, Users, Layers, Eye
+    Calendar, Award, Users, Layers, Eye, GitBranch, Tag
 } from "lucide-react";
 import "./Responses.css";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (d) =>
     d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
@@ -20,12 +19,6 @@ const PHASE_STATUS_CONFIG = {
     ACTIVE:    { bg: "#F0FDF4", color: "#15803D", dot: "#22C55E", label: "Active" },
     PENDING:   { bg: "#FFF7ED", color: "#C2410C", dot: "#FB923C", label: "Pending" },
     COMPLETED: { bg: "var(--background-blue)", color: "var(--blue-text)", dot: "#7073FF", label: "Completed" },
-};
-
-const RESPONSE_STATUS_CONFIG = {
-    DRAFT:     { bg: "#F1F5F9", color: "#64748B", label: "Draft" },
-    SUBMITTED: { bg: "#EEF0FF", color: "#4338CA", label: "Submitted" },
-    ARCHIVED:  { bg: "#F1F5F9", color: "#64748B", label: "Archived" },
 };
 
 const CATEGORY_COLORS = {
@@ -44,14 +37,7 @@ function unwrapList(res) {
     return [];
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-//  MODE A — Study + Phases  (/participate/responses/:studyId)
-//
-//  Data priority:
-//    1. /recruitment/participations/me  (may be empty — backend bug)
-//    2. /responses/me/by-study          (has study info if you already responded)
-//    3. /studies/:studyId               (study service — always works) ← NEW fallback
-// ────────────────────────────────────────────────────────────────────────────
+// ── StudyPhaseView ───────────────────────────────────────────────────────────
 function StudyPhaseView({ studyId, navigate }) {
     const [study, setStudy]         = useState(null);
     const [drafts, setDrafts]       = useState({});
@@ -71,7 +57,6 @@ function StudyPhaseView({ studyId, navigate }) {
             .then(async ([participationsRes, draftsRes, allResponsesRes, groupedRes]) => {
                 const participations = unwrapList(participationsRes);
 
-                // ── Try source 1: participations ──────────────────────────
                 const match = participations.find(
                     p => String(p.studyId) === String(studyId) || String(p.study?.studyId) === String(studyId)
                 );
@@ -79,20 +64,32 @@ function StudyPhaseView({ studyId, navigate }) {
                 let studyData = null;
 
                 if (match) {
-                    studyData = match.study || match;
-                    if (!studyData.studyId) studyData.studyId = studyId;
+                    const sd = match.study || match;
+                    if (sd.title || sd.studyTitle) {
+                        studyData = {
+                            studyId:       sd.studyId || studyId,
+                            title:         sd.title || sd.studyTitle,
+                            description:   sd.description,
+                            studyCategory: sd.studyCategory,
+                            studyStatus:   sd.studyStatus,
+                            isMultiPhase:  sd.isMultiPhase,
+                            startDate:     sd.startDate,
+                            endDate:       sd.endDate,
+                            phases:        sd.phases || [],
+                        };
+                    }
                 }
 
-                // ── Try source 2: response groups ─────────────────────────
                 if (!studyData) {
                     const groups = unwrapList(groupedRes);
                     const group  = groups.find(g => String(g.studyId) === String(studyId));
-                    if (group) {
+                    if (group && (group.studyTitle || group.title)) {
                         studyData = {
                             studyId,
-                            title:         group.studyTitle || group.title || "Study",
+                            title:         group.studyTitle || group.title,
                             studyCategory: group.studyCategory,
                             studyStatus:   group.studyStatus,
+                            isMultiPhase:  group.isMultiPhase,
                             startDate:     group.startDate,
                             endDate:       group.endDate,
                             phases:        group.phases || [],
@@ -100,29 +97,24 @@ function StudyPhaseView({ studyId, navigate }) {
                     }
                 }
 
-                // ── Try source 3: study service (the real fallback) ───────
-                // This fires when participations/me is empty AND no responses yet
-                // (i.e. participant just accepted an invitation)
                 if (!studyData || !studyData.phases?.length) {
                     try {
-                        const studyRes = await getStudyById(studyId);
-                        // getStudyById returns response.data directly (see StudyApi)
-                        const raw = studyRes?.data || studyRes;
+                        const raw = await getStudyByIdPublic(studyId);
                         if (raw && (raw.studyId || raw._id)) {
                             studyData = {
                                 studyId:       raw.studyId || studyId,
-                                title:         raw.title   || raw.studyTitle || "Study",
+                                title:         raw.title || raw.studyTitle || "Study",
                                 description:   raw.description,
                                 studyCategory: raw.studyCategory,
                                 studyStatus:   raw.studyStatus || raw.status,
+                                isMultiPhase:  raw.isMultiPhase,
                                 startDate:     raw.startDate,
                                 endDate:       raw.endDate,
-                                // phases may live under raw.phases or raw.studyPhases
                                 phases:        raw.phases || raw.studyPhases || [],
                             };
                         }
                     } catch (studyErr) {
-                        console.warn("getStudyById failed:", studyErr?.response?.data || studyErr.message);
+                        console.warn("getStudyByIdPublic failed:", studyErr?.response?.data || studyErr.message);
                     }
                 }
 
@@ -133,14 +125,12 @@ function StudyPhaseView({ studyId, navigate }) {
 
                 setStudy(studyData);
 
-                // Draft map: phaseId → responseId
                 const draftMap = {};
                 unwrapList(draftsRes).forEach(r => {
                     if (r.phaseId) draftMap[r.phaseId] = r.responseId;
                 });
                 setDrafts(draftMap);
 
-                // Submitted map: phaseId → responseId
                 const submittedMap = {};
                 unwrapList(allResponsesRes)
                     .filter(r => String(r.studyId) === String(studyId) && r.status === "SUBMITTED")
@@ -160,25 +150,46 @@ function StudyPhaseView({ studyId, navigate }) {
     return (
         <div className="responses-page">
             <div className="responses-heading">
-                <h1 className="responses-heading-text">
-                    Study <span className="responses-heading-accent">Phases</span>
-                </h1>
-                <p className="responses-subtitle">Select an active phase below to begin or continue your response.</p>
-            </div>
+    <button
+        onClick={() => navigate("/participate/responses")}
+        style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 13, fontWeight: 600, color: "var(--content)",
+            padding: "0 0 12px", marginBottom: 4
+        }}>
+        <ChevronLeft size={16} /> Back to My Responses
+    </button>
+    <h1 className="responses-heading-text">
+        Study <span className="responses-heading-accent">Phases</span>
+    </h1>
+    <p className="responses-subtitle">Select an active phase below to begin or continue your response.</p>
+</div>
 
             <div className="study-info-card">
                 <div className="study-info-stripe" />
                 <div className="study-info-body">
                     <div className="study-info-left">
                         <div className="study-badges">
-                            <span className="badge" style={{ background: catCfg.bg, color: catCfg.color }}>
-                                {study.studyCategory}
-                            </span>
+                            {study.studyCategory && (
+                                <span className="badge" style={{ background: catCfg.bg, color: catCfg.color }}>
+                                    {study.studyCategory}
+                                </span>
+                            )}
+                            {study.studyStatus && (
+                                <span className="badge" style={{
+                                    background: study.studyStatus === "PUBLISHED" ? "#F0FDF4" : "#F1F5F9",
+                                    color: study.studyStatus === "PUBLISHED" ? "#15803D" : "#64748B"
+                                }}>
+                                    {study.studyStatus}
+                                </span>
+                            )}
                             <span className="badge" style={{
-                                background: study.studyStatus === "PUBLISHED" ? "#F0FDF4" : "#F1F5F9",
-                                color: study.studyStatus === "PUBLISHED" ? "#15803D" : "#64748B"
+                                background: study.isMultiPhase ? "#EEF0FF" : "#F1F5F9",
+                                color: study.isMultiPhase ? "#4338CA" : "#475569"
                             }}>
-                                {study.studyStatus}
+                                <GitBranch size={10} style={{ marginRight: 3 }} />
+                                {study.isMultiPhase ? "Multi-phase" : "Single phase"}
                             </span>
                         </div>
                         <h2 className="study-title">{study.title}</h2>
@@ -289,8 +300,8 @@ function PhaseCard({ phase, index, draftId, isSubmitted, studyId, navigate }) {
                 <div className="phase-chips">
                     <MetaChip icon={<FileText size={11} />} label={`${phase.questions?.length || 0} questions`} />
                     <MetaChip icon={<Users size={11} />}    label={`Max ${phase.maxParticipants}`} />
-                    {phase.rewardAmount && parseFloat(phase.rewardAmount) > 0 && (
-                        <MetaChip icon={<Award size={11} />} label={`$${parseFloat(phase.rewardAmount).toFixed(2)}`} />
+                    {phase.rewardAmount && parseFloat(phase.rewardAmount?.$numberDecimal ?? phase.rewardAmount) > 0 && (
+                        <MetaChip icon={<Award size={11} />} label={`${parseFloat(phase.rewardAmount?.$numberDecimal ?? phase.rewardAmount).toFixed(0)} pts`} />
                     )}
                     {draftId && !isSubmitted && (
                         <span className="draft-chip">
@@ -313,16 +324,7 @@ function PhaseCard({ phase, index, draftId, isSubmitted, studyId, navigate }) {
     );
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-//  MODE B — My Responses  (/participate/responses)
-//
-//  Data sources (merged by studyId, deduped):
-//    1. /recruitment/participations/me  — accepted participations (may be empty)
-//    2. /recruitment/invitations/me     — ACCEPTED invitations ← NEW fallback
-//    3. /responses/me/by-study          — existing draft/submitted responses
-//
-//  For sources 1 & 2, we call getStudyById() to get real study+phases data.
-// ────────────────────────────────────────────────────────────────────────────
+// ── MyResponsesView ──────────────────────────────────────────────────────────
 function MyResponsesView({ navigate }) {
     const [tab, setTab]         = useState("ALL");
     const [search, setSearch]   = useState("");
@@ -335,7 +337,7 @@ function MyResponsesView({ navigate }) {
 
         Promise.all([
             RecruitmentApi.getMyParticipations().catch(() => ({ data: [] })),
-            RecruitmentApi.getMyInvitations().catch(() => ({ data: [] })),       // ← NEW
+            RecruitmentApi.getMyInvitations().catch(() => ({ data: [] })),
             ResponseApi.getMyResponsesGroupedByStudy().catch(() => ({ data: [] })),
         ])
             .then(async ([participationsRes, invitationsRes, responsesRes]) => {
@@ -346,96 +348,99 @@ function MyResponsesView({ navigate }) {
                     ? rawResponses
                     : (rawResponses?.data || []);
 
-                // Response map: studyId → group
                 const responseMap = {};
                 responseGroups.forEach(g => {
                     responseMap[String(g.studyId)] = g;
                 });
 
-                // studyMap: studyId → merged entry
                 const studyMap = {};
 
-                // ── Source 1: participations ──────────────────────────────
+                // Source 1: participations — only add if real title exists
                 participations.forEach(p => {
-                    const studyData = p.study || p;
-                    const sid = String(studyData.studyId || p.studyId);
+                    const sd  = p.study || p;
+                    const sid = String(sd.studyId || p.studyId);
                     if (!sid || sid === "undefined") return;
-                    if (!studyMap[sid]) {
+                    const title = sd.title || sd.studyTitle;
+                    if (!studyMap[sid] && title) {
                         studyMap[sid] = {
                             studyId:             sid,
-                            studyTitle:          studyData.title || studyData.studyTitle || "Untitled Study",
-                            studyCategory:       studyData.studyCategory,
-                            studyStatus:         studyData.studyStatus,
-                            startDate:           studyData.startDate,
-                            endDate:             studyData.endDate,
+                            studyTitle:          title,
+                            studyCategory:       sd.studyCategory,
+                            studyStatus:         sd.studyStatus,
+                            isMultiPhase:        sd.isMultiPhase,
+                            startDate:           sd.startDate,
+                            endDate:             sd.endDate,
                             responses:           [],
                             participationStatus: p.status,
                         };
                     }
                 });
 
-                // ── Source 2: accepted invitations (fills gap when participations/me is empty) ──
-                // Only add studies not already in the map
+                // Source 2: accepted invitations — fetch missing study data
                 const acceptedInvitations = invitations.filter(
                     inv => inv.status === "ACCEPTED" && inv.studyId
                 );
 
-                // Fetch study details for accepted invitations not already covered
                 const missingStudyIds = acceptedInvitations
                     .map(inv => String(inv.studyId))
                     .filter(sid => !studyMap[sid]);
 
-                // Dedupe
                 const uniqueMissingIds = [...new Set(missingStudyIds)];
 
-                // Fetch in parallel — ignore individual failures
                 const studyFetches = await Promise.all(
                     uniqueMissingIds.map(sid =>
-                        getStudyById(sid)
-                            .then(res => ({ sid, data: res?.data || res }))
+                        getStudyByIdPublic(sid)
+                            .then(data => ({ sid, data }))
                             .catch(() => ({ sid, data: null }))
                     )
                 );
 
                 studyFetches.forEach(({ sid, data }) => {
                     if (!data) return;
-                    const raw = data;
                     studyMap[sid] = {
                         studyId:             sid,
-                        studyTitle:          raw.title || raw.studyTitle || "Untitled Study",
-                        studyCategory:       raw.studyCategory,
-                        studyStatus:         raw.studyStatus || raw.status,
-                        startDate:           raw.startDate,
-                        endDate:             raw.endDate,
+                        studyTitle:          data.title || data.studyTitle || "Untitled Study",
+                        studyCategory:       data.studyCategory,
+                        studyStatus:         data.studyStatus || data.status,
+                        isMultiPhase:        data.isMultiPhase,
+                        startDate:           data.startDate,
+                        endDate:             data.endDate,
                         responses:           [],
                         participationStatus: "ACCEPTED",
                     };
                 });
 
-                // ── Overlay responses onto each entry ─────────────────────
+                // Overlay responses
                 Object.keys(studyMap).forEach(sid => {
                     const group = responseMap[sid];
                     if (group) studyMap[sid].responses = group.responses || [];
                 });
 
-                // ── Source 3: response groups not covered above ───────────
+                // Source 3: response groups not covered — allow overwriting "Untitled Study"
                 responseGroups.forEach(g => {
-                    const sid = String(g.studyId);
-                    if (!studyMap[sid]) {
+                    const sid        = String(g.studyId);
+                    const existing   = studyMap[sid];
+                    const newTitle   = g.studyTitle || g.title;
+                    const hasNoTitle = !existing?.studyTitle || existing.studyTitle === "Untitled Study";
+
+                    if (!existing || hasNoTitle) {
                         studyMap[sid] = {
-                            studyId:             sid,
-                            studyTitle:          g.studyTitle || g.title || "Untitled Study",
-                            studyCategory:       g.studyCategory,
-                            studyStatus:         g.studyStatus,
-                            startDate:           g.startDate,
-                            endDate:             g.endDate,
-                            responses:           g.responses || [],
-                            participationStatus: null,
+                            ...existing,
+                            studyId:       sid,
+                            studyTitle:    newTitle || existing?.studyTitle || "Untitled Study",
+                            studyCategory: g.studyCategory  || existing?.studyCategory,
+                            studyStatus:   g.studyStatus    || existing?.studyStatus,
+                            isMultiPhase:  g.isMultiPhase   ?? existing?.isMultiPhase,
+                            startDate:     g.startDate      || existing?.startDate,
+                            endDate:       g.endDate        || existing?.endDate,
+                            responses:     g.responses      || existing?.responses || [],
                         };
                     }
                 });
 
-                const allItems = Object.values(studyMap);
+                const allItems = Object.values(studyMap)
+    .filter(item => item.studyStatus === "PUBLISHED");
+                
                 setItems(allItems);
 
                 let drafts = 0, submitted = 0, enrolled = 0;
@@ -551,13 +556,14 @@ function StudyResponseCard({ item, navigate }) {
 
     const submittedCount = responses.filter(r => r.status === "SUBMITTED").length;
     const draftCount     = responses.filter(r => r.status === "DRAFT").length;
+    const isEnded = item.endDate && new Date(item.endDate) < new Date();
 
-    return (
-        <div
-            className="response-card-small"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate(`/participate/responses/${item.studyId}`)}
-        >
+return (
+    <div
+        className="response-card-small"
+        style={{ cursor: isEnded ? "default" : "pointer", opacity: isEnded ? 0.6 : 1 }}
+        onClick={() => !isEnded && navigate(`/participate/responses/${item.studyId}`)}
+    >
             <div className="response-card-small-top">
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <span className="badge" style={{ background: cfg.bg, color: cfg.color }}>
@@ -569,11 +575,27 @@ function StudyResponseCard({ item, navigate }) {
                             {item.studyCategory}
                         </span>
                     )}
+                    
                 </div>
-                <span className="response-date">{fmt(item.startDate)}</span>
+                {(item.startDate || item.endDate) && (
+                    <span className="response-date" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <Calendar size={11} />
+                        {fmt(item.startDate)}
+                    </span>
+                )}
             </div>
-
-            <h3 className="response-card-small-title">{item.studyTitle}</h3>
+             {item.isMultiPhase !== undefined && (
+                        <span className="badge" style={{
+                            background: item.isMultiPhase ? "#EEF0FF" : "#F1F5F9",
+                            color: item.isMultiPhase ? "#4338CA" : "#475569",
+                            display: "flex", alignItems: "center", gap: 3,
+                            width: "fit-content", padding: "2px 6px", fontSize: 11, marginTop: 4
+                        }}>
+                            <GitBranch size={10} />
+                            {item.isMultiPhase ? "Multi-phase" : "Single phase"}
+                        </span>
+                    )}
+            <h3 className="response-card-small-title">{item.studyTitle || "Untitled Study"}</h3>
 
             <p className="response-card-small-sub">
                 {noResponse
@@ -581,14 +603,22 @@ function StudyResponseCard({ item, navigate }) {
                     : `${submittedCount} submitted · ${draftCount} draft`}
             </p>
 
-            <button className="btn-details" style={{ marginTop: "auto" }}>
-                {noResponse
-                    ? <><PlayCircle size={12} /> Start</>
-                    : hasDraft && !hasSubmit
-                        ? <><PlayCircle size={12} /> Continue</>
-                        : <><Eye size={12} /> View</>
-                }
-            </button>
+            {item.endDate && (
+                <p style={{ fontSize: 11, color: "var(--content)", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 4 }}>
+                    <Clock size={10} /> Ends {fmt(item.endDate)}
+                </p>
+            )}
+
+            <button className="btn-details" style={{ marginTop: "auto" }} disabled={isEnded}>
+    {isEnded
+        ? <><Lock size={12} /> Ended</>
+        : noResponse
+            ? <><PlayCircle size={12} /> Start</>
+            : hasDraft && !hasSubmit
+                ? <><PlayCircle size={12} /> Continue</>
+                : <><Eye size={12} /> View</>
+    }
+</button>
         </div>
     );
 }
@@ -643,9 +673,7 @@ function EmptyState({ icon, title, subtitle }) {
     );
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-//  ROOT
-// ────────────────────────────────────────────────────────────────────────────
+// ── ROOT ─────────────────────────────────────────────────────────────────────
 export default function Responses() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { studyId }                   = useParams();

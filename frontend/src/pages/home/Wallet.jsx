@@ -245,7 +245,7 @@ function BuyPointsModal({ onClose, onSuccess }) {
 
                 {amount && Number(amount) > 0 && (
     <div style={{ background: "#EEF0FF", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#4338CA", marginBottom: 4 }}>
-        You will receive <strong>{Number(amount).toLocaleString()} pts</strong> for <strong>${Number(amount).toFixed(2)}</strong>
+        You will receive <strong>{Number(amount*5).toLocaleString()} pts</strong> for <strong>${Number(amount).toFixed(2)}</strong>
     </div>
 )}
 

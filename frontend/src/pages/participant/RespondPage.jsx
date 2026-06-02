@@ -165,7 +165,19 @@ function ProgressBar({ current, total }) {
 }
 
 // ─── success screen ───────────────────────────────────────────────────────────
-function SuccessScreen({ navigate, studyId }) {
+function SuccessScreen({ navigate, studyId, nextPhase }) {
+    useEffect(() => {
+        if (nextPhase) {
+            // auto-redirect after 2 seconds to next active phase
+            const timer = setTimeout(() => {
+                navigate(`/participate/respond/${studyId}/${nextPhase.phaseId}`, {
+                    state: { phase: nextPhase, studyId }
+                });
+            }, 2500);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
     return (
         <div className="rp-success">
             <div className="rp-success-icon">
@@ -173,14 +185,26 @@ function SuccessScreen({ navigate, studyId }) {
             </div>
             <h2 className="rp-success-title">Response Submitted!</h2>
             <p className="rp-success-sub">
-                Your answers have been recorded. Thank you for participating.
+                {nextPhase
+                    ? `Moving to Phase ${nextPhase.phaseOrder} in a moment…`
+                    : "Your answers have been recorded. Thank you for participating."
+                }
             </p>
-            <button
-                className="rp-btn rp-btn--primary"
-                onClick={() => navigate(`/participate/responses/${studyId}`)}
-            >
-                Back to Study
-            </button>
+            {nextPhase ? (
+                <button
+                    className="rp-btn rp-btn--primary"
+                    onClick={() => navigate(`/participate/respond/${studyId}/${nextPhase.phaseId}`, {
+                        state: { phase: nextPhase, studyId }
+                    })}>
+                    Go to Next Phase
+                </button>
+            ) : (
+                <button
+                    className="rp-btn rp-btn--primary"
+                    onClick={() => navigate(`/participate/responses/${studyId}`)}>
+                    Back to Study
+                </button>
+            )}
         </div>
     );
 }
@@ -207,6 +231,7 @@ export default function RespondPage() {
     const [submitted, setSubmitted] = useState(false);
     const [error, setError]         = useState(null);
     const [saveMsg, setSaveMsg]     = useState(null);
+    const [nextPhase, setNextPhase] = useState(null);
 
     const autoSaveTimer = useRef(null);
 
@@ -300,30 +325,43 @@ export default function RespondPage() {
 
     // ── submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        // Validate required
-        const missing = questions.filter(q => q.isRequired && !answers[q.questionId]);
-        if (missing.length) {
-            setError(`Please answer all required questions (${missing.length} remaining).`);
-            // Jump to first missing
-            const idx = questions.findIndex(q => q.questionId === missing[0].questionId);
-            if (idx >= 0) setCurrent(idx);
-            return;
-        }
-        setSubmitting(true);
-        setError(null);
+    const missing = questions.filter(q => q.isRequired && !answers[q.questionId]);
+    if (missing.length) {
+        setError(`Please answer all required questions (${missing.length} remaining).`);
+        const idx = questions.findIndex(q => q.questionId === missing[0].questionId);
+        if (idx >= 0) setCurrent(idx);
+        return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+        await ResponseApi.submitResponse({
+            studyId,
+            phaseId,
+            answers: Object.entries(answers).map(([questionId, value]) => ({ questionId, value })),
+        });
+
+        // Find next active phase
         try {
-            await ResponseApi.submitResponse({
-                studyId,
-                phaseId,
-                answers: Object.entries(answers).map(([questionId, value]) => ({ questionId, value })),
-            });
-            setSubmitted(true);
-        } catch (err) {
-            setError(err?.response?.data?.message || "Submission failed. Please try again.");
-        } finally {
-            setSubmitting(false);
+            const { getStudyByIdPublic } = await import("../../api/StudyApi");
+            const study = await getStudyByIdPublic(studyId);
+            const phases = (study?.phases || []).sort((a, b) => a.phaseOrder - b.phaseOrder);
+            const currentPhaseOrder = phase?.phaseOrder || 0;
+            const next = phases.find(p =>
+                p.phaseOrder > currentPhaseOrder && p.status === "ACTIVE"
+            );
+            setNextPhase(next || null);
+        } catch {
+            setNextPhase(null);
         }
-    };
+
+        setSubmitted(true);
+    } catch (err) {
+        setError(err?.response?.data?.message || "Submission failed. Please try again.");
+    } finally {
+        setSubmitting(false);
+    }
+};
 
     // ── navigation ────────────────────────────────────────────────────────────
     const goNext = () => { if (current < questions.length - 1) setCurrent(c => c + 1); };
@@ -338,14 +376,16 @@ export default function RespondPage() {
 
     // ── render ────────────────────────────────────────────────────────────────
     if (submitted) {
-        return (
-            <div className="dashboard">
-                <TopNavBar page="participate" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-                <SideBarParticipant page="responses" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-                <div className="wrapper"><SuccessScreen navigate={navigate} studyId={studyId} /></div>
+    return (
+        <div className="dashboard">
+            <TopNavBar page="participate" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <SideBarParticipant page="responses" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <div className="wrapper">
+                <SuccessScreen navigate={navigate} studyId={studyId} nextPhase={nextPhase} />
             </div>
-        );
-    }
+        </div>
+    );
+}
 
     const q = questions[current];
     const answeredCount = questions.filter(isAnswered).length;

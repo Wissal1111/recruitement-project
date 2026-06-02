@@ -94,3 +94,12 @@ export const publishStudy = async (studyId) => {
         throw error;
     }
 };
+export const getStudyByIdPublic = async (studyId) => {
+  try {
+    const response = await api.get(`/studies/extern/${studyId}`);
+    return response.data;
+  } catch (error) {
+    console.error("getStudyByIdPublic error:", error.response?.data || error.message);
+    throw error;
+  }
+};
