@@ -18,7 +18,10 @@ export default function MyInvitations() {
 
     useEffect(() => {
         getMyInvitations()
-            .then(r => setInvitations(r.data))
+           .then(r => {
+        console.log("Invitation sample:", r.data[0]);  // ← add this
+        setInvitations(r.data);
+    })
             .catch(() => setInvitations([]))
             .finally(() => setLoading(false));
     }, []);

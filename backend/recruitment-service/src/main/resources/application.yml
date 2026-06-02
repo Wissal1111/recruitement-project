@@ -30,8 +30,9 @@ jwt:
 # ✅ TOUT passe par le Gateway
 services:
   gateway:
-    url: ${GATEWAY_URL:http://gateway:90}
-
+    url: ${GATEWAY_URL:http://gateway:80}
+  survey-service:
+    url: ${SERVICES_SURVEY_SERVICE_URL:http://gateway:80/api}
 feign:
   client:
     config:

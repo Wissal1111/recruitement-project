@@ -103,8 +103,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       JWT_SECRET: your_super_secret_key
-      GATEWAY_URL: http://gateway:90
+      GATEWAY_URL: http://gateway:80
       SERVICE_SECRET: your_service_secret_key
+      SERVICES_SURVEY_SERVICE_URL: http://gateway:80/api
     networks:
       - app-network
     extra_hosts:
