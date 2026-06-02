@@ -88,5 +88,5 @@ router.post('/reward', authMiddleware, async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
-
+//ponit.js
 module.exports = router;
