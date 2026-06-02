@@ -136,10 +136,10 @@ export default function Wallet() {
                 <BuyPointsModal
                     onClose={() => setBuyModal(false)}
                     onSuccess={(tx) => {
-                        setTransactions(p => [tx, ...p]);
-                        getMyWallet().then(r => setWallet(r.data));
-                        setBuyModal(false);
-                    }}
+    setTransactions(p => [tx, ...p]);
+    getMyWallet().then(r => setWallet(r.data?.wallet || r.data));
+    setBuyModal(false);
+}}
                 />
             )}
         </div>
@@ -148,8 +148,8 @@ export default function Wallet() {
 
 function TxRow({ tx }) {
     const meta = TX_ICONS[tx.type] || TX_ICONS.commission;
-    const isPositive = ["reward", "release"].includes(tx.type);
-    const amt = Number(tx.pointsValue || tx.amount || 0);
+    const isPositive = ["reward", "release", "card_purchase"].includes(tx.type);
+    const amt = Number(tx.pointsValue ?? tx.amount ?? 0);
 
     return (
         <div className="tx-row">
@@ -167,7 +167,7 @@ function TxRow({ tx }) {
             </div>
             <div>
                 <div className={`tx-amount ${isPositive ? "positive" : "negative"}`}>
-                    {isPositive ? "+" : "-"}{amt.toLocaleString()} $
+                    {isPositive ? "+" : "-"}{amt.toLocaleString()} pts
                 </div>
                 <div style={{ textAlign: "right", marginTop: 2, height: 20 }}>
                     <span className={`tx-status status-${tx.status}`}>{tx.status}</span>
@@ -236,7 +236,7 @@ function BuyPointsModal({ onClose, onSuccess }) {
                 </div>
 
                 <div className="modal-field">
-                    <label>Points to Buy</label>
+                    <label>Budget $</label>
                     <input
                         type="number" min="1" placeholder="e.g. 500"
                         value={amount} onChange={e => setAmount(e.target.value)}
@@ -244,10 +244,10 @@ function BuyPointsModal({ onClose, onSuccess }) {
                 </div>
 
                 {amount && Number(amount) > 0 && (
-                    <div style={{ background: "#EEF0FF", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#4338CA", marginBottom: 4 }}>
-                        You will receive <strong>{Number(amount).toLocaleString()} pts</strong> for <strong>${Number(amount).toFixed(2)}</strong>
-                    </div>
-                )}
+    <div style={{ background: "#EEF0FF", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#4338CA", marginBottom: 4 }}>
+        You will receive <strong>{Number(amount).toLocaleString()} pts</strong> for <strong>${Number(amount).toFixed(2)}</strong>
+    </div>
+)}
 
                 {error && (
                     <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 8 }}>{error}</div>

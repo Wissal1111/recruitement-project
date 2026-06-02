@@ -1,16 +1,18 @@
-// service/ParticipationService.java  (only getMyParticipations changed)
+// service/ParticipationService.java
 package com.projet.recruitment_service.service;
 
-import com.projet.recruitment_service.dto.response.ParticipationDTO;
 import com.projet.recruitment_service.entity.*;
 import com.projet.recruitment_service.enums.*;
 import com.projet.recruitment_service.exception.BusinessException;
 import com.projet.recruitment_service.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.projet.recruitment_service.client.PaymentServiceClient;
+import com.projet.recruitment_service.dto.response.ParticipationDTO;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,12 +21,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ParticipationService {
 
     private final ParticipationRepository participationRepository;
     private final StudyApplicationRepository applicationRepository;
     private final RecruitmentSlotRepository slotRepository;
     private final RewardTransactionRepository rewardRepository;
+    private final PaymentServiceClient paymentServiceClient;
 
     // RC-25
     @Transactional
@@ -52,7 +56,7 @@ public class ParticipationService {
         return participationRepository.save(participation);
     }
 
-    // RC-26
+    // RC-26: Complete participation → create reward
     @Transactional
     public Participation completeParticipation(UUID participationId, UUID participantId) {
         Participation participation = getOwnedParticipation(participationId, participantId);
@@ -64,6 +68,7 @@ public class ParticipationService {
         participation.complete();
         participationRepository.save(participation);
 
+        // Create reward transaction
         RecruitmentSlot slot = slotRepository.findByPhaseId(participation.getPhaseId())
                 .orElseThrow(() -> new BusinessException("Slot not found", HttpStatus.NOT_FOUND));
 
@@ -74,6 +79,8 @@ public class ParticipationService {
                 .status(RewardStatus.PENDING)
                 .build();
         rewardRepository.save(reward);
+
+        // TODO: publish PARTICIPATION_COMPLETED event to Payment Service
 
         return participation;
     }

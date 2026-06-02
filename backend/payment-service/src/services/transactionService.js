@@ -9,25 +9,15 @@ async function purchasePoints(externalUserId, dto) {
   const user = await getOrCreateUser(externalUserId, 'creator');
   const card = await findPaymentCard(dto.paymentCardId, externalUserId);
 
-  if (!card) {
-    throw new Error('Payment card not found');
-  }
-
-  if (!card.isActive) {
-    throw new Error('Payment card is not active');
-  }
-
-  if (Number(card.automaticBudget) < Number(dto.amount)) {
-    throw new Error('Card budget exceeded');
-  }
+  if (!card) throw new Error('Payment card not found');
+  if (!card.isActive) throw new Error('Payment card is not active');
+  if (Number(card.automaticBudget) < Number(dto.amount)) throw new Error('Card budget exceeded');
 
   const points = dto.amount * POINTS_RATE;
 
   await prisma.paymentCard.update({
     where: { id: card.id },
-    data: {
-      automaticBudget: { decrement: dto.amount },
-    },
+    data: { automaticBudget: { decrement: dto.amount } },
   });
 
   const transaction = await prisma.transaction.create({
@@ -43,7 +33,6 @@ async function purchasePoints(externalUserId, dto) {
   });
 
   await addPoints(externalUserId, points, 'creator');
-
   return transaction;
 }
 
@@ -101,21 +90,14 @@ async function recordReleaseTransaction(creatorId, points) {
 
 async function getTransactionHistory(externalUserId, query = {}) {
   const user = await getOrCreateUser(externalUserId, 'creator');
-
   const where = { userId: user.id };
 
-  if (query.type) {
-    where.type = query.type;
-  }
+  if (query.type) where.type = query.type;
 
   if (query.startDate || query.endDate) {
     where.createdAt = {};
-    if (query.startDate) {
-      where.createdAt.gte = new Date(query.startDate);
-    }
-    if (query.endDate) {
-      where.createdAt.lte = new Date(query.endDate);
-    }
+    if (query.startDate) where.createdAt.gte = new Date(query.startDate);
+    if (query.endDate) where.createdAt.lte = new Date(query.endDate);
   }
 
   const transactions = await prisma.transaction.findMany({
@@ -124,16 +106,15 @@ async function getTransactionHistory(externalUserId, query = {}) {
     take: Number(query.limit ?? 50),
     skip: Number(query.offset ?? 0),
     include: { paymentCard: true },
+    include: { paymentCard: true },
   });
 
   const total = await prisma.transaction.count({ where });
-
   return { transactions, total };
 }
 
 async function getTransactionSummary(externalUserId) {
   const user = await getOrCreateUser(externalUserId, 'creator');
-
   return prisma.transaction.groupBy({
     by: ['type'],
     where: { userId: user.id },
@@ -146,6 +127,8 @@ module.exports = {
   purchasePoints,
   recordRewardTransaction,
   recordCommissionTransaction,
+  recordAllocationTransaction,
+  recordReleaseTransaction,
   recordAllocationTransaction,
   recordReleaseTransaction,
   getTransactionHistory,

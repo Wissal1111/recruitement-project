@@ -27,6 +27,7 @@ public class RecruitmentSlot {
     private int totalSlots;
 
     @Column(nullable = false)
+    @Builder.Default
     private int filledSlots = 0;
 
     @Column(nullable = false)

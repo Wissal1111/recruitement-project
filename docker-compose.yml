@@ -1,4 +1,26 @@
 services:
+  # ==================== USER SERVICE DATABASE ====================
+  user-service-db:
+    image: postgres:16-alpine
+    container_name: user_service_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: user_service_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_service_pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== USER SERVICE ====================
   user-service:
     build: ./backend/user-service
     container_name: user_service
@@ -12,6 +34,7 @@ services:
     networks:
       - app-network
 
+  # ==================== SURVEY SERVICE ====================
   survey-service:
     build: ./backend/survey-service
     container_name: survey_service
@@ -28,6 +51,7 @@ services:
       - ./backend/survey-service:/app
       - /app/node_modules
 
+  # ==================== RESPONSE SERVICE ====================
   response-service:
     build: ./backend/response-service
     container_name: response_service
@@ -42,6 +66,7 @@ services:
       - ./backend/response-service:/app
       - /app/node_modules
 
+  # ==================== DATABASES ====================
   recruitment-db:
     image: postgres:16-alpine
     container_name: recruitment_db
@@ -62,6 +87,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==================== RECRUITMENT SERVICE ====================
   recruitment-service:
     build: ./backend/recruitment-service
     container_name: recruitment_service
@@ -77,15 +103,14 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       JWT_SECRET: your_super_secret_key
-      SERVICES_USER_SERVICE_URL: http://user-service:3002
-      SERVICES_SURVEY_SERVICE_URL: http://survey-service:4000
+      GATEWAY_URL: http://gateway:90
+      SERVICE_SECRET: your_service_secret_key
     networks:
       - app-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-
-
+  # ==================== PAYMENT SERVICE ====================
   payment-service:
     build: ./backend/payment-service
     container_name: payment_service
@@ -94,9 +119,12 @@ services:
       - "3050:3050"
     env_file:
       - ./backend/payment-service/.env
+    environment:
+      SERVICE_SECRET: your_service_secret_key
     networks:
       - app-network
 
+  # ==================== GATEWAY ====================
   gateway:
     image: nginx:alpine
     container_name: api_gateway
@@ -120,3 +148,4 @@ networks:
 volumes:
   mongo_data:
   recruitment_pgdata:
+  user_service_pgdata:
