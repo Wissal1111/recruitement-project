@@ -48,6 +48,8 @@ export const cancelApplication = (id) =>
     api.delete(`/recruitment/applications/${id}`);
 export const reviewApplication = (applicationId, data) =>
     api.put(`/recruitment/screening/${applicationId}/review`, data);
+export const getMyApplications = () =>
+    api.get(`/recruitment/applications/me`);
 
 // PARTICIPATIONS
 export const startParticipation = (applicationId) =>

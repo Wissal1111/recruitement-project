@@ -28,6 +28,8 @@ import Wallet from "./pages/home/Wallet";
 import Cards from "./pages/home/Cards";
 import Responses from "./pages/participant/Responses";
 import RespondPage from "./pages/participant/RespondPage";
+import MyApplications from "./pages/participant/MyApplications";
+
 
 
 
@@ -52,6 +54,7 @@ function App() {
                 <Route path="/participate/activity" element={<ProtectedRoute><MyParticipations /></ProtectedRoute>} />
                 <Route path="/participate/browse" element={<ProtectedRoute><BrowseStudies /></ProtectedRoute>} />
                 <Route path="/participate/responses" element={<ProtectedRoute><Responses /></ProtectedRoute>} />
+                <Route path="/participate/myapplications" element={<ProtectedRoute><MyApplications /></ProtectedRoute>} />
                 <Route
     path="/participate/responses/:studyId"
     element={<ProtectedRoute><Responses /></ProtectedRoute>}

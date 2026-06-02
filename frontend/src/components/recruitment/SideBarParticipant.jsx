@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import '../SideBar.css'
 import {
     LayoutDashboard, UserRound, Bell,
-    Activity, Trophy, Search,ClipboardCheck
+    Activity, Trophy, Search,ClipboardCheck,ClipboardList
 } from "lucide-react"
 
 
@@ -27,6 +27,9 @@ export default function SideBarParticipant({ page, isOpen, onClose }) {
                     <li className={page === "invitations" ? 'selected-page' : ''} onClick={() => go("/participate/invitations")}>
                         <Bell size={16} /> Invitations
                     </li>
+                    <li className={page === "applications" ? 'selected-page' : ''} onClick={() => go("/participate/myapplications")}>
+    <ClipboardList size={16} /> My Applications
+</li>
                     <li
     className={page === "responses" ? "selected-page" : ""}
     onClick={() => go("/participate/responses")}

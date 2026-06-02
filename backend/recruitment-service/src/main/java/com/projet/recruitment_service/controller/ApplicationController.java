@@ -2,6 +2,7 @@ package com.projet.recruitment_service.controller;
 
 import com.projet.recruitment_service.dto.request.ApplicationRequest;
 import com.projet.recruitment_service.dto.request.ReviewRequest;
+import com.projet.recruitment_service.dto.response.ApplicationDto;
 import com.projet.recruitment_service.entity.StudyApplication;
 import com.projet.recruitment_service.enums.ApplicationStatus;
 import com.projet.recruitment_service.service.ApplicationService;
@@ -62,4 +63,10 @@ public class ApplicationController {
             @RequestBody ReviewRequest request) {
         return ResponseEntity.ok(applicationService.reviewApplication(applicationId, request));
     }
+@GetMapping("/api/recruitment/applications/me")
+public ResponseEntity<List<ApplicationDto>> getMyApplications(
+        HttpServletRequest request) {
+    UUID participantId = (UUID) request.getAttribute("userId");
+    return ResponseEntity.ok(applicationService.getMyApplications(participantId));
+}
 }

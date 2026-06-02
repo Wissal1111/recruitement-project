@@ -20,4 +20,6 @@ public interface StudyApplicationRepository extends JpaRepository<StudyApplicati
 
     Optional<StudyApplication> findByParticipantIdAndStudyIdAndStatus(
             UUID participantId, UUID studyId, ApplicationStatus status);
+    List<StudyApplication> findByParticipantId(UUID participantId);
+    
 }

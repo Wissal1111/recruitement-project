@@ -2,7 +2,7 @@ package com.projet.recruitment_service.service;
 
 import java.util.List;
 import java.util.UUID;
-
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.projet.recruitment_service.client.SurveyServiceClient;
 import com.projet.recruitment_service.dto.request.ApplicationRequest;
 import com.projet.recruitment_service.dto.request.ReviewRequest;
+import com.projet.recruitment_service.dto.response.ApplicationDto;
 import com.projet.recruitment_service.dto.response.PhaseInfoDto;
 import com.projet.recruitment_service.entity.RecruitmentSlot;
 import com.projet.recruitment_service.entity.StudyApplication;
@@ -176,4 +177,52 @@ public class ApplicationService {
 
         return applicationRepository.save(application);
     }
+public List<ApplicationDto> getMyApplications(UUID participantId) {
+    List<StudyApplication> applications = applicationRepository.findByParticipantId(participantId);
+
+    return applications.stream()
+            .map(app -> {
+                String title = null;
+                String description = null;
+                String reward = null;
+
+                try {
+                    Map<String, Object> study = surveyServiceClient
+                            .getStudyById(app.getStudyId().toString());
+                    if (study != null) {
+                        title = (String) study.get("title");
+                        description = (String) study.get("description");
+                        List<Map<String, Object>> phases =
+                                (List<Map<String, Object>>) study.get("phases");
+                        if (phases != null && !phases.isEmpty()) {
+                            Object rawReward = phases.get(0).get("rewardAmount");
+                            if (rawReward instanceof Map<?, ?> rewardMap) {
+                                Object decimal = rewardMap.get("$numberDecimal");
+                                reward = decimal != null ? decimal.toString() : "";
+                            } else if (rawReward != null) {
+                                reward = rawReward.toString();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not fetch study info for studyId={}: {}",
+                            app.getStudyId(), e.getMessage());
+                }
+
+                return ApplicationDto.builder()
+                        .applicationId(app.getApplicationId())
+                        .studyId(app.getStudyId())
+                        .phaseId(app.getPhaseId())
+                        .invitationId(app.getInvitationId())
+                        .status(app.getStatus())
+                        .appliedAt(app.getAppliedAt())
+                        .reviewedAt(app.getReviewedAt())
+                        .rejectionReason(app.getRejectionReason())
+                        .studyTitle(title)
+                        .studyDescription(description)
+                        .rewardAmount(reward)
+                        .build();
+            })
+            .toList();
+}
 }
