@@ -58,15 +58,23 @@ router.post('/release', authMiddleware, async (req, res) => {
 // Add points to participant after phase completion
 router.post('/reward', authMiddleware, async (req, res) => {
   try {
-    const { participantId, rewardAmount, studyId, phaseId } = req.body;
+    const { participantId: bodyParticipantId, rewardAmount, studyId, phaseId } = req.body;
+    const participantId = bodyParticipantId || req.user?.userId;
 
-    if (!participantId || !rewardAmount) {
-      return res.status(400).json({ error: 'participantId and rewardAmount are required' });
+    if (!participantId || rewardAmount == null) {
+      return res.status(400).json({
+        error: 'participantId and rewardAmount are required',
+        details: {
+          participantId: bodyParticipantId,
+          fallbackParticipantId: req.user?.userId,
+          rewardAmount,
+        },
+      });
     }
 
     const amount = Number(rewardAmount);
-    if (amount <= 0) {
-      return res.status(400).json({ error: 'rewardAmount must be positive' });
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'rewardAmount must be a positive number' });
     }
 
     const commission = Number((amount * 0.15).toFixed(2));
@@ -74,19 +82,28 @@ router.post('/reward', authMiddleware, async (req, res) => {
 
     const externalRef = phaseId || studyId || null;
 
-    await addPoints(participantId, participantPoints, 'participant');
-
+    // Convert external ID to internal user ID
     const participant = await getOrCreateUser(participantId, 'participant');
+
+    // addPoints expects an externalId (string). Pass the externalId to avoid creating/finding the wrong user.
+    const externalParticipantId = participant.externalId || String(participantId);
+    await addPoints(externalParticipantId, participantPoints, 'participant');
     await recordRewardTransaction(participant.id, participantPoints, externalRef);
+
+    const commissionPercent = 15;
 
     res.json({
       success: true,
+      message: `Reward processed: participant received ${participantPoints} points; platform commission ${commission} (${commissionPercent}%).`,
+      originalAmount: amount,
       participantPoints,
       commission,
+      commissionPercent,
+      externalRef,
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
-
+//ponit.js
 module.exports = router;

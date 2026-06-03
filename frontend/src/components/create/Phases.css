@@ -472,3 +472,27 @@
     .phases__confirm-actions { flex-direction: column; }
     .phases__confirm-btn     { flex: none; width: 100%; }
 }
+.phases__cancel-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.phases__cancel-btn:hover { background: #FEE2E2; }
+
+.phases__cancelled-badge {
+    background: #FEF2F2;
+    color: #DC2626;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 700;
+}

@@ -193,21 +193,77 @@ exports.submitResponse = async (req, res) => {
     }
 
 const currentPhase = study.phases.find(p => p.phaseId === phaseId);
-const rewardAmount = parseFloat(currentPhase.rewardAmount?.toString() || '0');
+
+// Helper: safely convert various Decimal128/string/number representations to Number
+function toNumericAmount(val) {
+  if (val == null) return 0;
+  if (typeof val === 'number') return Number.isFinite(val) ? val : NaN;
+
+  // Handle objects like { $numberDecimal: '5' } produced by some mongoose lean/transform ops
+  if (typeof val === 'object') {
+    if (val.$numberDecimal != null) {
+      const n = Number(val.$numberDecimal);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    try {
+      // Some Decimal128 instances implement toString() returning the numeric string
+      if (typeof val.toString === 'function') {
+        const s = val.toString();
+        if (s && !/^\[object/.test(s)) {
+          const cleaned = String(s).replace(/[^0-9.\-]/g, '');
+          if (cleaned === '') return NaN;
+          const n = Number(cleaned);
+          return Number.isFinite(n) ? n : NaN;
+        }
+      }
+    } catch (e) {
+      return NaN;
+    }
+    return NaN;
+  }
+
+  try {
+    const s = String(val);
+    const cleaned = s.replace(/[^0-9.\-]/g, '');
+    if (cleaned === '') return NaN;
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : NaN;
+  } catch (e) {
+    return NaN;
+  }
+}
+
+const rewardAmountRaw = currentPhase?.rewardAmount;
+const rewardAmount = toNumericAmount(rewardAmountRaw);
+console.debug('Raw phase.rewardAmount:', rewardAmountRaw, 'Parsed rewardAmount:', rewardAmount);
+
+// If parsing failed or value is non-positive, skip reward to avoid sending NaN
+if (!Number.isFinite(rewardAmount) || rewardAmount <= 0) {
+  return res.status(201).json({
+    message: "Response submitted successfully",
+    data: response,
+    reward: null
+  });
+}
 
 let rewardResponse;
 try {
+  const rewardPayload = {
+    participantId: String(participantId),
+    rewardAmount,
+    studyId,
+    phaseId,
+  };
+  console.debug('Reward request payload:', rewardPayload);
+
   rewardResponse = await axios.post(
     `${process.env.PAYMENT_SERVICE_URL}/api/points/reward`,
-    {
-      participantId: String(participantId),
-      rewardAmount,
-      studyId,
-      phaseId
-    },
+    rewardPayload,
     {
       headers: {
-        Authorization: `Bearer ${process.env.SERVICE_SECRET}`
+        'Authorization': `Bearer ${process.env.SERVICE_SECRET}`,
+        'x-creator-id': String(participantId),  // ← required by authMiddleware
+        'Content-Type': 'application/json'
       }
     }
   );

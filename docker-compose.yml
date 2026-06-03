@@ -117,7 +117,7 @@ services:
     container_name: payment_service
     restart: always
     ports:
-      - "3050:3050"
+      - "3051:3050"
     env_file:
       - ./backend/payment-service/.env
     networks:
