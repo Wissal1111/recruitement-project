@@ -42,77 +42,52 @@ public class CampaignService {
     private final RecruitmentSlotRepository slotRepository;
 
     // RC-06: Launch campaign → ALLOUER les points
-    @Transactional
-    public InvitationCampaign launchCampaign(UUID studyId, UUID creatorId,
-                                             CampaignRequest request, String authToken) {
+@Transactional
+public InvitationCampaign launchCampaign(UUID studyId, UUID creatorId,
+                                         CampaignRequest request, String authToken) {
 
-        // Allow no criteria → means "everyone is eligible"
-        EligibilityCriteria criteria = criteriaRepository
-                .findByStudyId(studyId)
-                .orElse(null);
+    // Allow no criteria → means "everyone is eligible"
+    EligibilityCriteria criteria = criteriaRepository
+            .findByStudyId(studyId)
+            .orElse(null);
 
-        // Calculate total budget and allocate points via payment-service
-        BigDecimal totalPoints = calculateTotalPoints(studyId, request.getTargetCount());
+    // Fetch eligible users from User Service
+    List<UserProfileDto> eligibleUsers = eligibilityService.fetchEligibleUsers(criteria, authToken);
 
-        try {
-            String serviceToken = "Bearer " + System.getenv("SERVICE_SECRET");
+    // Create the campaign
+    InvitationCampaign campaign = InvitationCampaign.builder()
+            .studyId(studyId)
+            .creatorId(creatorId)
+            .targetCount(request.getTargetCount())
+            .expirationDays(request.getExpirationDays())
+            .status(CampaignStatus.ACTIVE)
+            .build();
+    campaign.launch();
+    campaign = campaignRepository.save(campaign);
 
-            Map<String, Object> allocationResponse = paymentServiceClient.allocatePoints(
-                    serviceToken,
-                    Map.of(
-                            "creatorId", creatorId.toString(),
-                            "studyId", studyId.toString(),
-                            "totalPoints", totalPoints.toString()
-                    )
-            );
+    // RC-15: Create invitations, skip duplicates
+    final UUID campaignId = campaign.getCampaignId();
+    final int expDays = campaign.getExpirationDays();
 
-            log.info("Points allocated for study {}: {}", studyId, allocationResponse);
+    for (UserProfileDto user : eligibleUsers) {
+        boolean alreadyInvited = invitationRepository.existsByUserIdAndStudyIdAndStatusIn(
+                user.getUserId(), studyId,
+                List.of(InvitationStatus.PENDING, InvitationStatus.ACCEPTED,
+                        InvitationStatus.COMPLETED));
+        if (alreadyInvited) continue;
 
-        } catch (Exception e) {
-            log.error("Failed to allocate points: {}", e.getMessage());
-            throw new BusinessException(
-                    "Insufficient wallet points to launch campaign. Please purchase more points.",
-                    HttpStatus.PAYMENT_REQUIRED);
-        }
-
-        // Fetch eligible users from User Service
-        List<UserProfileDto> eligibleUsers = eligibilityService.fetchEligibleUsers(criteria, authToken);
-
-        // Create the campaign
-        InvitationCampaign campaign = InvitationCampaign.builder()
+        SurveyInvitation invitation = SurveyInvitation.builder()
+                .campaignId(campaignId)
+                .userId(user.getUserId())
                 .studyId(studyId)
-                .creatorId(creatorId)
-                .targetCount(request.getTargetCount())
-                .expirationDays(request.getExpirationDays())
-                .status(CampaignStatus.ACTIVE)
+                .status(InvitationStatus.PENDING)
+                .expiresAt(LocalDateTime.now().plusDays(expDays))
                 .build();
-        campaign.launch();
-        campaign = campaignRepository.save(campaign);
-
-        // RC-15: Create invitations, skip duplicates
-        final UUID campaignId = campaign.getCampaignId();
-        final int expDays = campaign.getExpirationDays();
-
-        for (UserProfileDto user : eligibleUsers) {
-            boolean alreadyInvited = invitationRepository.existsByUserIdAndStudyIdAndStatusIn(
-                    user.getUserId(), studyId,
-                    List.of(InvitationStatus.PENDING, InvitationStatus.ACCEPTED,
-                            InvitationStatus.COMPLETED));
-            if (alreadyInvited) continue;
-
-            SurveyInvitation invitation = SurveyInvitation.builder()
-                    .campaignId(campaignId)
-                    .userId(user.getUserId())
-                    .studyId(studyId)
-                    .status(InvitationStatus.PENDING)
-                    .expiresAt(LocalDateTime.now().plusDays(expDays))
-                    .build();
-            invitationRepository.save(invitation);
-        }
-
-        return campaign;
+        invitationRepository.save(invitation);
     }
 
+    return campaign;
+}
     // Calculate total budget: rewardAmount × targetCount across all slots
     private BigDecimal calculateTotalPoints(UUID studyId, int targetCount) {
         List<RecruitmentSlot> slots = slotRepository.findByStudyId(studyId);

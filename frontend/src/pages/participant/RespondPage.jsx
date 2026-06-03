@@ -325,6 +325,9 @@ export default function RespondPage() {
 
     // ── submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
+    // ✅ Cancel any pending auto-save
+    clearTimeout(autoSaveTimer.current);
+    
     const missing = questions.filter(q => q.isRequired && !answers[q.questionId]);
     if (missing.length) {
         setError(`Please answer all required questions (${missing.length} remaining).`);

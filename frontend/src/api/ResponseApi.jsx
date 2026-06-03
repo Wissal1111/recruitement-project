@@ -44,12 +44,20 @@ const ResponseApi = {
   // drafts for a specific study
   getMyDraftsByStudyId: (studyId) =>
     axiosInstance.get(`/responses/me/drafts-by-study/${studyId}`),
-
-  // draft for a specific phase
-  getMyDraftByStudyAndPhase: (studyId, phaseId) =>
-    axiosInstance.get(
+  
+// draft for a specific phase
+getMyDraftByStudyAndPhase: async (studyId, phaseId) => {
+  try {
+    return await axiosInstance.get(
       `/responses/me/drafts-by-study/${studyId}/phase/${phaseId}`
-    ),
+    );
+  } catch (err) {
+    if (err.response?.status === 404) {
+      return { data: null }; // No draft yet, start fresh
+    }
+    throw err;
+  }
+},
 
   // single draft by id
   getMyDraftById: (responseId) =>
