@@ -7,10 +7,10 @@ import { getMyStudies, getStudyById } from "../../api/StudyApi";
 import {
     BarChart2, CheckCircle2, Layers, Users, FileText,
     ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-    GitBranch, Activity, Send, Eye, Lock, AlertCircle
+    GitBranch, Activity, Send, Eye, Lock, AlertCircle,Download
 } from "lucide-react";
 import "./SurveyResponses.css";
-
+import { getProfileBasic, getProfileById } from "../../api/ProfileApi";
 // ─── Survey List Page ────────────────────────────────────────────────────────
 export function MySurveyResponsesList() {
     const navigate = useNavigate();
@@ -147,7 +147,46 @@ export function StudyResponsesAnalytics() {
     const [phaseResponses, setPhaseResponses] = useState([]);
     const [expandedResponse, setExpandedResponse] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [profilesMap, setProfilesMap] = useState({});
 
+useEffect(() => {
+    if (!activePhase) return;
+    const phase = study?.phases?.find(p => p.phaseId === activePhase);
+    if (!phase || (phase.status !== "ACTIVE" && phase.status !== "COMPLETED")) {
+        setPhaseResponses([]);
+        return;
+    }
+    setPhaseResponses([]);
+    ResponseApi.getResponsesByPhase(studyId, activePhase)
+        .then(async (res) => {
+            const raw = res?.data || res;
+            const arr = Array.isArray(raw)
+                ? raw
+                : Array.isArray(raw?.responses)
+                    ? raw.responses
+                    : Array.isArray(raw?.data)
+                        ? raw.data
+                        : [];
+            const submitted = arr.filter((r) => r.status === "SUBMITTED");
+            setPhaseResponses(submitted);
+
+            const uniqueUserIds = [...new Set(
+                submitted.map(r => r.participantId || r.userId).filter(Boolean)
+            )];
+            const entries = await Promise.all(
+                uniqueUserIds.map(async (uid) => {
+                    try {
+                        const data = await getProfileBasic(uid);
+                        return [uid, data];
+                    } catch {
+                        return [uid, null];
+                    }
+                })
+            );
+            setProfilesMap(Object.fromEntries(entries));
+        })
+        .catch(() => setPhaseResponses([]));
+}, [activePhase, studyId, study]);
     useEffect(() => {
         Promise.all([
             getStudyById(studyId),
@@ -375,70 +414,46 @@ export function StudyResponsesAnalytics() {
                                 {/* Individual Responses */}
                                 <div className="sr-section">
                                     <h3 className="sr-section-title">
-                                        <FileText size={16} color="var(--blue-text)" />
-                                        Submitted Responses
-                                        <span className="sr-section-count">{phaseResponses.length}</span>
-                                    </h3>
+    <FileText size={16} color="var(--blue-text)" />
+    Submitted Responses
+    <span className="sr-section-count">{phaseResponses.length}</span>
+    {phaseResponses.length > 0 && (
+        <button
+            className="sr-export-btn"
+            onClick={async () => {
+                try {
+                    const res = await ResponseApi.exportPhaseResponses(studyId, activePhase);
+                    const url = window.URL.createObjectURL(new Blob([res.data]));
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `responses_${activePhase}.xlsx`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } catch {
+                    alert("Export failed.");
+                }
+            }}
+        >
+            <Download size={13} /> Export Excel
+        </button>
+    )}
+</h3>
                                     {phaseResponses.length === 0 ? (
                                         <div className="sr-empty-phase">
                                             No submitted responses for this phase yet.
                                         </div>
                                     ) : (
                                         <div className="sr-responses-list">
-                                            {phaseResponses.map((resp, i) => (
-                                                <div key={resp.responseId || resp._id} className="sr-response-row">
-                                                    <div
-                                                        className="sr-response-row-header"
-                                                        onClick={() =>
-                                                            setExpandedResponse(
-                                                                expandedResponse === (resp.responseId || resp._id)
-                                                                    ? null
-                                                                    : (resp.responseId || resp._id)
-                                                            )
-                                                        }
-                                                    >
-                                                        <div className="sr-response-row-left">
-                                                            <span className="sr-response-num">#{i + 1}</span>
-                                                            <span className="sr-response-id">
-                                                                Participant {(resp.participantId || resp.userId)?.slice(0, 8)}…
-                                                            </span>
-                                                        </div>
-                                                        <div className="sr-response-row-right">
-                                                            <span className="sr-badge sr-badge--published">Submitted</span>
-                                                            <span className="sr-response-date">
-                                                                {new Date(resp.submittedAt || resp.updatedAt || resp.createdAt).toLocaleDateString()}
-                                                            </span>
-                                                            <span className="sr-expand-icon">
-                                                                {expandedResponse === (resp.responseId || resp._id)
-                                                                    ? <ChevronUp size={14} />
-                                                                    : <ChevronDown size={14} />}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {expandedResponse === (resp.responseId || resp._id) && (
-                                                        <div className="sr-response-answers">
-                                                            {resp.answers?.map((ans) => {
-                                                                const q = resp.snapshot?.questions?.find(
-                                                                    (sq) => sq.questionId === ans.questionId
-                                                                );
-                                                                return (
-                                                                    <div key={ans.questionId} className="sr-answer-item">
-                                                                        <p className="sr-answer-question">
-                                                                            {q?.text ?? ans.questionId}
-                                                                        </p>
-                                                                        <p className="sr-answer-value">
-                                                                            {Array.isArray(ans.value)
-                                                                                ? ans.value.join(", ")
-                                                                                : String(ans.value ?? "—")}
-                                                                        </p>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
+                                          {phaseResponses.map((resp, i) => (
+    <ParticipantResponseRow
+        key={resp.responseId || resp._id}
+        resp={resp}
+        index={i}
+        expandedResponse={expandedResponse}
+        setExpandedResponse={setExpandedResponse}
+        initialProfile={profilesMap[resp.participantId || resp.userId] ?? null}
+    />
+))}
                                         </div>
                                     )}
                                 </div>
@@ -451,6 +466,166 @@ export function StudyResponsesAnalytics() {
     );
 }
 
+import { X, User } from "lucide-react";
+
+function ParticipantResponseRow({ resp, index, expandedResponse, setExpandedResponse, initialProfile }) {
+    const respId = resp.responseId || resp._id;
+    const userId = resp.participantId || resp.userId;
+    const [profile, setProfile] = useState(null);
+    const [fullProfile, setFullProfile] = useState(null);
+    const [fullProfileLoading, setFullProfileLoading] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+
+    useEffect(() => {
+        if (initialProfile) setProfile(initialProfile);
+    }, [initialProfile]);
+
+    const handleSeeProfile = async (e) => {
+        e.stopPropagation();
+        setShowModal(true);
+        if (fullProfile) return;
+        setFullProfileLoading(true);
+        try {
+            const data = await getProfileById(userId);
+            setFullProfile(data);
+        } catch {
+            setFullProfile(null);
+        } finally {
+            setFullProfileLoading(false);
+        }
+    };
+
+    const initials = profile
+    ? `${profile.firstname?.[0] ?? ""}${profile.lastname?.[0] ?? ""}`.toUpperCase()
+    : "··";
+
+const fullName = profile
+    ? `${profile.firstname} ${profile.lastname}`
+    : null;
+
+const subLine = profile
+    ? [profile?.profile?.profession, profile?.profile?.country].filter(Boolean).join(" · ")
+    : null;
+
+    const calcAge = (dob) => {
+        if (!dob) return null;
+        const diff = Date.now() - new Date(dob).getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    };
+
+    const age = fullProfile?.profile?.age ?? calcAge(fullProfile?.profile?.dateOfBirth);
+
+    return (
+        <>
+            <div className="sr-response-row">
+                <div
+                    className="sr-response-row-header"
+                    onClick={() => setExpandedResponse(expandedResponse === respId ? null : respId)}
+                >
+                    <div className="sr-response-row-left">
+                        <span className="sr-response-num">#{index + 1}</span>
+                        <div className="sr-participant-avatar">{initials}</div>
+                        <div>
+    {fullName
+        ? <div className="sr-participant-name">{fullName}</div>
+        : <div className="sr-skeleton sr-skeleton--name" />
+    }
+    {subLine
+        ? <div className="sr-participant-sub">{subLine}</div>
+        : <div className="sr-skeleton sr-skeleton--sub" />
+    }
+</div>
+                    </div>
+                    <div className="sr-response-row-right">
+                        <span className="sr-badge sr-badge--published">Submitted</span>
+                        <span className="sr-response-date">
+                            {new Date(resp.submittedAt || resp.updatedAt || resp.createdAt).toLocaleDateString()}
+                        </span>
+                        <button className="sr-see-profile-btn" onClick={handleSeeProfile}>
+                            <User size={12} /> See profile
+                        </button>
+                        <span className="sr-expand-icon">
+                            {expandedResponse === respId ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </span>
+                    </div>
+                </div>
+
+                {expandedResponse === respId && (
+                    <div className="sr-response-answers">
+                        {resp.answers?.map((ans) => {
+                            const q = resp.snapshot?.questions?.find(sq => sq.questionId === ans.questionId);
+                            return (
+                                <div key={ans.questionId} className="sr-answer-item">
+                                    <p className="sr-answer-question">{q?.text ?? ans.questionId}</p>
+                                    <p className="sr-answer-value">
+                                        {Array.isArray(ans.value) ? ans.value.join(", ") : String(ans.value ?? "—")}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {showModal && (
+                <div className="sr-modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="sr-modal" onClick={e => e.stopPropagation()}>
+                        <div className="sr-modal-header">
+                            <div className="sr-modal-avatar">{initials}</div>
+                            <div>
+                                <p className="sr-modal-name">{fullName}</p>
+                                <p className="sr-modal-email">{fullProfile?.email ?? "—"}</p>
+                            </div>
+                            <button className="sr-modal-close" onClick={() => setShowModal(false)} aria-label="Close">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {fullProfileLoading ? (
+                            <div className="sr-modal-loading"><div className="sr-spinner" /><p>Loading profile…</p></div>
+                        ) : fullProfile ? (
+                            <div className="sr-modal-body">
+                                {[
+                                    ["Age",            age ? `${age} years` : null],
+                                    ["Gender",         fullProfile.profile?.gender],
+                                    ["Education",      fullProfile.profile?.education],
+                                    ["Profession",     fullProfile.profile?.profession],
+                                    ["Location",       [fullProfile.profile?.city, fullProfile.profile?.country].filter(Boolean).join(", ")],
+                                    ["Total earnings", `${fullProfile.profile?.totalEarnings ?? 0} pts`],
+                                ].map(([label, value]) => (
+                                    <div key={label} className="sr-modal-field">
+                                        <div className="sr-modal-field-label">{label}</div>
+                                        <div className={`sr-modal-field-value${!value ? " sr-modal-field-empty" : ""}`}>
+                                            {value || "Not provided"}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="sr-modal-field sr-modal-field--full">
+                                    <div className="sr-modal-field-label">Bio</div>
+                                    <div className={`sr-modal-field-value${!fullProfile.profile?.bio ? " sr-modal-field-empty" : ""}`}>
+                                        {fullProfile.profile?.bio || "No bio provided"}
+                                    </div>
+                                </div>
+                                <div className="sr-modal-field sr-modal-field--full">
+                                    <div className="sr-modal-field-label">Member since</div>
+                                    <div className="sr-modal-field-value">
+                                        {new Date(fullProfile.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="sr-modal-loading"><p>Could not load profile.</p></div>
+                        )}
+
+                        <div className="sr-modal-footer">
+                            <button className="sr-modal-close-btn" onClick={() => setShowModal(false)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
 // ─── Question Analytics Card ─────────────────────────────────────────────────
 function QuestionAnalyticsCard({ question }) {
     const { questionText, questionType, totalAnswers, distribution } = question;

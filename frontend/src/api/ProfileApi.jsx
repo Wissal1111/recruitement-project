@@ -25,3 +25,19 @@ export const updateProfile = async (profileData) => {
         throw error.response?.data || error;
     }
 };
+export const getProfileById = async (userId) => {
+  try {
+    const response = await api.get(`${API_URL}/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+export const getProfileBasic = async (userId) => {
+    try {
+        const response = await api.get(`${API_URL}/${userId}/basic`);
+        return response.data;
+    } catch {
+        return null;
+    }
+};

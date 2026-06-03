@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import SideBar from "../../components/SideBar";
 import TopNavBar from "../../components/TopNavBar";
 import { getApplicationsByStudy } from "../../api/RecruitmentApi";
+import { getProfileBasic, getProfileById } from "../../api/ProfileApi";
 import axiosInstance from "../../api/axiosInstance";
-import { MoreVertical, UserPlus, Filter, Flag } from "lucide-react";
+import { MoreVertical, UserPlus, Filter, Flag, User, X } from "lucide-react";
 
 const STATUS_STYLES = {
     PENDING:       { bg: "#FFF7ED", color: "#C2410C", label: "PENDING" },
@@ -22,6 +22,7 @@ export default function Candidates() {
     const [studies, setStudies] = useState([]);
     const [studyId, setStudyId] = useState("");
     const [applications, setApplications] = useState([]);
+    const [profilesMap, setProfilesMap] = useState({});
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -40,10 +41,25 @@ export default function Candidates() {
     const fetchApplications = async (id) => {
         if (!id) return;
         setLoading(true);
+        setProfilesMap({});
         try {
             const res = await getApplicationsByStudy(id);
-            setApplications(res.data);
-        } catch (e) {
+            const apps = res.data || [];
+            setApplications(apps);
+
+            const uniqueIds = [...new Set(apps.map(a => a.participantId).filter(Boolean))];
+            const entries = await Promise.all(
+                uniqueIds.map(async (uid) => {
+                    try {
+                        const data = await getProfileBasic(uid);
+                        return [uid, data];
+                    } catch {
+                        return [uid, null];
+                    }
+                })
+            );
+            setProfilesMap(Object.fromEntries(entries));
+        } catch {
             setApplications([]);
         } finally {
             setLoading(false);
@@ -176,7 +192,7 @@ export default function Candidates() {
                 {/* Table */}
                 <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E8ECF4", overflow: "hidden" }}>
                     <div style={{
-                        display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 1.5fr 80px",
+                        display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 1.5fr 120px",
                         padding: "12px 20px", borderBottom: "1px solid #E8ECF4",
                         fontSize: 11, fontWeight: 700, color: "var(--content)", letterSpacing: "0.05em"
                     }}>
@@ -195,7 +211,12 @@ export default function Candidates() {
                         </div>
                     ) : (
                         filtered.map((p, i) => (
-                            <ParticipantRow key={p.applicationId} p={p} last={i === filtered.length - 1} />
+                            <ParticipantRow
+                                key={p.applicationId}
+                                p={p}
+                                last={i === filtered.length - 1}
+                                initialProfile={profilesMap[p.participantId] ?? null}
+                            />
                         ))
                     )}
                 </div>
@@ -223,30 +244,179 @@ function StatBox({ icon, label, value, sub, subColor }) {
     );
 }
 
-function ParticipantRow({ p, last }) {
+function ParticipantRow({ p, last, initialProfile }) {
+    const [profile, setProfile] = useState(initialProfile);
+    const [fullProfile, setFullProfile] = useState(null);
+    const [fullProfileLoading, setFullProfileLoading] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+
+    useEffect(() => {
+        if (initialProfile) setProfile(initialProfile);
+    }, [initialProfile]);
+
+    const handleSeeProfile = async (e) => {
+        e.stopPropagation();
+        setShowModal(true);
+        if (fullProfile) return;
+        setFullProfileLoading(true);
+        try {
+            const data = await getProfileById(p.participantId);
+            setFullProfile(data);
+        } catch {
+            setFullProfile(null);
+        } finally {
+            setFullProfileLoading(false);
+        }
+    };
+
+    const initials = profile
+        ? `${profile.firstname?.[0] ?? ""}${profile.lastname?.[0] ?? ""}`.toUpperCase()
+        : "··";
+
+    const fullName = profile ? `${profile.firstname} ${profile.lastname}` : null;
+    const subLine = profile
+        ? [profile.profile?.profession, profile.profile?.country].filter(Boolean).join(" · ")
+        : null;
+
     const s = STATUS_STYLES[p.status] || STATUS_STYLES.PENDING;
-    const initials = p.participantId?.slice(0, 2).toUpperCase() || "??";
+
+    const calcAge = (dob) => {
+        if (!dob) return null;
+        const diff = Date.now() - new Date(dob).getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    };
+    const age = fullProfile?.profile?.age ?? calcAge(fullProfile?.profile?.dateOfBirth);
+
     return (
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 1.5fr 80px", padding: "16px 20px", borderBottom: last ? "none" : "1px solid #F5F6FA", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--linear-blue)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>{initials}</div>
+        <>
+            <div style={{
+                display: "grid", gridTemplateColumns: "2fr 2fr 1.2fr 1.5fr 120px",
+                padding: "16px 20px", borderBottom: last ? "none" : "1px solid #F5F6FA", alignItems: "center"
+            }}>
+                {/* Participant */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                        width: 36, height: 36, borderRadius: "50%",
+                        background: "var(--background-blue)", color: "var(--blue-text)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, fontWeight: 700, flexShrink: 0
+                    }}>{initials}</div>
+                    <div>
+                        {fullName
+                            ? <div style={{ fontWeight: 700, fontSize: 13, color: "var(--title)" }}>{fullName}</div>
+                            : <div style={{ width: 110, height: 13, borderRadius: 6, background: "linear-gradient(90deg,#E8ECF4 25%,#F4F6FA 50%,#E8ECF4 75%)", backgroundSize: "200% 100%", animation: "sr-shimmer 1.4s infinite", marginBottom: 4 }} />
+                        }
+                        {subLine
+                            ? <div style={{ fontSize: 11, color: "var(--content)" }}>{subLine}</div>
+                            : <div style={{ width: 75, height: 10, borderRadius: 6, background: "linear-gradient(90deg,#E8ECF4 25%,#F4F6FA 50%,#E8ECF4 75%)", backgroundSize: "200% 100%", animation: "sr-shimmer 1.4s infinite" }} />
+                        }
+                    </div>
+                </div>
+
+                {/* Phase */}
+                <div style={{ fontSize: 13, color: "var(--content)" }}>{p.phaseId?.slice(0, 8)}...</div>
+
+                {/* Status */}
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--title)" }}>{p.participantId?.slice(0, 8)}...</div>
-                    <div style={{ fontSize: 11, color: "var(--content)" }}>App: {p.applicationId?.slice(0, 8)}...</div>
+                    <span style={{ background: s.bg, color: s.color, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                        {s.label}
+                    </span>
+                </div>
+
+                {/* Date */}
+                <div style={{ fontSize: 12, color: "var(--content)" }}>
+                    {new Date(p.appliedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                    <button
+                        onClick={handleSeeProfile}
+                        style={{
+                            background: "none", border: "1px solid #E8ECF4", borderRadius: 6,
+                            padding: "4px 10px", fontSize: 12, color: "var(--content)",
+                            cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                            fontWeight: 600
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "var(--background-blue)"; e.currentTarget.style.color = "var(--blue-text)"; e.currentTarget.style.borderColor = "var(--blue-text)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--content)"; e.currentTarget.style.borderColor = "#E8ECF4"; }}
+                    >
+                        <User size={12} /> Profile
+                    </button>
+                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--content)", padding: 4, borderRadius: 6 }}>
+                        <MoreVertical size={16} />
+                    </button>
                 </div>
             </div>
-            <div style={{ fontSize: 13, color: "var(--content)" }}>{p.phaseId?.slice(0, 8)}...</div>
-            <div>
-                <span style={{ background: s.bg, color: s.color, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.label}</span>
-            </div>
-            <div style={{ fontSize: 12, color: "var(--content)" }}>
-                {new Date(p.appliedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-            </div>
-            <div style={{ textAlign: "right" }}>
-                <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--content)", padding: 4, borderRadius: 6 }}>
-                    <MoreVertical size={16} />
-                </button>
-            </div>
-        </div>
+
+            {/* Profile Modal */}
+            {showModal && (
+                <div
+                    style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+                    onClick={() => setShowModal(false)}
+                >
+                    <div
+                        style={{ background: "#fff", borderRadius: 14, border: "1px solid #E8ECF4", width: 440, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto" }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid #E8ECF4", display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--background-blue)", color: "var(--blue-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                                {initials}
+                            </div>
+                            <div>
+                                <p style={{ fontSize: 15, fontWeight: 700, color: "var(--title)", margin: "0 0 2px" }}>{fullName ?? "—"}</p>
+                                <p style={{ fontSize: 12, color: "var(--content)", margin: 0 }}>{fullProfile?.email ?? "—"}</p>
+                            </div>
+                            <button onClick={() => setShowModal(false)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--content)", display: "flex", alignItems: "center" }}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        {fullProfileLoading ? (
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 40, color: "var(--content)", fontSize: 14 }}>
+                                <div className="sr-spinner" /><p>Loading profile…</p>
+                            </div>
+                        ) : fullProfile ? (
+                            <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                {[
+                                    ["Age",            age ? `${age} years` : null],
+                                    ["Gender",         fullProfile.profile?.gender],
+                                    ["Education",      fullProfile.profile?.education],
+                                    ["Profession",     fullProfile.profile?.profession],
+                                    ["Location",       [fullProfile.profile?.city, fullProfile.profile?.country].filter(Boolean).join(", ")],
+                                    ["Total earnings", `${fullProfile.profile?.totalEarnings ?? 0} pts`],
+                                ].map(([label, value]) => (
+                                    <div key={label} style={{ background: "#F8FAFF", borderRadius: 8, padding: "10px 12px" }}>
+                                        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--content)", marginBottom: 4, fontWeight: 600 }}>{label}</div>
+                                        <div style={{ fontSize: 13, fontWeight: value ? 600 : 400, color: value ? "var(--title)" : "var(--content)", fontStyle: value ? "normal" : "italic" }}>
+                                            {value || "Not provided"}
+                                        </div>
+                                    </div>
+                                ))}
+                                {[["Bio", fullProfile.profile?.bio], ["Member since", new Date(fullProfile.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })]].map(([label, value]) => (
+                                    <div key={label} style={{ background: "#F8FAFF", borderRadius: 8, padding: "10px 12px", gridColumn: "1 / -1" }}>
+                                        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--content)", marginBottom: 4, fontWeight: 600 }}>{label}</div>
+                                        <div style={{ fontSize: 13, fontWeight: value ? 600 : 400, color: value ? "var(--title)" : "var(--content)", fontStyle: value ? "normal" : "italic" }}>
+                                            {value || "Not provided"}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ padding: 40, textAlign: "center", color: "var(--content)", fontSize: 14 }}>Could not load profile.</div>
+                        )}
+
+                        {/* Footer */}
+                        <div style={{ padding: "12px 20px", borderTop: "1px solid #E8ECF4", display: "flex", justifyContent: "flex-end" }}>
+                            <button onClick={() => setShowModal(false)} style={{ background: "none", border: "1px solid #E8ECF4", borderRadius: 8, padding: "7px 18px", fontSize: 13, color: "var(--title)", cursor: "pointer" }}>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

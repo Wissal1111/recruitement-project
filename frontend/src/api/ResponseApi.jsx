@@ -75,6 +75,10 @@ getMyDraftByStudyAndPhase: async (studyId, phaseId) => {
 
   getResponsesByParticipant: (participantId) =>
     axiosInstance.get(`/responses/participant/${participantId}`),
+  exportPhaseResponses: (studyId, phaseId) =>
+    axiosInstance.get(`/responses/study/${studyId}/phase/${phaseId}/export`, {
+        responseType: "blob",
+    }),
 
   // update submitted response (admin/creator edit)
   upsertSubmittedResponse: (studyId, phaseId, data) =>

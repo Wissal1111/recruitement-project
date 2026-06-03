@@ -5,4 +5,6 @@ router.get('/', auth, ctrl.getProfile);
 router.put('/', auth, ctrl.updateProfile);
 router.put('/earnings', auth, ctrl.updateEarnings);
 router.post('/search', auth, ctrl.searchProfiles);
+router.get('/:userId/basic', auth, ctrl.getProfileBasic); 
+router.get('/:userId', auth, ctrl.getProfileById);
 module.exports = router;

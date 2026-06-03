@@ -69,7 +69,7 @@ router.put(
   auth,
   ctrl.upsertSubmittedResponse
 );
-
+router.get("/study/:studyId/phase/:phaseId/export", auth, isStudyCreator, ctrl.exportPhaseResponsesToExcel);
 //=================
 // GET: /api/responses/:responseId - done: get a single response by its ID (only if it belongs to the logged-in participant)
 router.get("/:responseId",    auth, ctrl.getResponseById);

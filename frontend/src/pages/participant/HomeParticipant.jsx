@@ -94,7 +94,7 @@ export default function HomeParticipant() {
                         value={activePartic}
                         tag="LIVE NOW"
                         icon={<Rocket size={20} color="var(--blue-text)" />}
-                        onClick={() => navigate("/home/activity")}
+                        onClick={() => navigate("/participate/responses")}
                     />
                     <StatCard
                         label="Pending Invitations"
@@ -102,11 +102,11 @@ export default function HomeParticipant() {
                         tag="NEW FOR YOU"
                         icon={<Mail size={20} color="var(--blue-text)" />}
                         highlight
-                        onClick={() => navigate("/home/invitations")}
+                        onClick={() => navigate("/participate/invitations")}
                     />
                     <StatCard
                         label="Total Rewards Earned"
-                        value={`$${totalRewards.toFixed(2)}`}
+                        value={`${totalRewards.toFixed(2)} pts`}
                         tag="AVAILABLE"
                         icon={<Trophy size={20} color="var(--blue-text)" />}
                     />
@@ -203,7 +203,7 @@ function StudyCard({ study }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                     <div style={{ fontWeight: 700, fontSize: 16, color: "var(--title)" }}>
-    ${Number(study.reward).toFixed(2)}
+    {Number(study.reward).toFixed(2)}pts
 </div>
                     <div style={{ fontSize: 12, color: "var(--content)" }}>{study.duration} mins duration</div>
                 </div>
@@ -230,7 +230,7 @@ function RecommendedCard({ study }) {
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--title)", marginBottom: 6 }}>{study.title}</div>
                 <div style={{ fontSize: 12, color: "var(--content)", marginBottom: 12, lineHeight: 1.5 }}>{study.desc}</div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--title)" }}>${study.reward}.00</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--title)" }}>{Number(study.reward).toFixed(2)}pts</span>
                     <span style={{ background: "var(--background-blue)", color: "var(--blue-text)", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 600 }}>{study.duration} Min</span>
                 </div>
             </div>

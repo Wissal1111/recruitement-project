@@ -215,3 +215,51 @@ exports.searchProfiles = async (req, res) => {
     });
   }
 };
+exports.getProfileById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const data = await prisma.user.findUnique({
+      where: { userId },
+      select: {
+        userId: true,
+        firstname: true,
+        lastname: true,
+        email: true,
+        profilePictureUrl: true,
+        isActive: true,
+        createdAt: true,
+        lastLogin: true,
+        profile: true,
+        roles: { include: { role: true } },
+      },
+    });
+    if (!data) return res.status(404).json({ message: 'User not found' });
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+exports.getProfileBasic = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const data = await prisma.user.findUnique({
+      where: { userId },
+      select: {
+        userId: true,
+        firstname: true,
+        lastname: true,
+        profilePictureUrl: true,
+        profile: {
+          select: {
+            profession: true,
+            country: true,
+          }
+        }
+      },
+    });
+    if (!data) return res.status(404).json({ message: 'User not found' });
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+};

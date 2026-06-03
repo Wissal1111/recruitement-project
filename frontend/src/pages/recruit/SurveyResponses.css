@@ -403,3 +403,108 @@
     color: #C2410C;
     font-weight: 600;
 }
+/* ── Participant row ─────────────────────────────────────────────────────── */
+.sr-participant-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--background-blue); color: var(--blue-text);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+}
+.sr-participant-name { font-size: 13px; font-weight: 600; color: var(--title); }
+.sr-participant-sub  { font-size: 12px; color: var(--content); }
+.sr-see-profile-btn {
+    background: none; border: 1px solid #E8ECF4; border-radius: 6px;
+    padding: 4px 10px; font-size: 12px; color: var(--content);
+    cursor: pointer; display: flex; align-items: center; gap: 4px;
+    transition: background 0.15s, color 0.15s;
+}
+.sr-see-profile-btn:hover { background: var(--background-blue); color: var(--blue-text); border-color: var(--blue-text); }
+
+/* ── Profile modal ───────────────────────────────────────────────────────── */
+.sr-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.sr-modal {
+    background: #fff; border-radius: var(--radius);
+    border: 1px solid #E8ECF4; width: 440px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto;
+}
+.sr-modal-header {
+    padding: 18px 20px 14px; border-bottom: 1px solid #E8ECF4;
+    display: flex; align-items: center; gap: 14px;
+}
+.sr-modal-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--background-blue); color: var(--blue-text);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; flex-shrink: 0;
+}
+.sr-modal-name  { font-size: 15px; font-weight: 700; color: var(--title); margin: 0 0 2px; }
+.sr-modal-email { font-size: 12px; color: var(--content); margin: 0; }
+.sr-modal-close {
+    margin-left: auto; background: none; border: none;
+    cursor: pointer; color: var(--content); display: flex; align-items: center;
+}
+.sr-modal-close:hover { color: var(--title); }
+.sr-modal-body {
+    padding: 16px 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.sr-modal-field {
+    background: #F8FAFF; border-radius: 8px; padding: 10px 12px;
+}
+.sr-modal-field--full { grid-column: 1 / -1; }
+.sr-modal-field-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--content); margin-bottom: 4px; font-weight: 600;
+}
+.sr-modal-field-value { font-size: 13px; font-weight: 600; color: var(--title); }
+.sr-modal-field-empty { font-weight: 400; font-style: italic; color: var(--content); }
+.sr-modal-loading {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; padding: 40px; color: var(--content); font-size: 14px;
+}
+.sr-modal-footer {
+    padding: 12px 20px; border-top: 1px solid #E8ECF4;
+    display: flex; justify-content: flex-end;
+}
+.sr-modal-close-btn {
+    background: none; border: 1px solid #E8ECF4; border-radius: 8px;
+    padding: 7px 18px; font-size: 13px; color: var(--title); cursor: pointer;
+}
+.sr-modal-close-btn:hover { background: #F8FAFF; }
+/* ── Skeleton ────────────────────────────────────────────────────────────── */
+.sr-skeleton {
+    background: linear-gradient(90deg, #E8ECF4 25%, #F4F6FA 50%, #E8ECF4 75%);
+    background-size: 200% 100%;
+    animation: sr-shimmer 1.4s infinite;
+    border-radius: 6px;
+}
+.sr-skeleton--name { width: 120px; height: 13px; margin-bottom: 4px; }
+.sr-skeleton--sub  { width: 80px;  height: 11px; }
+
+@keyframes sr-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.sr-export-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid #E8ECF4;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.sr-export-btn:hover {
+    background: var(--background-blue);
+    border-color: var(--blue-text);
+}
