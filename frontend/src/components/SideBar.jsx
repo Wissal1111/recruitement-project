@@ -3,7 +3,7 @@ import './SideBar.css'
 import {
     Info, LayoutDashboard, UserRound, Settings, Bell,
     Activity, Files, SquarePlus, Search, UsersRound,
-    Target, MailPlus, ClipboardList,DollarSign,CreditCard,Coins
+    Target, MailPlus, ClipboardList,DollarSign,CreditCard,Coins,BarChart3
 } from "lucide-react"
 
 
@@ -54,8 +54,12 @@ export default function SideBar({ page, part, isOpen, onClose }) {
                         <li className={page === "mysurveys" ? 'selected-page' : ''} onClick={() => go("/recruit/surveys")}>
                             <Files size={16} /> My Surveys
                         </li>
+                        
                         <li className={page === "createsurvey" ? 'selected-page' : ''} onClick={() => go("/recruit/create")}>
                             <SquarePlus size={16} /> Build Survey
+                        </li>
+                        <li className={page === "surveyresponses" ? 'selected-page' : ''} onClick={() => go("/recruit/surveyresponses")}>
+                            <BarChart3 size={16} /> Responses
                         </li>
                         <li className={page === "payments" ? 'selected-page' : ''} onClick={() => go("/recruit/payments")}>
                             <CreditCard size={16} /> Payments

@@ -29,6 +29,7 @@ import Cards from "./pages/home/Cards";
 import Responses from "./pages/participant/Responses";
 import RespondPage from "./pages/participant/RespondPage";
 import MyApplications from "./pages/participant/MyApplications";
+import { MySurveyResponsesList, StudyResponsesAnalytics } from "./pages/recruit/SurveyResponses";
 
 
 
@@ -74,6 +75,8 @@ function App() {
                 <Route path="/recruit" element={<ProtectedRoute><RecruitRouter /></ProtectedRoute>} />
                 <Route path="/recruit/surveys" element={<ProtectedRoute><MySurveys /></ProtectedRoute>} />
                 <Route path="/recruit/create" element={<ProtectedRoute><CreateSurvey /></ProtectedRoute>} />
+                <Route path="/recruit/surveyresponses" element={<ProtectedRoute><MySurveyResponsesList /></ProtectedRoute>} />
+                <Route path="/recruit/responses/:studyId" element={<ProtectedRoute><StudyResponsesAnalytics /></ProtectedRoute>} />
                 <Route path="/recruit/create/:id" element={<ProtectedRoute><CreateSurvey /></ProtectedRoute>} />
                 <Route path="/recruit/create/study/:id/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
                 <Route path="/recruit/create/study/:id/phases" element={<ProtectedRoute><PhasesPage /></ProtectedRoute>} />
