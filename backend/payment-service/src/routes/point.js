@@ -89,7 +89,7 @@ router.post('/reward', authMiddleware, async (req, res) => {
     const externalParticipantId = participant.externalId || String(participantId);
     await addPoints(externalParticipantId, participantPoints, 'participant');
     await recordRewardTransaction(participant.id, participantPoints, externalRef);
-
+//.
     const commissionPercent = 15;
 
     res.json({

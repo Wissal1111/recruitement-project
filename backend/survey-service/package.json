@@ -1,25 +1,26 @@
-{
-  "name": "microservice-survey",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
+﻿{
+    "name":  "microservice-survey",
+    "version":  "1.0.0",
+    "description":  "",
+    "main":  "index.js",
+    "scripts":  {
+                    "test":  "echo \"Error: no test specified\" \u0026\u0026 exit 1"
+                },
+    "keywords":  [
 
-    "axios": "^1.16.1",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.4.1",
-    "dotenv": "^17.4.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
-  }
-
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "type":  "commonjs",
+    "dependencies":  {
+                         "axios":  "^1.16.1",
+                         "express":  "^5.2.1",
+                         "jsonwebtoken":  "^9.0.3",
+                         "mongoose":  "^9.4.1",
+                         "dotenv":  "^17.4.2",
+                         "eureka-js-client":  "^4.5.0"
+                     },
+    "devDependencies":  {
+                            "nodemon":  "^3.1.14"
+                        }
 }

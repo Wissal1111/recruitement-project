@@ -7,6 +7,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const morgan = require("morgan");
+const eurekaClient = require("./config/eureka");
 
 const app = express();
 
@@ -27,8 +28,27 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
+    });
+
+    // Start Eureka client registration
+    eurekaClient.start((error) => {
+      if (error) {
+        console.error('Eureka registration error:', error);
+      } else {
+        console.log('✓ Eureka client started - service registered');
+      }
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully...');
+      eurekaClient.stop();
+      server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+      });
     });
   })
   .catch((err) => {

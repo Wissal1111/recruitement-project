@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "response-service",
   "version": "1.0.0",
@@ -25,4 +26,35 @@
   "devDependencies": {
     "nodemon": "^3.1.14"
   }
+=======
+﻿{
+    "name":  "response-service",
+    "version":  "1.0.0",
+    "main":  "index.js",
+    "scripts":  {
+                    "test":  "echo \"Error: no test specified\" \u0026\u0026 exit 1",
+                    "start":  "node src/index.js",
+                    "dev":  "nodemon src/index.js"
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "description":  "",
+    "dependencies":  {
+                         "axios":  "^1.16.1",
+                         "cors":  "^2.8.6",
+                         "dotenv":  "^17.4.2",
+                         "express":  "^5.2.1",
+                         "jsonwebtoken":  "^9.0.3",
+                         "mongodb":  "^6.15.0",
+                         "mongoose":  "^9.6.2",
+                         "morgan":  "^1.10.1",
+                         "eureka-js-client":  "^4.5.0"
+                     },
+    "devDependencies":  {
+                            "nodemon":  "^3.1.14"
+                        }
+>>>>>>> e9ad3165266d8c001a8b307a0bd5ead2df36a928
 }
