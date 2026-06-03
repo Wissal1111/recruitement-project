@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "cors": "^2.8.6",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "eureka-js-client": "^4.5.0"
   }
 }

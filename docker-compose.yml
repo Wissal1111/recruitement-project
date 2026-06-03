@@ -31,6 +31,9 @@ services:
       - ./backend/user-service/.env
     environment:
       JWT_SECRET: your_super_secret_key
+    depends_on:
+      eureka-server:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -45,6 +48,9 @@ services:
       - ./backend/survey-service/.env
     environment:
       JWT_SECRET: your_super_secret_key
+    depends_on:
+      eureka-server:
+        condition: service_healthy
     networks:
       - app-network
     volumes:
@@ -60,6 +66,9 @@ services:
       - "4003:4003"
     env_file:
       - ./backend/response-service/.env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
     networks:
       - app-network
     volumes:
@@ -97,6 +106,8 @@ services:
     depends_on:
       recruitment-db:
         condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://recruitment-db:5432/recruitment_db
       SPRING_DATASOURCE_USERNAME: postgres
@@ -111,6 +122,23 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # ==================== EUREKA SERVER ====================
+# ✅ Fixed
+  eureka-server:
+    build: ./backend/eureka-server
+    container_name: eureka_server
+    restart: always
+    ports:
+      - "8761:8761"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
   # ==================== PAYMENT SERVICE ====================
   payment-service:
     build: ./backend/payment-service
@@ -120,6 +148,9 @@ services:
       - "3051:3050"
     env_file:
       - ./backend/payment-service/.env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -140,6 +171,20 @@ services:
     networks:
       - app-network
 
+  # ==================== PORTAINER DASHBOARD ====================
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    ports:
+      - "9000:9000"
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
@@ -148,3 +193,4 @@ volumes:
   mongo_data:
   recruitment_pgdata:
   user_service_pgdata:
+  portainer_data:

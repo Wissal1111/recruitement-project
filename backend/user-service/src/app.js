@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const eurekaClient = require('./config/eureka');
 
 const app = express();
 app.use(helmet());
@@ -20,6 +21,25 @@ app.use('/api/roles', require('./routes/role.routes'));
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'user-service' }));
 
 const PORT = process.env.PORT || 3002;
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 user-service running on port ${PORT}`);
+});
+
+// Start Eureka client registration
+eurekaClient.start((error) => {
+  if (error) {
+    console.error('Eureka registration error:', error);
+  } else {
+    console.log('✓ Eureka client started - service registered');
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  eurekaClient.stop();
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });

@@ -1,0 +1,27 @@
+{
+  "name": "microservice-survey",
+  "version": "1.0.0",
+  "description": "Multi-service survey and recruitment platform with Eureka service discovery",
+  "scripts": {
+    "install:all": "npm install --prefix backend/survey-service && npm install --prefix backend/response-service && npm install --prefix backend/user-service && npm install --prefix backend/payment-service",
+    "up": "docker-compose up -d",
+    "down": "docker-compose down",
+    "restart": "docker-compose down && docker-compose up -d --build",
+    "logs": "docker-compose logs -f",
+    "logs:payment": "docker-compose logs -f payment-service",
+    "logs:survey": "docker-compose logs -f survey-service",
+    "logs:response": "docker-compose logs -f response-service",
+    "logs:user": "docker-compose logs -f user-service",
+    "logs:eureka": "docker-compose logs -f eureka-server",
+    "status": "docker-compose ps"
+  },
+  "keywords": [
+    "microservices",
+    "survey",
+    "recruitment",
+    "eureka",
+    "service-discovery"
+  ],
+  "author": "",
+  "license": "ISC"
+}
