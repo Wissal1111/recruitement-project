@@ -202,7 +202,7 @@ export default function Phase({ phase, index, onDelete, onUpdate }) {
                         <div className="phase__field phase__field--full">
                             <button
                                 className="phase__goto-questions"
-                                onClick={() => navigate(`/recruit/create/phases/${phase.id}/questions`)}
+                                onClick={() => navigate(`./${phase.id}/questions`)}
                             >
                                 Build Questions for this Phase
                                 <ArrowRight size={13} strokeWidth={2.5} />
