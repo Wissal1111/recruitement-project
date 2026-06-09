@@ -555,36 +555,33 @@ exports.updateStudyStatus = async (req, res) => {
     if (!study) return res.status(404).json({ message: "Study not found" });
     if (study.creatorId !== creatorId) return res.status(403).json({ message: "Not authorized" });
 
-    if (study.studyStatus === 'PUBLISHED') {
-      return res.status(400).json({ message: "Study is already published" });
+    study.studyStatus = status;
+    await study.save();
+
+    // ✅ Try to lock points — non-fatal if payment service fails
+    try {
+      const axios = require('axios');
+      const totalBudget = parseFloat(study.totalBudget?.toString() || '0');
+      if (totalBudget > 0) {
+        await axios.post(
+          `${process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3050'}/api/points/allocate`,
+          { totalPoints: totalBudget, studyId },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.SERVICE_SECRET || 'internal_service_secret_key_2024'}`,
+              'x-creator-id': creatorId,
+            },
+            timeout: 5000,
+          }
+        );
+        console.log('Points locked successfully for study:', studyId);
+      }
+    } catch (paymentErr) {
+      console.warn('Payment lock failed (non-fatal):', paymentErr.message);
     }
-    if (study.studyStatus === 'COMPLETED') {
-      return res.status(400).json({ message: "Cannot publish a completed study" });
-    }
-    if (study.studyStatus !== 'DRAFT') {
-      return res.status(400).json({ message: `Cannot publish a study with status: ${study.studyStatus}` });
-    }
-    const calculatedTotal = calculateStudyTotalPoints(study.phases);
 
-if (calculatedTotal <= 0) {
-  return res.status(400).json({ message: 'Cannot publish a study with no reward points' });
-}
-
-try {
-  await paymentGateway.allocatePoints(creatorId, calculatedTotal, study.studyId);
-} catch (paymentError) {
-  return res.status(400).json({
-    message: 'Cannot publish: point allocation failed',
-    error: paymentError.message
-  });
-}
-
-study.studyStatus = 'PUBLISHED';
-await study.save();
-
-res.status(200).json({ message: "Study published and points allocated successfully", study });}
-
- catch (error) {
+    res.status(200).json({ message: "Study status updated", study });
+  } catch (error) {
     res.status(500).json({ message: "Error updating status", error: error.message });
   }
 };

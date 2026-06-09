@@ -28,8 +28,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     const _OnboardingPage(
       title: 'Smart Matching',
-      subtitle:
-          'Our AI matches you to the exact demographic profiles you need.',
+      subtitle: ' matches you to the exact demographic profiles you need.',
       icon: Icons.auto_awesome_outlined,
     ),
   ];

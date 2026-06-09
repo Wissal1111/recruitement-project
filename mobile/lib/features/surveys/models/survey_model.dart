@@ -1,7 +1,7 @@
 class Study {
   final String studyId;
   final String creatorId;
-  final String creatorName; // ✅ ADD THIS
+  final String creatorName;
   final String title;
   final String? description;
   final String studyStatus;
@@ -15,7 +15,7 @@ class Study {
   Study({
     required this.studyId,
     required this.creatorId,
-    this.creatorName = '', // ✅ ADD THIS
+    this.creatorName = '',
     required this.title,
     this.description,
     required this.studyStatus,
@@ -32,6 +32,26 @@ class Study {
     return DateTime.now().isAfter(endDate!);
   }
 
+  // ✅ Total reward a participant earns across all phases
+  double get rewardPerParticipant {
+    double total = 0;
+    for (final phase in phases) {
+      final raw = phase['rewardAmount'];
+      if (raw is num) {
+        total += raw.toDouble();
+      } else if (raw is Map && raw['\$numberDecimal'] != null) {
+        total += double.tryParse(raw['\$numberDecimal'].toString()) ?? 0;
+      }
+    }
+    return total;
+  }
+
+  // ✅ Max participants from first phase
+  int get maxParticipants {
+    if (phases.isEmpty) return 0;
+    return (phases[0]['maxParticipants'] as num?)?.toInt() ?? 0;
+  }
+
   factory Study.fromJson(Map<String, dynamic> json) {
     double parseBudget(dynamic raw) {
       if (raw == null) return 0.0;
@@ -43,7 +63,6 @@ class Study {
       return 0.0;
     }
 
-    // ✅ Try to get creator name from response
     final creatorInfo = json['creator'] as Map<String, dynamic>?;
     final creatorName = creatorInfo != null
         ? '${creatorInfo['firstname'] ?? ''} ${creatorInfo['lastname'] ?? ''}'
@@ -53,7 +72,7 @@ class Study {
     return Study(
       studyId: json['studyId'] ?? '',
       creatorId: json['creatorId'] ?? '',
-      creatorName: creatorName, // ✅ ADD THIS
+      creatorName: creatorName,
       title: json['title'] ?? 'Untitled Survey',
       description: json['description'],
       studyStatus: json['studyStatus'] ?? 'DRAFT',

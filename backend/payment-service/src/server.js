@@ -14,6 +14,13 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// ✅ ADD THIS - log every request
+app.use((req, res, next) => {
+  console.log(`→ ${req.method} ${req.path}`, 
+    req.body ? JSON.stringify(req.body).substring(0, 200) : '');
+  next();
+});
+
 app.get('/', (req, res) => {
   res.json({ message: 'Payment Service is running' });
 });
@@ -22,6 +29,12 @@ app.use('/api/points', pointsRoutes);
 app.use('/api/payment-cards', paymentCardRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/transactions', transactionRoutes);
+
+// ✅ ADD THIS - log all errors
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err.message);
+  res.status(500).json({ error: err.message });
+});
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

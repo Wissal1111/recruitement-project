@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucid_curator/features/notifications/screens/alerts_screen.dart';
+import 'package:lucid_curator/features/payment/screens/buy_points_screen.dart';
+import 'package:lucid_curator/features/payment/screens/payment_cards_screen.dart';
+import 'package:lucid_curator/features/payment/screens/transaction_history_screen.dart';
+import 'package:lucid_curator/features/payment/screens/wallet_screen.dart';
 import 'package:lucid_curator/features/surveys/models/survey_model.dart';
 import 'package:lucid_curator/features/surveys/screens/answer_phase_screen.dart';
 import 'package:lucid_curator/features/surveys/screens/create_survey_screen.dart';
@@ -11,6 +17,7 @@ import 'package:lucid_curator/features/surveys/screens/survey_builder_screen.dar
 import 'package:lucid_curator/features/surveys/screens/survey_detail_screen.dart';
 import 'package:lucid_curator/features/surveys/screens/surveys_screen.dart';
 
+import '../core/api_client.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/login_screen.dart';
@@ -22,6 +29,65 @@ import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/surveys/screens/applications_screen.dart';
 import '../features/surveys/screens/invite_participants_screen.dart';
+
+// ✅ Unread notification count provider
+final unreadNotificationCountProvider =
+    StateNotifierProvider<UnreadCountNotifier, int>(
+        (ref) => UnreadCountNotifier(ref));
+
+class UnreadCountNotifier extends StateNotifier<int> {
+  final Ref _ref;
+  UnreadCountNotifier(this._ref) : super(0) {
+    refresh();
+  }
+
+  Future<void> refresh() async {
+    try {
+      final dio = _ref.read(dioProvider);
+      final res = await dio.get('/api/notifications');
+      List all = [];
+      if (res.data is List) {
+        all = res.data as List;
+      } else if (res.data is Map && res.data['notifications'] != null) {
+        all = res.data['notifications'] as List;
+      }
+      final unread = all.where((n) => n['isRead'] != true).length;
+      state = unread;
+    } catch (_) {
+      state = 0;
+    }
+  }
+}
+
+// ✅ Pending invitation count provider
+final pendingInvitationCountProvider =
+    StateNotifierProvider<PendingInvitationCountNotifier, int>(
+        (ref) => PendingInvitationCountNotifier(ref));
+
+class PendingInvitationCountNotifier extends StateNotifier<int> {
+  final Ref _ref;
+  PendingInvitationCountNotifier(this._ref) : super(0) {
+    refresh();
+  }
+
+  Future<void> refresh() async {
+    try {
+      final dio = _ref.read(dioProvider);
+      final res = await dio.get('/api/recruitment/invitations/me');
+      List all = [];
+      if (res.data is List) {
+        all = res.data as List;
+      }
+      final pending = all.where((inv) {
+        final status = (inv['status'] ?? '').toString().toUpperCase();
+        return status == 'PENDING';
+      }).length;
+      state = pending;
+    } catch (_) {
+      state = 0;
+    }
+  }
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -70,7 +136,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/surveys/create',
               builder: (_, __) => const CreateSurveyScreen()),
-                    GoRoute(
+          GoRoute(
               path: '/surveys/participant-detail',
               builder: (context, state) {
                 final survey = state.extra as Study;
@@ -107,47 +173,113 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/profile/edit',
               builder: (_, __) => const EditProfileScreen()),
-
-          // 🚨 REPLACED INTERESTS WITH INVITATIONS
           GoRoute(
               path: '/invitations',
               builder: (_, __) => const InvitationsScreen()),
           GoRoute(
               path: '/notifications', builder: (_, __) => const AlertsScreen()),
+          GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
+          GoRoute(
+              path: '/wallet/cards',
+              builder: (_, __) => const PaymentCardsScreen()),
+          GoRoute(
+              path: '/wallet/transactions',
+              builder: (_, __) => const TransactionHistoryScreen()),
+          GoRoute(
+              path: '/wallet/buy-points',
+              builder: (_, __) => const BuyPointsScreen()),
         ],
       ),
     ],
   );
 });
 
-// Bottom nav shell
-class MainShell extends StatelessWidget {
+// ✅ Bottom nav shell with auto-refresh
+class MainShell extends ConsumerStatefulWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
 
   @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  late final Timer _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Refresh counts immediately
+    Future.microtask(() {
+      ref.read(unreadNotificationCountProvider.notifier).refresh();
+      ref.read(pendingInvitationCountProvider.notifier).refresh();
+    });
+
+    // ✅ Auto-refresh every 15 seconds
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) {
+        if (mounted) {
+          ref.read(unreadNotificationCountProvider.notifier).refresh();
+          ref.read(pendingInvitationCountProvider.notifier).refresh();
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
-      bottomNavigationBar: _BottomNav(),
+      body: widget.child,
+      bottomNavigationBar: const _BottomNav(),
     );
   }
 }
 
-class _BottomNav extends StatelessWidget {
+class _BottomNav extends ConsumerWidget {
+  const _BottomNav();
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final invitationCount = ref.watch(pendingInvitationCountProvider);
 
     final items = [
-      (icon: Icons.home_outlined, label: 'Home', path: '/home'),
-      (icon: Icons.mail_outline, label: 'Invitations', path: '/invitations'),
+      (
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: 'Home',
+        path: '/home',
+        badgeCount: 0,
+      ),
+      (
+        icon: Icons.mail_outline,
+        activeIcon: Icons.mail,
+        label: 'Invitations',
+        path: '/invitations',
+        badgeCount: invitationCount, // ✅ Pending invitations
+      ),
       (
         icon: Icons.notifications_outlined,
+        activeIcon: Icons.notifications,
         label: 'Notifications',
-        path: '/notifications'
+        path: '/notifications',
+        badgeCount: unreadCount, // ✅ Unread notifications
       ),
-      (icon: Icons.person_outline, label: 'Profile', path: '/profile'),
+      (
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: 'Profile',
+        path: '/profile',
+        badgeCount: 0,
+      ),
     ];
 
     int idx = items.indexWhere((e) => location.startsWith(e.path));
@@ -164,12 +296,36 @@ class _BottomNav extends StatelessWidget {
         backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFF534AB7),
         unselectedItemColor: const Color(0xFF9CA3AF),
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
         elevation: 0,
-        onTap: (i) => context.go(items[i].path),
-        items: items
-            .map((e) =>
-                BottomNavigationBarItem(icon: Icon(e.icon), label: e.label))
-            .toList(),
+        onTap: (i) {
+          context.go(items[i].path);
+          // ✅ Refresh both counts when switching tabs
+          ref.read(unreadNotificationCountProvider.notifier).refresh();
+          ref.read(pendingInvitationCountProvider.notifier).refresh();
+        },
+        items: items.map((e) {
+          final isSelected = items.indexOf(e) == idx;
+
+          return BottomNavigationBarItem(
+            icon: e.badgeCount > 0
+                ? Badge(
+                    label: Text(
+                      e.badgeCount > 99 ? '99+' : '${e.badgeCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    backgroundColor: Colors.red,
+                    child: Icon(isSelected ? e.activeIcon : e.icon),
+                  )
+                : Icon(isSelected ? e.activeIcon : e.icon),
+            label: e.label,
+          );
+        }).toList(),
       ),
     );
   }

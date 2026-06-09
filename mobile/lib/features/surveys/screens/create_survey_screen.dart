@@ -1,200 +1,95 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme.dart';
 import '../../../shared/widgets/gradient_button.dart';
+import '../../payment/repository/payment_repository.dart';
 
-class CreateSurveyScreen extends StatefulWidget {
+class CreateSurveyScreen extends ConsumerStatefulWidget {
   const CreateSurveyScreen({super.key});
 
   @override
-  State<CreateSurveyScreen> createState() => _CreateSurveyScreenState();
+  ConsumerState<CreateSurveyScreen> createState() => _CreateSurveyScreenState();
 }
 
-class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
+class _CreateSurveyScreenState extends ConsumerState<CreateSurveyScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _budgetCtrl = TextEditingController();
   final _maxParticipantsCtrl = TextEditingController();
+  final _rewardPerParticipantCtrl = TextEditingController();
   final _otherProfCtrl = TextEditingController();
   final _otherEduCtrl = TextEditingController();
 
   bool _isMultiPhase = false;
   RangeValues _ageRange = const RangeValues(18, 45);
-  String? _profession;
+  String? _profession = 'Technology & Design';
   String? _education = "Master's Degree";
-  String? _country;
-  final Set<String> _selectedInterests = {};
+  String? _country = 'United Kingdom';
+  final Set<String> _selectedInterests = {'UX Research'};
+  DateTime? _endDate;
 
-  List<String> _countries = [];
-  bool _loadingCountries = true;
+  // ✅ Wallet check state
+  bool _checkingWallet = false;
+  String? _walletError;
 
-  final List<String> _professions = [
-    'Software Engineer',
-    'Web Developer',
-    'Mobile Developer',
-    'Data Scientist',
-    'Machine Learning Engineer',
-    'DevOps Engineer',
-    'Cybersecurity Analyst',
-    'UI/UX Designer',
-    'Product Manager',
-    'Project Manager',
-    'Business Analyst',
-    'Marketing Manager',
-    'Digital Marketer',
-    'Content Creator',
-    'Social Media Manager',
-    'SEO Specialist',
-    'Graphic Designer',
-    'Video Editor',
-    'Photographer',
-    'Doctor',
-    'Nurse',
-    'Pharmacist',
-    'Dentist',
-    'Psychologist',
-    'Teacher',
-    'Professor',
-    'Researcher',
-    'Scientist',
-    'Accountant',
-    'Financial Analyst',
-    'Banker',
-    'Investment Manager',
-    'Lawyer',
-    'Paralegal',
-    'Judge',
-    'Architect',
-    'Civil Engineer',
-    'Mechanical Engineer',
-    'Electrical Engineer',
-    'HR Manager',
-    'Recruiter',
-    'Operations Manager',
-    'Entrepreneur',
-    'Freelancer',
-    'Consultant',
-    'Sales Representative',
-    'Customer Service',
-    'Logistics Manager',
-    'Chef',
-    'Nutritionist',
-    'Personal Trainer',
-    'Coach',
-    'Journalist',
-    'Writer',
-    'Editor',
-    'Translator',
-    'Artist',
-    'Musician',
-    'Actor',
-    'Student',
-    'Retired',
-    'Other',
+  final _professions = [
+    'Technology & Design',
+    'Healthcare',
+    'Education',
+    'Finance',
+    'Marketing',
+    'Other'
   ];
-
-  final List<String> _educationLevels = [
-    'No Formal Education',
-    'Primary School',
-    'Middle School / Junior High',
-    'High School Diploma / GED',
-    'Some College (No Degree)',
-    'Vocational / Trade School',
-    'Associate Degree',
+  final _educationLevels = [
+    'High School',
     "Bachelor's Degree",
-    'Post-Graduate Certificate',
     "Master's Degree",
-    'MBA',
-    'Professional Degree (JD, MD, PharmD…)',
-    'PhD / Doctorate',
-    'Postdoctoral Research',
-    'Other',
+    'PhD',
+    'Other'
   ];
-
-  final List<String> _interests = [
+  final _countries = [
+    'United Kingdom',
+    'United States',
+    'France',
+    'Germany',
+    'Algeria',
+    'Other'
+  ];
+  final _interests = [
     'UX Research',
     'SaaS Growth',
     'AI Ethics',
     'Product Design',
     'Data Science',
-    'Marketing',
-    'Technology',
-    'Healthcare',
-    'Finance',
-    'Education',
-    'Environment',
-    'Social Media',
+    'Marketing'
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCountries();
-  }
+  // ✅ Auto-calculated total budget
+  double get _rewardPerParticipant =>
+      double.tryParse(_rewardPerParticipantCtrl.text.trim()) ?? 0;
 
-  Future<void> _loadCountries() async {
-    try {
-      final dio = Dio();
-      final res =
-          await dio.get('https://restcountries.com/v3.1/all?fields=name');
-      final List data = res.data;
-      final names = data.map((c) => c['name']['common'].toString()).toList();
-      names.sort();
-      if (mounted) {
-        setState(() {
-          _countries = names;
-          _loadingCountries = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _countries = [
-            'Algeria',
-            'Australia',
-            'Brazil',
-            'Canada',
-            'China',
-            'Egypt',
-            'France',
-            'Germany',
-            'India',
-            'Indonesia',
-            'Italy',
-            'Japan',
-            'Mexico',
-            'Morocco',
-            'Netherlands',
-            'Nigeria',
-            'Pakistan',
-            'Russia',
-            'Saudi Arabia',
-            'South Africa',
-            'Spain',
-            'Tunisia',
-            'Turkey',
-            'United Arab Emirates',
-            'United Kingdom',
-            'United States',
-            'Other',
-          ];
-          _loadingCountries = false;
-        });
-      }
-    }
-  }
+  int get _maxParticipants =>
+      int.tryParse(_maxParticipantsCtrl.text.trim()) ?? 0;
+
+  double get _totalBudgetPoints => _rewardPerParticipant * _maxParticipants;
 
   int get _estimatedAudience {
     final ageSpan = _ageRange.end - _ageRange.start;
     return (ageSpan * 500 + _selectedInterests.length * 1200).round();
   }
 
-  bool get _isFormValid =>
-      _titleCtrl.text.isNotEmpty &&
-      _budgetCtrl.text.isNotEmpty &&
-      _maxParticipantsCtrl.text.isNotEmpty;
+  bool get _isFormValid {
+    return _titleCtrl.text.isNotEmpty &&
+        _maxParticipantsCtrl.text.isNotEmpty &&
+        _rewardPerParticipantCtrl.text.isNotEmpty &&
+        _rewardPerParticipant > 0 &&
+        _maxParticipants > 0;
+  }
+
+  String _formatEndDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
   Future<void> _pickEndDate() async {
     final picked = await showDatePicker(
@@ -212,10 +107,79 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
     if (picked != null) setState(() => _endDate = picked);
   }
 
-  DateTime? _endDate;
+  // ✅ Check wallet before proceeding to builder
+  Future<void> _continueToBuilder() async {
+    setState(() {
+      _checkingWallet = true;
+      _walletError = null;
+    });
 
-  String _formatEndDate(DateTime date) =>
-      '${date.day}/${date.month}/${date.year}';
+    try {
+      // ✅ Check 1: Creator must have at least one card
+      final cards = await ref.read(paymentRepositoryProvider).getPaymentCards();
+
+      if (cards.isEmpty) {
+        setState(() {
+          _walletError =
+              'You need to add a payment card first before creating a survey.';
+          _checkingWallet = false;
+        });
+        return;
+      }
+
+      // ✅ Check 2: Creator must have enough points in wallet
+      final wallet = await ref.read(paymentRepositoryProvider).getWallet();
+
+      final available =
+          double.tryParse(wallet['availablePoints']?.toString() ?? '0') ?? 0;
+
+      if (available < _totalBudgetPoints) {
+        setState(() {
+          _walletError =
+              'Insufficient points! You have ${available.toStringAsFixed(0)} pts but need ${_totalBudgetPoints.toStringAsFixed(0)} pts. Buy more points in your wallet first.';
+          _checkingWallet = false;
+        });
+        return;
+      }
+
+      // ✅ All good — proceed to builder
+      if (mounted) {
+        context.push('/surveys/build', extra: {
+          'title': _titleCtrl.text,
+          'description': _descCtrl.text,
+          'totalBudget': _totalBudgetPoints,
+          'maxParticipants': _maxParticipants,
+          'rewardPerParticipant': _rewardPerParticipant,
+          'isMultiPhase': _isMultiPhase,
+          'ageMin': _ageRange.start.round(),
+          'ageMax': _ageRange.end.round(),
+          'country': _country,
+          'education': _education == 'Other' ? _otherEduCtrl.text : _education,
+          'gender': null,
+          'interestIds': [],
+          if (_endDate != null) 'endDate': _endDate!.toIso8601String(),
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _walletError = 'Could not verify wallet. Please try again.';
+        _checkingWallet = false;
+      });
+    } finally {
+      if (mounted) setState(() => _checkingWallet = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    _maxParticipantsCtrl.dispose();
+    _rewardPerParticipantCtrl.dispose();
+    _otherProfCtrl.dispose();
+    _otherEduCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,11 +188,12 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // ── Header ──────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(children: [
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => context.pop(),
                   child: Container(
                     width: 36,
                     height: 36,
@@ -247,12 +212,14 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                         color: AppTheme.primary)),
               ]),
             ),
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Survey Name ──────────────────────
                     _Label('SURVEY NAME'),
                     const SizedBox(height: 8),
                     TextField(
@@ -263,6 +230,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    // ── Description ──────────────────────
                     _Label('DESCRIPTION'),
                     const SizedBox(height: 8),
                     TextField(
@@ -272,45 +240,94 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                             hintText: 'Define the primary objective...')),
                     const SizedBox(height: 16),
 
+                    // ── Max Participants + Reward ─────────
                     Row(children: [
                       Expanded(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            _Label('TOTAL BUDGET (\$)'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _budgetCtrl,
-                              onChanged: (_) => setState(() {}),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              decoration: const InputDecoration(
-                                  hintText: 'e.g. 1500',
-                                  prefixIcon: Icon(Icons.attach_money,
-                                      color: AppTheme.textSecondary)),
-                            ),
-                          ])),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _Label('MAX PARTICIPANTS'),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _maxParticipantsCtrl,
+                                onChanged: (_) => setState(() {
+                                  _walletError = null;
+                                }),
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                    hintText: 'e.g. 10',
+                                    prefixIcon: Icon(Icons.people_outline,
+                                        color: AppTheme.textSecondary)),
+                              ),
+                            ]),
+                      ),
                       const SizedBox(width: 16),
                       Expanded(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            _Label('MAX PARTICIPANTS'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _maxParticipantsCtrl,
-                              onChanged: (_) => setState(() {}),
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                  hintText: 'e.g. 100',
-                                  prefixIcon: Icon(Icons.people_outline,
-                                      color: AppTheme.textSecondary)),
-                            ),
-                          ])),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _Label('REWARD / PARTICIPANT (PTS)'),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _rewardPerParticipantCtrl,
+                                onChanged: (_) => setState(() {
+                                  _walletError = null;
+                                }),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                decoration: const InputDecoration(
+                                    hintText: 'e.g. 150 pts',
+                                    prefixIcon: Icon(Icons.star_outline,
+                                        color: AppTheme.textSecondary)),
+                              ),
+                            ]),
+                      ),
                     ]),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
+                    // ✅ Auto-calculated budget display
+                    if (_rewardPerParticipant > 0 && _maxParticipants > 0) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.calculate_outlined,
+                              color: AppTheme.primary, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('TOTAL BUDGET (AUTO-CALCULATED)',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1,
+                                          color: AppTheme.primary)),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                      '${_totalBudgetPoints.toStringAsFixed(0)} pts',
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppTheme.primary)),
+                                  Text(
+                                      '${_rewardPerParticipant.toStringAsFixed(0)} pts × $_maxParticipants participants  ≈  \$${(_totalBudgetPoints / 5).toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppTheme.textSecondary)),
+                                ]),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // ── Expiry Date ──────────────────────
                     _Label('EXPIRY DATE (OPTIONAL)'),
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -349,6 +366,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // ── Single / Multi Phase ─────────────
                     Row(children: [
                       Expanded(
                           child: GestureDetector(
@@ -418,7 +436,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                     ]),
                     const SizedBox(height: 24),
 
-                    // Target participants card
+                    // ── Target Participants ──────────────
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -470,55 +488,34 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                       setState(() => _ageRange = v)),
                             ),
                             const SizedBox(height: 16),
-
-                            // Profession dropdown
-                            _Label('PROFESSION'),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(
-                              value: _profession,
-                              isExpanded: true,
-                              hint: const Text('Select profession'),
-                              decoration: const InputDecoration(),
-                              items: _professions
-                                  .map((e) => DropdownMenuItem(
-                                      value: e, child: Text(e)))
-                                  .toList(),
-                              onChanged: (v) => setState(() => _profession = v),
-                            ),
+                            _DropdownField(
+                                label: 'PROFESSION',
+                                value: _profession,
+                                items: _professions,
+                                onChanged: (v) =>
+                                    setState(() => _profession = v)),
                             if (_profession == 'Other') ...[
                               const SizedBox(height: 8),
                               TextField(
                                   controller: _otherProfCtrl,
                                   decoration: const InputDecoration(
-                                      hintText: 'Type custom profession...')),
+                                      hintText: 'Type custom profession...'))
                             ],
                             const SizedBox(height: 16),
-
-                            // Education dropdown
-                            _Label('EDUCATION'),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(
-                              value: _educationLevels.contains(_education)
-                                  ? _education
-                                  : null,
-                              isExpanded: true,
-                              hint: const Text('Select education level'),
-                              decoration: const InputDecoration(),
-                              items: _educationLevels
-                                  .map((e) => DropdownMenuItem(
-                                      value: e, child: Text(e)))
-                                  .toList(),
-                              onChanged: (v) => setState(() => _education = v),
-                            ),
+                            _DropdownField(
+                                label: 'EDUCATION',
+                                value: _education,
+                                items: _educationLevels,
+                                onChanged: (v) =>
+                                    setState(() => _education = v)),
                             if (_education == 'Other') ...[
                               const SizedBox(height: 8),
                               TextField(
                                   controller: _otherEduCtrl,
                                   decoration: const InputDecoration(
-                                      hintText: 'Type custom education...')),
+                                      hintText: 'Type custom education...'))
                             ],
                             const SizedBox(height: 16),
-
                             const Text('KEY INTERESTS',
                                 style: TextStyle(
                                     fontSize: 11,
@@ -558,36 +555,17 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                   );
                                 }).toList()),
                             const SizedBox(height: 16),
-
-                            // Country dropdown — from API
-                            _Label('COUNTRY'),
-                            const SizedBox(height: 8),
-                            _loadingCountries
-                                ? const Center(
-                                    child: Padding(
-                                    padding: EdgeInsets.all(8),
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  ))
-                                : DropdownButtonFormField<String>(
-                                    value: _country,
-                                    isExpanded: true,
-                                    hint: const Text('Select country'),
-                                    decoration: const InputDecoration(
-                                        suffixIcon: Icon(Icons.public_outlined,
-                                            size: 18,
-                                            color: AppTheme.textTertiary)),
-                                    items: _countries
-                                        .map((e) => DropdownMenuItem(
-                                            value: e, child: Text(e)))
-                                        .toList(),
-                                    onChanged: (v) =>
-                                        setState(() => _country = v),
-                                  ),
+                            _DropdownField(
+                                label: 'COUNTRY',
+                                value: _country,
+                                items: _countries,
+                                trailingIcon: Icons.public_outlined,
+                                onChanged: (v) => setState(() => _country = v)),
                           ]),
                     ),
                     const SizedBox(height: 16),
 
+                    // ── Audience Estimator ───────────────
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -622,35 +600,57 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
                                     height: 1.4)),
                           ]),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
+                    // ✅ Wallet error display
+                    if (_walletError != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                            color: AppTheme.errorColor.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: AppTheme.errorColor.withOpacity(0.3))),
+                        child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.warning_amber_outlined,
+                                  color: AppTheme.errorColor, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(_walletError!,
+                                    style: const TextStyle(
+                                        color: AppTheme.errorColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500)),
+                              ),
+                            ]),
+                      ),
+                      const SizedBox(height: 10),
+                      // ✅ Quick link to wallet
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/wallet'),
+                          icon: const Icon(
+                              Icons.account_balance_wallet_outlined,
+                              size: 16),
+                          label: const Text('Go to Wallet'),
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primary,
+                              side: const BorderSide(color: AppTheme.primary)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // ── Continue Button ──────────────────
                     GradientButton(
-                      label: 'Continue to Questions',
-                      onPressed: _isFormValid
-                          ? () {
-                              context.push('/surveys/build', extra: {
-                                'title': _titleCtrl.text,
-                                'description': _descCtrl.text,
-                                'totalBudget':
-                                    double.tryParse(_budgetCtrl.text.trim()) ??
-                                        0.0,
-                                'maxParticipants': int.tryParse(
-                                        _maxParticipantsCtrl.text.trim()) ??
-                                    0,
-                                'isMultiPhase': _isMultiPhase,
-                                'profession': _profession == 'Other'
-                                    ? _otherProfCtrl.text
-                                    : _profession,
-                                'education': _education == 'Other'
-                                    ? _otherEduCtrl.text
-                                    : _education,
-                                'ageMin': _ageRange.start.round(),
-                                'ageMax': _ageRange.end.round(),
-                                'country': _country,
-                                'interests': _selectedInterests.toList(),
-                                'endDate': _endDate?.toIso8601String(),
-                              });
-                            }
+                      label: _checkingWallet
+                          ? 'Checking wallet...'
+                          : 'Continue to Questions',
+                      onPressed: _isFormValid && !_checkingWallet
+                          ? _continueToBuilder
                           : null,
                       trailingIcon: Icons.arrow_forward,
                     ),
@@ -669,6 +669,7 @@ class _CreateSurveyScreenState extends State<CreateSurveyScreen> {
 class _Label extends StatelessWidget {
   final String text;
   const _Label(this.text);
+
   @override
   Widget build(BuildContext context) => Text(text,
       style: const TextStyle(
@@ -676,4 +677,45 @@ class _Label extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
           color: AppTheme.textSecondary));
+}
+
+class _DropdownField extends StatelessWidget {
+  final String label;
+  final String? value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+  final IconData? trailingIcon;
+
+  const _DropdownField(
+      {required this.label,
+      required this.value,
+      required this.items,
+      required this.onChanged,
+      this.trailingIcon});
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                  color: AppTheme.textSecondary)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: value,
+            isExpanded: true,
+            decoration: InputDecoration(
+                suffixIcon: trailingIcon != null
+                    ? Icon(trailingIcon, color: AppTheme.textTertiary, size: 18)
+                    : null),
+            items: items
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+            onChanged: onChanged,
+          ),
+        ],
+      );
 }

@@ -4,11 +4,17 @@ const { getOrCreateUser } = require('./userService');
 async function createPaymentCard(externalUserId, dto) {
   const user = await getOrCreateUser(externalUserId, 'creator');
 
+  // ✅ Map any value to valid CardType enum
+  const validCardTypes = ['paypal', 'payoneer', 'stripe', 'custom'];
+  const cardType = validCardTypes.includes(dto.cardType?.toLowerCase())
+    ? dto.cardType.toLowerCase()
+    : 'custom'; // ✅ default to custom if invalid
+
   return prisma.paymentCard.create({
     data: {
       userId: user.id,
       cardName: dto.cardName,
-      cardType: dto.cardType || 'custom',
+      cardType: cardType,
       lastFourDigits: dto.lastFourDigits || '0000',
       automaticBudget: dto.automaticBudget ?? 1000.0,
     },

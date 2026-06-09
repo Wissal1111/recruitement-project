@@ -72,6 +72,47 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
         .indexWhere((p) => p['phaseId'] == response['phaseId']);
   }
 
+  // ✅ Check if survey is full and notify creator
+  Future<void> _checkIfSurveyFull() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final apps = await ref
+          .read(recruitmentRepositoryProvider)
+          .getStudyApplications(widget.survey.studyId);
+
+      final approvedCount = apps
+          .where((a) => (a['status'] ?? '').toString() == 'APPROVED')
+          .length;
+
+      final maxParticipants = widget.survey.maxParticipants;
+
+      debugPrint('Approved: $approvedCount / Max: $maxParticipants');
+
+      if (maxParticipants > 0 && approvedCount >= maxParticipants) {
+        // ✅ Notify creator
+        await dio.post('/api/notifications', data: {
+          'userId': widget.survey.creatorId,
+          'title': '🎉 Survey is Full!',
+          'message':
+              '"${widget.survey.title}" has reached its maximum of $maxParticipants participants! Consider closing it.',
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('🎉 Survey is now full! Creator has been notified.'),
+              backgroundColor: AppTheme.successColor,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Survey full check error: $e');
+    }
+  }
+
   Future<void> _approveParticipant(
       Map<String, dynamic> app, int lastSubmittedPhaseIndex) async {
     final participantId = app['participantId']?.toString() ?? '';
@@ -95,6 +136,9 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen> {
             ? 'Congratulations! You completed "${widget.survey.title}".'
             : 'Phase ${lastSubmittedPhaseIndex + 1} approved! Continue with Phase ${lastSubmittedPhaseIndex + 2}. [studyId:${widget.survey.studyId}][nextPhase:${lastSubmittedPhaseIndex + 1}]',
       });
+
+      // ✅ Check if survey is now full
+      await _checkIfSurveyFull();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -343,18 +387,14 @@ class _ParticipantCardState extends State<_ParticipantCard> {
     }
   }
 
-  // ✅ Get participant display name
   String get _participantName {
-    // Try firstname + lastname from app data
     final firstname = widget.app['firstname']?.toString() ?? '';
     final lastname = widget.app['lastname']?.toString() ?? '';
-    if (firstname.isNotEmpty) return '$firstname $lastname'.trim();
-
-    // Try participantName
+    if (firstname.isNotEmpty) {
+      return '$firstname $lastname'.trim();
+    }
     final name = widget.app['participantName']?.toString() ?? '';
     if (name.isNotEmpty) return name;
-
-    // Try from responses
     for (final r in widget.responses) {
       final pName = r['participantName']?.toString() ?? '';
       if (pName.isNotEmpty) return pName;
@@ -363,8 +403,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
         return '$pFirst ${r['lastname'] ?? ''}'.trim();
       }
     }
-
-    // Fallback to short ID
     final shortId = widget.participantId.length > 8
         ? widget.participantId.substring(0, 8)
         : widget.participantId;
@@ -376,16 +414,13 @@ class _ParticipantCardState extends State<_ParticipantCard> {
     return name.isNotEmpty ? name[0].toUpperCase() : 'P';
   }
 
-  // ✅ Determine the real display status based on responses
   String get _displayStatus {
-    // If participant has submitted responses, they're active not rejected
     if (widget.hasResponses) {
       if (widget.responses.length >= widget.survey.phases.length) {
         return 'COMPLETED';
       }
       return 'ACTIVE';
     }
-    // Use actual status from backend
     final s = widget.status;
     if (s == 'APPLIED') return 'PENDING';
     return s;
@@ -418,7 +453,7 @@ class _ParticipantCardState extends State<_ParticipantCard> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: AppTheme.ambientShadow),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── Header ─────────────────────────────────────────────────
+        // ── Header ───────────────────────────────────
         Padding(
           padding: const EdgeInsets.all(20),
           child: Row(children: [
@@ -435,14 +470,12 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  // ✅ Show name, not ID
                   Text(_participantName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 15)),
                   const SizedBox(height: 4),
-                  // ✅ Wrap in Flexible to prevent overflow
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
@@ -479,7 +512,7 @@ class _ParticipantCardState extends State<_ParticipantCard> {
           ]),
         ),
 
-        // ── Answers Toggle ──────────────────────────────────────────
+        // ── Answers Toggle ────────────────────────────
         if (widget.hasResponses) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -534,7 +567,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ✅ Phase header with name
                       Row(children: [
                         const Icon(Icons.assignment_outlined,
                             size: 14, color: AppTheme.primary),
@@ -550,7 +582,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                         ),
                       ]),
                       const SizedBox(height: 12),
-
                       ...answers.asMap().entries.map((entry) {
                         final answerIndex = entry.key;
                         final answer = entry.value;
@@ -602,8 +633,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                                         color: AppTheme.textPrimary,
                                         height: 1.4)),
                                 const SizedBox(height: 12),
-
-                                // ✅ TEXT
                                 if (qType == 'TEXT')
                                   Container(
                                     width: double.infinity,
@@ -623,8 +652,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                                             color: AppTheme.primary,
                                             fontWeight: FontWeight.w500)),
                                   ),
-
-                                // ✅ SINGLE_CHOICE
                                 if (qType == 'SINGLE_CHOICE')
                                   ...options.map((opt) {
                                     final label =
@@ -667,8 +694,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                                       ]),
                                     );
                                   }),
-
-                                // ✅ MULTIPLE_CHOICE
                                 if (qType == 'MULTIPLE_CHOICE')
                                   ...options.map((opt) {
                                     final label =
@@ -720,8 +745,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
                                       ]),
                                     );
                                   }),
-
-                                // ✅ RATING_SCALE
                                 if (qType == 'RATING_SCALE')
                                   Row(
                                     mainAxisAlignment:
@@ -784,7 +807,7 @@ class _ParticipantCardState extends State<_ParticipantCard> {
           ),
         ],
 
-        // ── Action Buttons ──────────────────────────────────────────
+        // ── Action Buttons ────────────────────────────
         if (widget.showActions)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
@@ -816,7 +839,6 @@ class _ParticipantCardState extends State<_ParticipantCard> {
             ]),
           )
         else
-          // ✅ Show correct status message (not "declined" when approved)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Container(

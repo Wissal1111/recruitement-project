@@ -2,12 +2,23 @@ const Response = require("../models/ResponseSchema");
 const { fetchStudy, buildSnapshot } = require("../services/surveyService");
 const axios = require('axios');
 
-const PAYMENT_GATEWAY_URL = process.env.PAYMENT_GATEWAY_URL || 'http://gateway';
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3050';
+const SERVICE_SECRET = process.env.SERVICE_SECRET || 'internal_service_secret_key_2024';
 
-/**
- * POST /api/responses/draft
- * Create or update a draft (auto-save while filling form)
- */
+// ✅ Helper to parse MongoDB Decimal128 rewardAmount safely
+function parseRewardAmount(raw) {
+  if (raw === null || raw === undefined) return 0;
+  // MongoDB Decimal128 format: { $numberDecimal: "25" }
+  if (typeof raw === 'object' && raw.$numberDecimal !== undefined) {
+    return parseFloat(raw.$numberDecimal) || 0;
+  }
+  // Plain number
+  if (typeof raw === 'number') return raw;
+  // String
+  if (typeof raw === 'string') return parseFloat(raw) || 0;
+  return 0;
+}
+
 exports.saveDraft = async (req, res) => {
   try {
     const { studyId, phaseId, answers } = req.body;
@@ -17,31 +28,32 @@ exports.saveDraft = async (req, res) => {
       return res.status(400).json({ message: "Missing studyId or phaseId" });
     }
 
-    // Block if already submitted
     const submitted = await Response.findOne({
       studyId, phaseId, participantId, status: "SUBMITTED"
     });
 
     if (submitted) {
-      return res.status(409).json({ message: "Phase already submitted, cannot save draft" });
+      return res.status(409).json({
+        message: "Phase already submitted, cannot save draft"
+      });
     }
 
-    // Upsert draft
     const draft = await Response.findOneAndUpdate(
       { studyId, phaseId, participantId, status: "DRAFT" },
       { $set: { answers: answers || [] } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    return res.status(200).json({
-      message: "Draft saved",
-      data: draft
-    });
+    return res.status(200).json({ message: "Draft saved", data: draft });
 
   } catch (err) {
-    return res.status(500).json({ message: "Error saving draft", error: err.message });
+    return res.status(500).json({
+      message: "Error saving draft",
+      error: err.message
+    });
   }
 };
+
 exports.upsertSubmittedResponse = async (req, res) => {
   try {
     const participantId =
@@ -56,7 +68,6 @@ exports.upsertSubmittedResponse = async (req, res) => {
       });
     }
 
-    // Find the existing submitted response for this participant/phase
     const response = await Response.findOne({
       participantId,
       studyId,
@@ -70,10 +81,9 @@ exports.upsertSubmittedResponse = async (req, res) => {
       });
     }
 
-    // Update answers
     response.answers = Array.isArray(answers) ? answers : [];
     response.status = "SUBMITTED";
-    response.submittedAt = new Date(); // update timestamp
+    response.submittedAt = new Date();
     await response.save();
 
     return res.status(200).json(response);
@@ -84,10 +94,7 @@ exports.upsertSubmittedResponse = async (req, res) => {
     });
   }
 };
-/**
- * PATCH /api/responses/draft/answer
- * Save a single answer into the draft (per-question auto-save)
- */
+
 exports.saveAnswer = async (req, res) => {
   try {
     const { studyId, phaseId, questionId, value } = req.body;
@@ -105,12 +112,9 @@ exports.saveAnswer = async (req, res) => {
       return res.status(409).json({ message: "Phase already submitted" });
     }
 
-    // Upsert draft, then update or push the single answer
     const draft = await Response.findOneAndUpdate(
       { studyId, phaseId, participantId, status: "DRAFT" },
-      {
-        $set: { "answers.$[answer].value": value },
-      },
+      { $set: { "answers.$[answer].value": value } },
       {
         arrayFilters: [{ "answer.questionId": questionId }],
         upsert: true,
@@ -119,26 +123,21 @@ exports.saveAnswer = async (req, res) => {
       }
     );
 
-    // If answer didn't exist yet (arrayFilter matched nothing), push it
     if (!draft.answers.find(a => a.questionId === questionId)) {
       draft.answers.push({ questionId, value });
       await draft.save();
     }
 
-    return res.status(200).json({
-      message: "Answer saved",
-      data: draft
-    });
+    return res.status(200).json({ message: "Answer saved", data: draft });
 
   } catch (err) {
-    return res.status(500).json({ message: "Error saving answer", error: err.message });
+    return res.status(500).json({
+      message: "Error saving answer",
+      error: err.message
+    });
   }
 };
 
-/**
- * POST /api/responses
- * Finalize and submit a response (upgrades draft → submitted)
- */
 exports.submitResponse = async (req, res) => {
   try {
     const { studyId, phaseId, answers } = req.body;
@@ -148,24 +147,29 @@ exports.submitResponse = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Block duplicate submission
     const alreadySubmitted = await Response.findOne({
       studyId, phaseId, participantId, status: "SUBMITTED"
     });
 
     if (alreadySubmitted) {
-      return res.status(409).json({ message: "You already submitted this phase" });
+      return res.status(409).json({
+        message: "You already submitted this phase"
+      });
     }
 
-    // Fetch + validate study
     const study = await fetchStudy(studyId);
     const phase = study?.phases?.find(p => p.phaseId === phaseId);
 
-    if (!phase) return res.status(404).json({ message: "Phase not found" });
-    if (!["ACTIVE", "PENDING"].includes(phase.status)) return res.status(400).json({ message: "Phase is not active" });
+    if (!phase) {
+      return res.status(404).json({ message: "Phase not found" });
+    }
+
+    if (!["ACTIVE", "PENDING", "PUBLISHED"].includes(phase.status)) {
+      return res.status(400).json({ message: "Phase is not active" });
+    }
+
     const snapshot = buildSnapshot(phase);
 
-    // ✅ Find existing draft and upgrade it, or create fresh submission
     const existing = await Response.findOne({
       studyId, phaseId, participantId, status: "DRAFT"
     });
@@ -173,14 +177,12 @@ exports.submitResponse = async (req, res) => {
     let response;
 
     if (existing) {
-      // Upgrade draft → submitted
       existing.answers = answers;
       existing.snapshot = snapshot;
       existing.status = "SUBMITTED";
       existing.submittedAt = new Date();
       response = await existing.save();
     } else {
-      // No draft — create fresh submission
       response = await Response.create({
         studyId,
         phaseId,
@@ -192,6 +194,7 @@ exports.submitResponse = async (req, res) => {
       });
     }
 
+<<<<<<< HEAD
 const currentPhase = study.phases.find(p => p.phaseId === phaseId);
 
 // Helper: safely convert various Decimal128/string/number representations to Number
@@ -264,25 +267,372 @@ try {
         'Authorization': `Bearer ${process.env.SERVICE_SECRET}`,
         'x-creator-id': String(participantId),  // ← required by authMiddleware
         'Content-Type': 'application/json'
-      }
-    }
-  );
-} catch (rewardErr) {
-  console.error('REWARD ERROR:', rewardErr.response?.data || rewardErr.message);
-  return res.status(500).json({
-    message: "Response saved but reward failed",
-    error: rewardErr.response?.data || rewardErr.message,
-    data: response
-  });
-}
+=======
+    // ✅ Parse rewardAmount correctly (handles MongoDB Decimal128 format)
+    const currentPhase = study.phases.find(p => p.phaseId === phaseId);
+    const rewardAmount = parseRewardAmount(currentPhase?.rewardAmount);
 
-return res.status(201).json({
-  message: "Response submitted successfully",
-  data: response,
-  reward: rewardResponse.data
-});
+    console.log(`Phase ${phaseId} rewardAmount raw:`, currentPhase?.rewardAmount);
+    console.log(`Phase ${phaseId} rewardAmount parsed:`, rewardAmount);
+
+    if (rewardAmount > 0) {
+      try {
+        const rewardRes = await axios.post(
+          `${PAYMENT_SERVICE_URL}/api/points/reward`,
+          {
+            participantId: String(participantId),
+            rewardAmount,
+            studyId,
+            phaseId
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${SERVICE_SECRET}`
+            },
+            timeout: 5000,
+          }
+        );
+        console.log(
+          '✅ Reward sent:',
+          rewardAmount,
+          'pts to participant:',
+          participantId,
+          '| result:',
+          rewardRes.data
+        );
+      } catch (rewardErr) {
+        console.error(
+          'REWARD ERROR (non-fatal):',
+          rewardErr.response?.data || rewardErr.message
+        );
+>>>>>>> d66ee48 (last commit)
+      }
+    } else {
+      console.log('Phase reward is 0 — skipping reward for phase:', phaseId);
+    }
+
+    return res.status(201).json({
+      message: "Response submitted successfully",
+      data: response,
+    });
 
   } catch (err) {
-    return res.status(500).json({ message: "Error submitting response", error: err.message });
+    console.error('submitResponse error:', err.message);
+    return res.status(500).json({
+      message: "Error submitting response",
+      error: err.message
+    });
+  }
+};
+
+exports.getMyResponsesGroupedByStudy = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const responses = await Response.find({ participantId })
+      .sort({ submittedAt: -1 });
+
+    const grouped = {};
+    for (const r of responses) {
+      if (!grouped[r.studyId]) {
+        grouped[r.studyId] = { studyId: r.studyId, responses: [] };
+      }
+      grouped[r.studyId].responses.push(r);
+    }
+
+    return res.json({ data: Object.values(grouped) });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching responses",
+      error: err.message
+    });
+  }
+};
+
+exports.getMyResponses = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const responses = await Response.find({ participantId })
+      .sort({ submittedAt: -1 });
+    return res.json(responses);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching responses",
+      error: err.message
+    });
+  }
+};
+
+exports.getMySubmitted = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const responses = await Response.find({
+      participantId,
+      status: "SUBMITTED"
+    }).sort({ submittedAt: -1 });
+    return res.json(responses);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching submitted responses",
+      error: err.message
+    });
+  }
+};
+
+exports.getMyDrafts = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const drafts = await Response.find({
+      participantId,
+      status: "DRAFT"
+    }).sort({ updatedAt: -1 });
+    return res.json(drafts);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching drafts",
+      error: err.message
+    });
+  }
+};
+
+exports.getMyDraftsGroupedByStudy = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const drafts = await Response.find({
+      participantId,
+      status: "DRAFT"
+    }).sort({ updatedAt: -1 });
+
+    const grouped = {};
+    for (const d of drafts) {
+      if (!grouped[d.studyId]) {
+        grouped[d.studyId] = { studyId: d.studyId, drafts: [] };
+      }
+      grouped[d.studyId].drafts.push(d);
+    }
+
+    return res.json({ data: Object.values(grouped) });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching drafts",
+      error: err.message
+    });
+  }
+};
+
+exports.getMyDraftsByStudyId = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const { studyId } = req.params;
+    const drafts = await Response.find({
+      participantId,
+      studyId,
+      status: "DRAFT"
+    });
+    return res.json(drafts);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching drafts",
+      error: err.message
+    });
+  }
+};
+
+exports.getMyDraftsByStudyAndPhaseId = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const { studyId, phaseId } = req.params;
+    const draft = await Response.findOne({
+      participantId,
+      studyId,
+      phaseId,
+      status: "DRAFT"
+    });
+    return res.json(draft || null);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching draft",
+      error: err.message
+    });
+  }
+};
+
+exports.getMyDraftById = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const { responseId } = req.params;
+    const draft = await Response.findOne({
+      _id: responseId,
+      participantId,
+      status: "DRAFT"
+    });
+    if (!draft) {
+      return res.status(404).json({ message: "Draft not found" });
+    }
+    return res.json(draft);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching draft",
+      error: err.message
+    });
+  }
+};
+
+exports.getResponsesByStudy = async (req, res) => {
+  try {
+    const { studyId } = req.params;
+    const responses = await Response.find({
+      studyId,
+      status: "SUBMITTED"
+    }).sort({ submittedAt: -1 });
+    return res.json(responses);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching responses",
+      error: err.message
+    });
+  }
+};
+
+exports.getResponsesByPhase = async (req, res) => {
+  try {
+    const { studyId, phaseId } = req.params;
+    const responses = await Response.find({
+      studyId,
+      phaseId,
+      status: "SUBMITTED"
+    }).sort({ submittedAt: -1 });
+    return res.json(responses);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching responses",
+      error: err.message
+    });
+  }
+};
+
+exports.getResponsesByParticipant = async (req, res) => {
+  try {
+    const { participantId } = req.params;
+    const responses = await Response.find({
+      participantId,
+      status: "SUBMITTED"
+    }).sort({ submittedAt: -1 });
+    return res.json(responses);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching responses",
+      error: err.message
+    });
+  }
+};
+
+exports.getResponseById = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const { responseId } = req.params;
+    const response = await Response.findOne({
+      _id: responseId,
+      participantId
+    });
+    if (!response) {
+      return res.status(404).json({ message: "Response not found" });
+    }
+    return res.json(response);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching response",
+      error: err.message
+    });
+  }
+};
+
+exports.deleteResponse = async (req, res) => {
+  try {
+    const participantId = req.user.userId;
+    const { responseId } = req.params;
+    const response = await Response.findOne({
+      _id: responseId,
+      participantId,
+      status: "DRAFT"
+    });
+    if (!response) {
+      return res.status(404).json({
+        message: "Draft not found or already submitted"
+      });
+    }
+    await Response.deleteOne({ _id: responseId });
+    return res.json({ message: "Draft deleted successfully" });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error deleting response",
+      error: err.message
+    });
+  }
+};
+
+exports.getStudyAnalytics = async (req, res) => {
+  try {
+    const { studyId } = req.params;
+    const responses = await Response.find({
+      studyId,
+      status: "SUBMITTED"
+    });
+
+    const analytics = {};
+    for (const response of responses) {
+      for (const answer of response.answers) {
+        const qId = answer.questionId;
+        if (!analytics[qId]) {
+          analytics[qId] = { questionId: qId, answers: [], count: 0 };
+        }
+        analytics[qId].answers.push(answer.value);
+        analytics[qId].count++;
+      }
+    }
+
+    return res.json({
+      studyId,
+      totalResponses: responses.length,
+      analytics: Object.values(analytics)
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching analytics",
+      error: err.message
+    });
+  }
+};
+
+exports.getStudyStats = async (req, res) => {
+  try {
+    const { studyId } = req.params;
+
+    const total = await Response.countDocuments({ studyId });
+    const submitted = await Response.countDocuments({
+      studyId,
+      status: "SUBMITTED"
+    });
+    const drafts = await Response.countDocuments({
+      studyId,
+      status: "DRAFT"
+    });
+
+    const byPhase = await Response.aggregate([
+      { $match: { studyId, status: "SUBMITTED" } },
+      { $group: { _id: "$phaseId", count: { $sum: 1 } } }
+    ]);
+
+    return res.json({
+      studyId,
+      total,
+      submitted,
+      drafts,
+      byPhase
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error fetching stats",
+      error: err.message
+    });
   }
 };

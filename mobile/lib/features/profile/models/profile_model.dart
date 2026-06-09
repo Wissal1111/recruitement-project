@@ -1,6 +1,8 @@
 class UserProfile {
   final String profileId;
   final String userId;
+  final String? firstname; // ✅ ADD
+  final String? lastname; // ✅ ADD
   final int? age;
   final String? gender;
   final DateTime? dateOfBirth;
@@ -16,6 +18,8 @@ class UserProfile {
   UserProfile({
     required this.profileId,
     required this.userId,
+    this.firstname, // ✅ ADD
+    this.lastname, // ✅ ADD
     this.age,
     this.gender,
     this.dateOfBirth,
@@ -30,23 +34,29 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
+    // ✅ Profile can be nested or flat
+    final profile = json['profile'] as Map<String, dynamic>? ?? json;
+
     return UserProfile(
-      profileId: json['profileId'] ?? '',
-      userId: json['userId'] ?? '',
-      age: json['age'],
-      gender: json['gender'],
-      dateOfBirth: json['dateOfBirth'] != null
-          ? DateTime.tryParse(json['dateOfBirth'])
+      profileId: profile['profileId'] ?? json['profileId'] ?? '',
+      userId: json['userId'] ?? profile['userId'] ?? '',
+      firstname: json['firstname'], // ✅ from parent
+      lastname: json['lastname'], // ✅ from parent
+      age: profile['age'],
+      gender: profile['gender'],
+      dateOfBirth: profile['dateOfBirth'] != null
+          ? DateTime.tryParse(profile['dateOfBirth'])
           : null,
-      education: json['education'],
-      profession: json['profession'],
-      country: json['country'],
-      city: json['city'],
-      bio: json['bio'],
-      profilePictureUrl: json['profilePictureUrl'],
+      education: profile['education'],
+      profession: profile['profession'],
+      country: profile['country'],
+      city: profile['city'],
+      bio: profile['bio'],
+      profilePictureUrl:
+          json['profilePictureUrl'] ?? profile['profilePictureUrl'],
       totalEarnings:
-          double.tryParse(json['totalEarnings']?.toString() ?? '0') ?? 0,
-      completionScore: json['completionScore'] ?? 0,
+          double.tryParse(profile['totalEarnings']?.toString() ?? '0') ?? 0,
+      completionScore: profile['completionScore'] ?? 0,
     );
   }
 

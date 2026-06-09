@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_client.dart';
 import '../../../core/secure_storage.dart';
-import '../../auth/providers/auth_provider.dart';
+// ✅ NO auth_provider import
 import '../models/survey_model.dart';
 
 final surveyRepositoryProvider = Provider((ref) => SurveyRepository(
@@ -80,12 +80,10 @@ class SurveyRepository {
     }
   }
 
-  // ✅ Returns studyIds the current user has already applied to or participated in
   Future<Set<String>> getMyInvolvedStudyIds() async {
     final Set<String> ids = {};
 
     try {
-      // 1. Submitted responses
       final res = await _dio.get('/api/responses/me/by-study',
           options: Options(receiveTimeout: const Duration(seconds: 8)));
       final raw = res.data;
@@ -104,7 +102,6 @@ class SurveyRepository {
     }
 
     try {
-      // 2. Applications (PENDING/APPROVED) from recruitment
       final res = await _dio.get('/api/recruitment/applications/me',
           options: Options(receiveTimeout: const Duration(seconds: 8)));
       final List apps = res.data is List ? res.data : [];
@@ -117,7 +114,6 @@ class SurveyRepository {
     }
 
     try {
-      // 3. Accepted/completed invitations
       final res = await _dio.get('/api/recruitment/invitations/me',
           options: Options(receiveTimeout: const Duration(seconds: 8)));
       final List invites = res.data is List ? res.data : [];
@@ -148,27 +144,27 @@ class SurveyRepository {
   }
 }
 
-// ✅ Tracks current logged-in user ID
+// ✅ Tracks current logged-in user ID — NO auth import needed
 final currentUserIdProvider = FutureProvider<String?>((ref) async {
   final storage = ref.watch(secureStorageProvider);
   return storage.getUserId();
 });
 
-// ✅ My Surveys — only for logged-in user
+// ✅ My Surveys — watches userId to refresh on user change
 final mySurveysProvider = FutureProvider<List<Study>>((ref) async {
-  ref.watch(authProvider);
+  // Re-run when user changes
+  await ref.watch(currentUserIdProvider.future);
   return ref.watch(surveyRepositoryProvider).getMyStudies();
 });
 
-// ✅ Tracks all studyIds user is already involved in (applied/participated)
+// ✅ Tracks all studyIds user is already involved in
 final userInvolvedStudyIdsProvider = FutureProvider<Set<String>>((ref) async {
-  ref.watch(authProvider);
+  await ref.watch(currentUserIdProvider.future);
   return ref.watch(surveyRepositoryProvider).getMyInvolvedStudyIds();
 });
 
 // ✅ Browse — excludes own surveys AND already involved surveys
 final browseSurveysProvider = FutureProvider<List<Study>>((ref) async {
-  ref.watch(authProvider);
   final userId = await ref.watch(currentUserIdProvider.future);
   final involved = await ref.watch(userInvolvedStudyIdsProvider.future);
   final all = await ref.watch(surveyRepositoryProvider).getActiveStudies();
@@ -181,6 +177,6 @@ final browseSurveysProvider = FutureProvider<List<Study>>((ref) async {
 
 // Keep for backward compat
 final myParticipatedStudyIdsProvider = FutureProvider<Set<String>>((ref) async {
-  ref.watch(authProvider);
+  await ref.watch(currentUserIdProvider.future);
   return ref.watch(surveyRepositoryProvider).getMyInvolvedStudyIds();
 });

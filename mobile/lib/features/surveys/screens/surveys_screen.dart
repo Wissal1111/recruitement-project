@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucid_curator/core/secure_storage.dart';
 
 import '../../../core/api_client.dart';
 import '../../../shared/theme.dart';
@@ -62,7 +64,7 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
                             fontWeight: FontWeight.w800,
                             color: AppTheme.textPrimary)),
                     Row(children: [
-                      const Text('Surveyor',
+                      const Text('LucidCurator',
                           style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -133,7 +135,7 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
 
   Widget _buildBodyContent(
       AsyncValue<List<Study>> mySurveys, AsyncValue<List<Study>> browsable) {
-    // ── TAB 0: BROWSE ──────────────────────────────────────
+    // ── TAB 0: BROWSE ─────────────────────────────────────
     if (_filterIndex == 0) {
       return browsable.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -168,12 +170,12 @@ class _SurveysScreenState extends ConsumerState<SurveysScreen> {
       );
     }
 
-    // ── TAB 2: COMPLETED ───────────────────────────────────
+    // ── TAB 2: COMPLETED ──────────────────────────────────
     if (_filterIndex == 2) {
       return const _CompletedTab();
     }
 
-    // ── TAB 1: MY SURVEYS ──────────────────────────────────
+    // ── TAB 1: MY SURVEYS ─────────────────────────────────
     return mySurveys.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, _) => Center(
@@ -285,9 +287,8 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
         final totalPhases = study.phases.length;
         final completedPhases = submitted.length;
         final isFullyComplete = completedPhases >= totalPhases;
+        final isMultiPhase = totalPhases > 1;
 
-        // ✅ Find next phase index to continue from
-        // Get all submitted phaseIds
         final submittedPhaseIds =
             submitted.map((r) => r['phaseId']?.toString() ?? '').toSet();
 
@@ -298,8 +299,40 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
             nextPhaseIndex = i;
             break;
           }
-          // All phases submitted — stay on last
           nextPhaseIndex = study.phases.length - 1;
+        }
+
+        bool needsApproval = false;
+        if (isMultiPhase && !isFullyComplete && completedPhases == 1) {
+          try {
+            final appsRes = await dio.get(
+              '/api/recruitment/studies/$studyId/applications',
+              options: Options(receiveTimeout: const Duration(seconds: 5)),
+            );
+            final List applications = appsRes.data is List ? appsRes.data : [];
+            final storage = ref.read(secureStorageProvider);
+            final currentUserId = await storage.getUserId();
+
+            final myApp = applications.firstWhere(
+              (a) {
+                final pId = (a['participantId'] ?? '').toString();
+                return pId == currentUserId;
+              },
+              orElse: () => <String, dynamic>{},
+            );
+
+            final myStatus = (myApp['status'] ?? '').toString().toUpperCase();
+            debugPrint('My application status for $studyId: $myStatus');
+
+            if (myStatus == 'PENDING' ||
+                myStatus == 'APPLIED' ||
+                myStatus.isEmpty) {
+              needsApproval = true;
+            }
+          } catch (e) {
+            debugPrint('Applications check error: $e');
+            needsApproval = false;
+          }
         }
 
         double totalEarned = 0;
@@ -325,8 +358,6 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
             'reward': reward,
             'submittedAt': response['submittedAt'],
             'phaseId': phaseId,
-            'answers': response['answers'] ?? [],
-            'snapshot': response['snapshot'] ?? {},
           });
         }
 
@@ -337,7 +368,8 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
           'totalPhases': totalPhases,
           'isFullyComplete': isFullyComplete,
           'phaseBreakdown': phaseBreakdown,
-          'nextPhaseIndex': nextPhaseIndex, // ✅ stored
+          'nextPhaseIndex': nextPhaseIndex,
+          'needsApproval': needsApproval,
         });
       }
 
@@ -355,10 +387,14 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
 
   Future<void> _continueOrUpdate(Study study, int nextPhaseIndex) async {
     if (!mounted) return;
-    context.push('/surveys/answer', extra: {
+    await context.push('/surveys/answer', extra: {
       'survey': study,
       'phaseIndex': nextPhaseIndex,
     });
+    if (mounted) {
+      setState(() => _isLoading = true);
+      await _load();
+    }
   }
 
   @override
@@ -407,6 +443,7 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
           final phaseBreakdown =
               item['phaseBreakdown'] as List<Map<String, dynamic>>;
           final nextPhaseIndex = item['nextPhaseIndex'] as int;
+          final needsApproval = item['needsApproval'] as bool;
 
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
@@ -417,39 +454,47 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
                 border: Border.all(color: AppTheme.surfaceHigh)),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // ── Status row ───────────────────────────
+              // ── Status row ─────────────────────────
               Row(children: [
                 Icon(
                     isFullyComplete
                         ? Icons.check_circle
-                        : Icons.pending_outlined,
+                        : needsApproval
+                            ? Icons.hourglass_top
+                            : Icons.pending_outlined,
                     color: isFullyComplete
                         ? AppTheme.successColor
-                        : AppTheme.primary,
+                        : needsApproval
+                            ? const Color(0xFFF59E0B)
+                            : AppTheme.primary,
                     size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                       isFullyComplete
                           ? 'COMPLETED'
-                          : 'IN PROGRESS ($completedPhases/$totalPhases phases)',
+                          : needsApproval
+                              ? 'WAITING FOR APPROVAL'
+                              : 'IN PROGRESS ($completedPhases/$totalPhases phases)',
                       style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: isFullyComplete
                               ? AppTheme.successColor
-                              : AppTheme.primary,
+                              : needsApproval
+                                  ? const Color(0xFFF59E0B)
+                                  : AppTheme.primary,
                           letterSpacing: 1)),
                 ),
-                Text('\$${totalEarned.toStringAsFixed(0)} earned',
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primary)),
+                if (totalEarned > 0)
+                  Text('+${totalEarned.toStringAsFixed(0)} pts',
+                      style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.primary)),
               ]),
               const SizedBox(height: 12),
 
-              // ── Survey title ─────────────────────────
               Text(study.title,
                   style: const TextStyle(
                       fontSize: 18,
@@ -468,34 +513,42 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
               const Divider(color: AppTheme.surfaceHigh),
               const SizedBox(height: 8),
 
-              // ── Phase breakdown ──────────────────────
-              ...phaseBreakdown.map((phase) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(children: [
-                      Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                              color: AppTheme.successColor,
-                              shape: BoxShape.circle)),
-                      const SizedBox(width: 10),
-                      const Icon(Icons.check_circle_outline,
-                          size: 14, color: AppTheme.successColor),
-                      const SizedBox(width: 6),
-                      Text(phase['phaseName'],
-                          style: const TextStyle(
-                              fontSize: 13, color: AppTheme.textSecondary)),
-                      const Spacer(),
-                      Text(
-                          '\$${(phase['reward'] as double).toStringAsFixed(0)}',
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primary)),
-                    ]),
-                  )),
+              // ── Phase breakdown ────────────────────
+              ...phaseBreakdown.map((phase) {
+                final reward = phase['reward'] as double;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(children: [
+                    Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                            color: AppTheme.successColor,
+                            shape: BoxShape.circle)),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.check_circle_outline,
+                        size: 14, color: AppTheme.successColor),
+                    const SizedBox(width: 6),
+                    Text(phase['phaseName'],
+                        style: const TextStyle(
+                            fontSize: 13, color: AppTheme.textSecondary)),
+                    const Spacer(),
+                    Text(
+                      reward > 0
+                          ? '+${reward.toStringAsFixed(0)} pts'
+                          : 'No reward',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: reward > 0
+                            ? AppTheme.primary
+                            : AppTheme.textTertiary,
+                      ),
+                    ),
+                  ]),
+                );
+              }),
 
-              // ── Remaining phases ─────────────────────
               if (!isFullyComplete) ...[
                 ...List.generate(
                     totalPhases - completedPhases,
@@ -509,16 +562,20 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
                                     color: AppTheme.surfaceHigh,
                                     shape: BoxShape.circle)),
                             const SizedBox(width: 10),
-                            const Icon(Icons.radio_button_unchecked,
-                                size: 14, color: AppTheme.textTertiary),
+                            Icon(
+                                needsApproval && i == 0
+                                    ? Icons.lock_outline
+                                    : Icons.radio_button_unchecked,
+                                size: 14,
+                                color: AppTheme.textTertiary),
                             const SizedBox(width: 6),
                             Text('Phase ${completedPhases + i + 1}',
                                 style: const TextStyle(
                                     fontSize: 13,
                                     color: AppTheme.textTertiary)),
                             const Spacer(),
-                            const Text('Pending',
-                                style: TextStyle(
+                            Text(needsApproval && i == 0 ? 'Locked' : 'Pending',
+                                style: const TextStyle(
                                     fontSize: 12,
                                     color: AppTheme.textTertiary)),
                           ]),
@@ -526,30 +583,56 @@ class _CompletedTabState extends ConsumerState<_CompletedTab> {
               ],
               const SizedBox(height: 16),
 
-              // ── Action button ────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _continueOrUpdate(study, nextPhaseIndex),
-                  icon: Icon(
-                      isFullyComplete ? Icons.edit_outlined : Icons.play_arrow,
-                      size: 18,
-                      color: Colors.white),
-                  label: Text(
-                      isFullyComplete
-                          ? 'Update Answers'
-                          : 'Continue Phase ${nextPhaseIndex + 1}',
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600)),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: isFullyComplete
-                          ? AppTheme.successColor
-                          : AppTheme.primary,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      minimumSize: const Size(double.infinity, 48)),
+              // ── Action button ──────────────────────
+              if (needsApproval)
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(children: [
+                    Icon(Icons.hourglass_top,
+                        size: 18, color: Color(0xFFF59E0B)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                          'Waiting for creator to approve Phase 1 before you can continue.',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF92400E),
+                              fontWeight: FontWeight.w500)),
+                    ),
+                  ]),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _continueOrUpdate(study, nextPhaseIndex),
+                    icon: Icon(
+                        isFullyComplete
+                            ? Icons.edit_outlined
+                            : Icons.play_arrow,
+                        size: 18,
+                        color: Colors.white),
+                    label: Text(
+                        isFullyComplete
+                            ? 'Update Answers'
+                            : 'Continue Phase ${nextPhaseIndex + 1}',
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: isFullyComplete
+                            ? AppTheme.successColor
+                            : AppTheme.primary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        minimumSize: const Size(double.infinity, 48)),
+                  ),
                 ),
-              ),
             ]),
           );
         },
@@ -583,7 +666,6 @@ class _BrowseListState extends ConsumerState<_BrowseList> {
   @override
   void didUpdateWidget(_BrowseList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If surveys list changed, compute scores for new ones
     if (oldWidget.surveys != widget.surveys) {
       for (final survey in widget.surveys) {
         if (!_scores.containsKey(survey.studyId)) {
@@ -684,14 +766,21 @@ class _BrowseListState extends ConsumerState<_BrowseList> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // ✅ Filter out surveys with match score < 70%
+    // Keep: surveys still loading scores + surveys with no criteria (-1) + 70%+ match
     final visible = widget.surveys.where((s) {
       final score = _scores[s.studyId];
       if (score == null) return true; // still loading
       if (score == -1) return true; // no criteria = open to all
-      return score >= 70;
-    }).toList();
+      return score >= 70; // only 70%+ matches
+    }).toList()
+      ..sort((a, b) {
+        final scoreA = _scores[a.studyId] ?? 100;
+        final scoreB = _scores[b.studyId] ?? 100;
+        return scoreB.compareTo(scoreA); // Highest match first
+      });
 
-    if (visible.isEmpty && _scores.length == widget.surveys.length) {
+    if (visible.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(40),
@@ -704,7 +793,7 @@ class _BrowseListState extends ConsumerState<_BrowseList> {
                     color: AppTheme.textSecondary,
                     fontWeight: FontWeight.w600)),
             SizedBox(height: 8),
-            Text('Surveys need at least 70% profile match.',
+            Text('Surveys need at least 70% profile match to appear here.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: AppTheme.textTertiary)),
           ]),
@@ -740,6 +829,9 @@ class _BrowseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reward = survey.rewardPerParticipant;
+    final spots = survey.maxParticipants;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -762,7 +854,6 @@ class _BrowseCard extends StatelessWidget {
                     letterSpacing: 1)),
           ),
           const Spacer(),
-          // ── Match score badge ──────────────────────
           if (matchScore == null)
             const SizedBox(
                 width: 16,
@@ -815,6 +906,8 @@ class _BrowseCard extends StatelessWidget {
             style:
                 const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
         const SizedBox(height: 12),
+
+        // ✅ Show pts per participant + phases + spots
         Row(children: [
           const Icon(Icons.layers_outlined,
               size: 14, color: AppTheme.textTertiary),
@@ -822,14 +915,25 @@ class _BrowseCard extends StatelessWidget {
           Text('${survey.phaseCount} PHASES',
               style:
                   const TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
-          const SizedBox(width: 16),
-          const Icon(Icons.attach_money, size: 14, color: AppTheme.primary),
-          const SizedBox(width: 2),
-          Text('\$${survey.totalBudget.toStringAsFixed(0)}',
-              style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.primary,
-                  fontWeight: FontWeight.w700)),
+          const SizedBox(width: 12),
+          const Icon(Icons.star, size: 14, color: AppTheme.primary),
+          const SizedBox(width: 4),
+          Text(
+            reward > 0 ? '${reward.toStringAsFixed(0)} pts' : 'No reward',
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: reward > 0 ? AppTheme.primary : AppTheme.textTertiary),
+          ),
+          if (spots > 0) ...[
+            const SizedBox(width: 12),
+            const Icon(Icons.people_outline,
+                size: 14, color: AppTheme.textTertiary),
+            const SizedBox(width: 4),
+            Text('$spots spots',
+                style: const TextStyle(
+                    fontSize: 12, color: AppTheme.textTertiary)),
+          ],
         ]),
         const SizedBox(height: 16),
         Row(children: [
@@ -963,6 +1067,7 @@ class _MySurveyCard extends StatelessWidget {
             ]),
           ],
           const SizedBox(height: 8),
+          // ✅ Show pts budget + per participant reward
           Row(children: [
             const Icon(Icons.layers_outlined,
                 size: 14, color: AppTheme.textTertiary),
@@ -970,15 +1075,25 @@ class _MySurveyCard extends StatelessWidget {
             Text('${survey.phaseCount} PHASES',
                 style: const TextStyle(
                     fontSize: 12, color: AppTheme.textTertiary)),
-            const SizedBox(width: 16),
-            const Icon(Icons.monetization_on_outlined,
-                size: 14, color: AppTheme.primary),
+            const SizedBox(width: 12),
+            const Icon(Icons.stars, size: 14, color: AppTheme.primary),
             const SizedBox(width: 4),
-            Text('\$${survey.totalBudget.toStringAsFixed(0)} BUDGET',
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.primary,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              '${survey.totalBudget.toStringAsFixed(0)} pts',
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.bold),
+            ),
+            if (survey.maxParticipants > 0) ...[
+              const SizedBox(width: 12),
+              const Icon(Icons.people_outline,
+                  size: 14, color: AppTheme.textTertiary),
+              const SizedBox(width: 4),
+              Text('${survey.maxParticipants} max',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.textTertiary)),
+            ],
           ]),
         ]),
       ),

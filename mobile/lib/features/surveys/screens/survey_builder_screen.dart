@@ -107,6 +107,27 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
     try {
       final dio = ref.read(dioProvider);
 
+      // ✅ Get reward and participant info from create screen
+      final rewardPerParticipant =
+          (widget.surveyData['rewardPerParticipant'] as num?)?.toDouble() ??
+              0.0;
+      final maxParticipants =
+          (widget.surveyData['maxParticipants'] as num?)?.toInt() ?? 10;
+      final isMultiPhase = _phases > 1;
+
+      // ✅ Option B: Total reward divided equally across rewarded phases
+      // Phase 1 in multi-phase = screening (no reward)
+      // Remaining phases share the total reward equally
+      final rewardedPhasesCount = isMultiPhase ? (_phases - 1) : 1;
+
+      final rewardPerPhase = rewardedPhasesCount > 0
+          ? (rewardPerParticipant / rewardedPhasesCount)
+          : rewardPerParticipant;
+
+      debugPrint('Total reward per participant: $rewardPerParticipant pts');
+      debugPrint('Number of rewarded phases: $rewardedPhasesCount');
+      debugPrint('Reward per phase: $rewardPerPhase pts');
+
       // 1. Build phases payload
       final phasesPayload = [];
 
@@ -118,15 +139,12 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
           final q = e.value;
 
           String backendType = 'TEXT';
-
           if (q['type'] == 'MULTIPLE CHOICE' || q['type'] == 'DROPDOWN') {
             backendType = 'SINGLE_CHOICE';
           }
-
           if (q['type'] == 'CHECKBOX') {
             backendType = 'MULTIPLE_CHOICE';
           }
-
           if (q['type'] == 'RATING') {
             backendType = 'RATING_SCALE';
           }
@@ -151,12 +169,22 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
           };
         }).toList();
 
+        // ✅ Phase 1 = 0 pts (screening), others = equal share
+        final phaseReward =
+            isMultiPhase ? (i == 0 ? 0.0 : rewardPerPhase) : rewardPerPhase;
+
+        debugPrint('Phase ${i + 1} rewardAmount: $phaseReward pts');
+        debugPrint('=== PHASE ${i + 1} PAYLOAD ===');
+        debugPrint('rewardAmount: $phaseReward');
+        debugPrint(
+            'rewardPerParticipant from surveyData: ${widget.surveyData['rewardPerParticipant']}');
+        debugPrint('maxParticipants: $maxParticipants');
         phasesPayload.add({
           'phaseOrder': i + 1,
           'title': 'Phase ${i + 1}',
           'phaseType': 'NORMAL',
-          'rewardAmount': 0,
-          'maxParticipants': widget.surveyData['maxParticipants'] ?? 0,
+          'rewardAmount': phaseReward, // ✅ FIXED
+          'maxParticipants': maxParticipants,
           'questions': formattedQuestions.isNotEmpty
               ? formattedQuestions
               : [
@@ -179,21 +207,17 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
         'description': widget.surveyData['description'] ?? '',
         'studyCategory': 'SURVEY',
         'totalBudget': widget.surveyData['totalBudget'] ?? 500.0,
-        'isMultiPhase': _phases > 1,
+        'isMultiPhase': isMultiPhase,
         'phases': phasesPayload,
       };
 
       final existingStudyId = widget.surveyData['studyId'];
 
-      // ============================================================
-      // UPDATE EXISTING SURVEY
-      // ============================================================
+      // ── UPDATE EXISTING SURVEY ─────────────────────────
       if (existingStudyId != null) {
         await dio.put('/api/studies/$existingStudyId', data: payload);
 
-        // Save/update criteria too
         final criteriaPayload = _buildCriteriaPayload();
-
         debugPrint('CRITERIA PAYLOAD FOR UPDATE: $criteriaPayload');
 
         await ref
@@ -212,9 +236,7 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
         }
       }
 
-      // ============================================================
-      // CREATE NEW SURVEY
-      // ============================================================
+      // ── CREATE NEW SURVEY ──────────────────────────────
       else {
         // Step 1: Create survey as DRAFT
         final createResponse = await dio.post('/api/studies', data: payload);
@@ -228,9 +250,8 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
           throw Exception('Server did not return a studyId');
         }
 
-        // Step 2: Save criteria in recruitment service
+        // Step 2: Save criteria
         final criteriaPayload = _buildCriteriaPayload();
-
         debugPrint('CRITERIA PAYLOAD: $criteriaPayload');
 
         await ref
@@ -241,7 +262,6 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
 
         // Step 3: Publish survey
         await dio.patch('/api/studies/$newStudyId/status');
-
         debugPrint('Survey published');
 
         if (mounted) {
@@ -262,7 +282,6 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
       }
     } catch (e) {
       debugPrint('PUBLISH ERROR: $e');
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -300,14 +319,11 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
 
   String? _mapEducationToBackend(dynamic education) {
     if (education == null) return null;
-
     final e = education.toString().toLowerCase();
-
     if (e.contains('high')) return 'HIGH_SCHOOL';
     if (e.contains('bachelor')) return 'BACHELOR';
     if (e.contains('master')) return 'MASTER';
     if (e.contains('phd') || e.contains('doctor')) return 'PHD';
-
     return 'OTHER';
   }
 
@@ -318,11 +334,21 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
         : widget.surveyData['title'];
     final currentQuestions = _phaseQuestions[_activePhase] ?? [];
 
+    // ✅ Show reward info in builder header
+    final rewardPerParticipant =
+        (widget.surveyData['rewardPerParticipant'] as num?)?.toDouble() ?? 0.0;
+    final isMultiPhase = _phases > 1;
+    final rewardedPhasesCount = isMultiPhase ? (_phases - 1) : 1;
+    final rewardPerPhase = rewardedPhasesCount > 0
+        ? (rewardPerParticipant / rewardedPhasesCount)
+        : rewardPerParticipant;
+
     return Scaffold(
       backgroundColor: AppTheme.surfaceBase,
       body: SafeArea(
         child: Column(
           children: [
+            // ── Header ────────────────────────────────────
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -348,8 +374,32 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
                                 letterSpacing: 1)),
                       ]),
                 ),
+                // ✅ Show reward per phase info
+                if (rewardPerParticipant > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                        color: AppTheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('${rewardPerPhase.toStringAsFixed(0)} pts/phase',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.primary)),
+                          Text(
+                              '${rewardPerParticipant.toStringAsFixed(0)} pts total',
+                              style: const TextStyle(
+                                  fontSize: 10, color: AppTheme.textSecondary)),
+                        ]),
+                  ),
               ]),
             ),
+
+            // ── Phase tabs ────────────────────────────────
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -375,13 +425,39 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
                                       : null,
                                   borderRadius: BorderRadius.circular(9999),
                                 ),
-                                child: Text('Phase ${i + 1}',
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: _activePhase == i
-                                            ? Colors.white
-                                            : AppTheme.textSecondary)),
+                                child: Row(children: [
+                                  Text('Phase ${i + 1}',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: _activePhase == i
+                                              ? Colors.white
+                                              : AppTheme.textSecondary)),
+                                  // ✅ Show reward badge on each phase tab
+                                  if (rewardPerParticipant > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                          color: _activePhase == i
+                                              ? Colors.white.withOpacity(0.3)
+                                              : AppTheme.primaryContainer,
+                                          borderRadius:
+                                              BorderRadius.circular(9999)),
+                                      child: Text(
+                                          isMultiPhase && i == 0
+                                              ? '0 pts'
+                                              : '${rewardPerPhase.toStringAsFixed(0)} pts',
+                                          style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w700,
+                                              color: _activePhase == i
+                                                  ? Colors.white
+                                                  : AppTheme.primary)),
+                                    ),
+                                  ],
+                                ]),
                               ),
                             ),
                           )),
@@ -409,6 +485,33 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
                 ]),
               ),
             ),
+
+            // ✅ Reward breakdown info bar
+            if (rewardPerParticipant > 0)
+              Container(
+                width: double.infinity,
+                color: AppTheme.primaryContainer,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(children: [
+                  const Icon(Icons.info_outline,
+                      size: 14, color: AppTheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isMultiPhase
+                          ? 'Phase 1 = screening (0 pts)  •  Phases 2–$_phases = ${rewardPerPhase.toStringAsFixed(0)} pts each  •  Total = ${rewardPerParticipant.toStringAsFixed(0)} pts per participant'
+                          : 'Each participant earns ${rewardPerParticipant.toStringAsFixed(0)} pts on completion',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ]),
+              ),
+
+            // ── Questions list ────────────────────────────
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -474,40 +577,99 @@ class _SurveyBuilderScreenState extends ConsumerState<SurveyBuilderScreen> {
           ],
         ),
       ),
+
+      // ── Bottom publish button ──────────────────────────
       bottomNavigationBar: Container(
         color: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(children: [
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              onPressed: _isPublishing ? null : _publish,
-              child: _isPublishing
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                  : Text(
-                      widget.surveyData['studyId'] != null
-                          ? 'Update Survey'
-                          : 'Publish Survey',
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // ✅ Show reward summary before publishing
+          if (rewardPerParticipant > 0) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                  color: AppTheme.surfaceLow,
+                  borderRadius: BorderRadius.circular(10)),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _RewardStat(
+                        label: 'Per Phase',
+                        value: '${rewardPerPhase.toStringAsFixed(0)} pts'),
+                    Container(
+                        width: 1, height: 30, color: AppTheme.surfaceHigh),
+                    _RewardStat(
+                        label: 'Per Participant',
+                        value:
+                            '${rewardPerParticipant.toStringAsFixed(0)} pts'),
+                    Container(
+                        width: 1, height: 30, color: AppTheme.surfaceHigh),
+                    _RewardStat(
+                        label: 'Rewarded Phases',
+                        value: '$rewardedPhasesCount'),
+                  ]),
             ),
-          ),
+          ],
+          Row(children: [
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: _isPublishing ? null : _publish,
+                child: _isPublishing
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text(
+                        widget.surveyData['studyId'] != null
+                            ? 'Update Survey'
+                            : 'Publish Survey',
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ]),
         ]),
       ),
     );
   }
 }
 
+// ── Reward stat widget ─────────────────────────────────────
+class _RewardStat extends StatelessWidget {
+  final String label, value;
+  const _RewardStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Text(label,
+          style: const TextStyle(
+              fontSize: 10,
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w500)),
+      const SizedBox(height: 2),
+      Text(value,
+          style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.primary)),
+    ]);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// QUESTION CARD
+// ─────────────────────────────────────────────────────────
 class _QuestionCard extends StatelessWidget {
   final int index;
   final Map<String, dynamic> question;
@@ -678,6 +840,9 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────
+// ADD QUESTION SHEET
+// ─────────────────────────────────────────────────────────
 class _AddQuestionSheet extends StatelessWidget {
   final ValueChanged<String> onSelect;
   const _AddQuestionSheet({required this.onSelect});

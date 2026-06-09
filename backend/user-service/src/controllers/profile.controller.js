@@ -1,9 +1,26 @@
 const prisma = require('../config/prisma');
 
+const getUserIdFromReq = (req) => {
+  return (
+    req.user?.userId ||
+    req.user?.id ||
+    req.user?.sub ||
+    req.user?._id ||
+    req.userId ||
+    null
+  );
+};
+
 exports.getProfile = async (req, res) => {
   try {
+    const userId = getUserIdFromReq(req);
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const data = await prisma.user.findUnique({
-      where: { userId: req.userId },
+      where: { userId },
       select: {
         userId: true,
         firstname: true,
@@ -14,18 +31,23 @@ exports.getProfile = async (req, res) => {
         createdAt: true,
         lastLogin: true,
         profile: true,
-        roles: { include: { role: true } },
-      },
+        roles: { include: { role: true } }
+      }
     });
+
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ message: 'Server error zmr' });
+    console.error('getProfile error:', err);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
-
 exports.updateProfile = async (req, res) => {
-  const userId = req.userId; // ✅ from token
+  const userId = getUserIdFromReq(req);
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 
   const {
     age,
@@ -42,7 +64,6 @@ exports.updateProfile = async (req, res) => {
   try {
     const profile = await prisma.userProfile.upsert({
       where: { userId },
-
       update: {
         age,
         gender,
@@ -55,7 +76,6 @@ exports.updateProfile = async (req, res) => {
         bio,
         profileCompletedAt: new Date()
       },
-
       create: {
         userId,
         age,
@@ -72,15 +92,13 @@ exports.updateProfile = async (req, res) => {
     });
 
     return res.json({
-      message: "Profile updated successfully ✅",
+      message: 'Profile updated successfully ✅',
       profile
     });
-
   } catch (error) {
-    console.error("updateProfile error:", error);
-
+    console.error('updateProfile error:', error);
     return res.status(500).json({
-      message: "Server error ❌",
+      message: 'Server error ❌',
       detail: error.message
     });
   }
@@ -88,10 +106,21 @@ exports.updateProfile = async (req, res) => {
 
 exports.updateEarnings = async (req, res) => {
   try {
+    const userId = getUserIdFromReq(req);
     const { amount } = req.body;
 
-    if (amount === undefined || typeof amount !== 'number' || Number.isNaN(amount)) {
-      return res.status(400).json({ message: 'amount is required and must be a number' });
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (
+      amount === undefined ||
+      typeof amount !== 'number' ||
+      Number.isNaN(amount)
+    ) {
+      return res.status(400).json({
+        message: 'amount is required and must be a number'
+      });
     }
 
     if (amount === 0) {
@@ -99,7 +128,7 @@ exports.updateEarnings = async (req, res) => {
     }
 
     const existingProfile = await prisma.userProfile.findUnique({
-      where: { userId: req.userId },
+      where: { userId },
       select: { totalEarnings: true }
     });
 
@@ -108,17 +137,17 @@ exports.updateEarnings = async (req, res) => {
     }
 
     const updatedProfile = await prisma.userProfile.update({
-      where: { userId: req.userId },
+      where: { userId },
       data: {
         totalEarnings: {
-          increment: amount 
+          increment: amount
         }
       }
     });
 
     return res.json({
       message: 'Earnings updated',
-      userId: req.userId,
+      userId,
       previousEarnings: existingProfile.totalEarnings,
       newEarnings: updatedProfile.totalEarnings
     });
@@ -127,10 +156,9 @@ exports.updateEarnings = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 exports.searchProfiles = async (req, res) => {
   try {
-    const prisma = require('../config/prisma');
-
     const users = await prisma.user.findMany({
       where: {
         isActive: true
@@ -140,7 +168,7 @@ exports.searchProfiles = async (req, res) => {
       }
     });
 
-    const userIds = users.map(u => u.userId);
+    const userIds = users.map((u) => u.userId);
 
     let userInterests = [];
 
@@ -196,12 +224,10 @@ exports.searchProfiles = async (req, res) => {
         email: user.email,
         firstname: user.firstname,
         lastname: user.lastname,
-
         age: profile.age ?? calculateAge(profile.dateOfBirth),
         gender: profile.gender,
         country: profile.country,
         education: profile.education,
-
         interestIds: interestsByUser[user.userId] || []
       };
     });
@@ -214,6 +240,7 @@ exports.searchProfiles = async (req, res) => {
       error: err.message
     });
   }
+<<<<<<< HEAD
 };
 exports.getProfileById = async (req, res) => {
   try {
@@ -262,4 +289,6 @@ exports.getProfileBasic = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ message: 'Server error' });
   }
+=======
+>>>>>>> d66ee48 (last commit)
 };
